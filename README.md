@@ -31,6 +31,6 @@ window.
   average-case O(log *d*) where *d* is the distance the newly arrived item is from 
   being in-order, and worst-case O(log *n*). For in-order data, this reduces to 
   average-case O(1) and worst-case O(log *n*). The reference paper for FiBA is 
-  [Optimal and General Out-of-Order Sliding-Window Aggregation](https://dl.acm.org/doi/abs/10.14778/3339490.3339499).
+  [Optimal and General Out-of-Order Sliding-Window Aggregation](http://www.vldb.org/pvldb/vol12/p1167-tangwongsan.pdf).
 - [Reactive](cpp/src/Reactive.hpp) is worst-case O(log *n*). The reference paper is 
-  [General Incremental Sliding-Window Aggregation](https://dl.acm.org/doi/10.14778/2752939.2752940).
+  [General Incremental Sliding-Window Aggregation](http://www.vldb.org/pvldb/vol8/p702-tangwongsan.pdf).
