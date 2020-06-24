@@ -12,6 +12,10 @@ algorithms.
 The algorithmic complexity of the algorithms is with respect to the size of the
 window.
 
+A [tutorial](https://dl.acm.org/doi/abs/10.1145/3093742.3095107) and 
+[encyclopedia](http://hirzels.com/martin/papers/encyc18-sliding-window.pdf)
+article provide more background on sliding window aggregation algorithms.
+
 ## FIFO Algorithms
 - [DABA](cpp/src/DABA.hpp) and [DABA Lite](cpp/src/DABALite.hpp) are worst-case 
   O(1). The reference paper for DABA is [Low-Latency Sliding-Window Aggregation in Worst-Case Constant Time](https://dl.acm.org/doi/abs/10.1145/3093742.3093925).
@@ -23,7 +27,7 @@ window.
   worst-case O(1). It is based on Chris Okasaki's real time queues. The reference 
   paper for IOA is [Low-Latency Sliding-Window Aggregation in Worst-Case Constant Time](https://dl.acm.org/doi/abs/10.1145/3093742.3093925).
 - [Two-Stacks](cpp/src/TwoStacks.hpp) and [Two-Stacks Lite](cpp/src/TwoStacksLite.hpp)
-  are average-case O(1) and worst-case O(*n*). It was originally described by 
+  are average-case O(1) and worst-case O(*n*). Two-Stacks was originally described by 
   [Jon Skeet on Stack Overflow](https://stackoverflow.com/questions/685060/design-a-stack-such-that-getminimum-should-be-o1).
 
 ## General Algorithms
