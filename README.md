@@ -10,7 +10,7 @@ semantics. We refer to the algorithms that tolerate disordered data as general
 algorithms.
 
 The algorithmic complexity of the algorithms is with respect to the size of the
-window.
+window. 
 
 A [tutorial][swag_tutorial] and [encyclopedia][swag_encyclopedia] article
 provide more background on sliding window aggregation algorithms.
