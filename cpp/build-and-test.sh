@@ -13,5 +13,3 @@ docker run -it \
        ${FQDN_IMAGE} \
        bash -c "cd /stage; make ${TARGETS} && make zip && ./bin/test"
 
-
-

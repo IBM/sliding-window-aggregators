@@ -1,0 +1,5 @@
+dist: bionic
+language: cpp
+jobs:
+  include:
+      - script: cpp/build-and-test.sh
