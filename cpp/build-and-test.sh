@@ -5,7 +5,7 @@ IMAGE="swag-builder-cpp"
 CWD="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 # only proceed if this directory is in the latest commit
-if [ $(./can-skip.sh .) ]; then
+if [ $(${CWD}/can-skip.sh .) ]; then
     echo "Skipping build and test for C++ code."
     exit 0
 fi
