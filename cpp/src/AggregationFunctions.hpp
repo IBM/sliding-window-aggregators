@@ -10,7 +10,7 @@
 #include <list>
 #include <limits>
 
-template <class _In, class _Partial=_In, class _Out=_In>
+template <class _In, class _Partial=_In, class _Out=_In> 
 class Sum {
 public:
     typedef _In In;
