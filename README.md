@@ -4,9 +4,9 @@ aggregation algorithms.
 
 All of these algorithms require operators that are associative. We classify the
 algorithms in two groups: those that require data to arrive in-order, and those
-that allow data to arrive out-of-order. We call the algorithms that require
+that allow data to arrive out-of-order. We refer to the algorithms that require
 data to arrive in-order as FIFO algorithms, as they assume first-in, first-out
-semantics. We call algorithms that tolerate disordered data as general 
+semantics. We refer to algorithms that tolerate disordered data as general 
 algorithms.
 
 The algorithmic complexity of the algorithms is with respect to the size of the
