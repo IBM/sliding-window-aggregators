@@ -1,6 +1,6 @@
 # Sliding Window Aggregators
-This repo contains reference implementations of many different sliding window 
-aggregation algorithms.
+This repo contains reference implementations of sliding window aggregation 
+algorithms.
 
 All of these algorithms require operators that are associative. We classify the
 algorithms in two groups: those that require data to arrive in-order, and those
