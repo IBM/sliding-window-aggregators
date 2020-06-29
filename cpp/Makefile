@@ -6,10 +6,26 @@ SWAG_ALGOS=src/ChunkedArrayQueue.hpp \
            src/OkasakisQueue.hpp src/FiBA.hpp \
            src/TimestampedFifo.hpp
 
-all: benchmark_driver benchmark_driver_stats ooo_adversary ooo_adversary_stats data_benchmark dynamic_benchmark shared log 
+all: benchmark_driver benchmark_driver_stats ooo_adversary ooo_adversary_stats data_benchmark dynamic_benchmark shared
 
-zip:
+bin:
+	mkdir bin
+
+zip: bin
 	cd bin; zip -D benchmark_bin.zip *
+
+log: bin/log
+
+bin/log: bin
+	g++ --version > bin/log.txt 2>&1
+
+builder-image:
+	docker build -t swag-builder-cpp builder
+
+test: bin/test
+
+bin/test: log src/test.cc $(SWAG_ALGOS)
+	$(CXX) -std=gnu++11 -ggdb src/test.cc -o bin/test
 
 benchmark_driver: log src/benchmark_driver.cc src/benchmark_core.h $(SWAG_ALGOS)
 	$(CXX) $(CXXFLAGS) src/benchmark_driver.cc -o bin/benchmark_driver
@@ -32,15 +48,4 @@ dynamic_benchmark: log src/benchmark_driver.cc src/benchmark_core.h $(SWAG_ALGOS
 shared: log src/shared_benchmark_driver.cc src/benchmark_core.h src/FiBA.hpp
 	$(CXX) $(CXXFLAGS) src/shared_benchmark_driver.cc -o bin/shared_benchmark_driver
 
-test: bin/test
 
-bin/test: log src/test.cc $(SWAG_ALGOS)
-	$(CXX) -std=gnu++11 -ggdb src/test.cc -o bin/test
-
-log: bin/log
-
-bin/log:
-	g++ --version > bin/log.txt 2>&1
-
-builder-image:
-	docker build -t swag-builder-cpp builder
