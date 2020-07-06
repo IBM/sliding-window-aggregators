@@ -1,0 +1,60 @@
+[package]
+name               = "swag"
+version            = "0.2.0"
+authors            = ["Klas Segeljakt <klasseg@kth.se>"]
+description        = "General Purpose Sliding Window Aggregator."
+homepage           = "https://github.com/IBM/sliding-window-aggregators/rust"
+repository         = "https://github.com/IBM/sliding-window-aggregators/rust"
+documentation      = "https://github.com/IBM/sliding-window-aggregators/rust"
+readme             = "README.md"
+keywords           = ["sliding-window-aggregation", "stream-processing", "incremental-computation"]
+categories         = ["database", "science"]
+license-file       = "../LICENSE"
+edition            = "2018"
+publish            = false
+
+[lib]
+name               = "swag"
+path               = "src/lib.rs"
+
+[dependencies]
+num-traits         = "0.2.12"
+arrayvec           = "0.5.1"
+alga               = "0.9.3"
+
+[dev-dependencies]
+criterion          = "0.3.3"
+
+[profile.dev]
+opt-level          = 0
+debug              = 2
+debug-assertions   = true
+rpath              = false
+lto                = false
+panic              = 'unwind'
+incremental        = true
+
+[profile.release]  
+opt-level          = 3
+debug              = 0
+debug-assertions   = false
+rpath              = false
+lto                = false
+codegen-units      = 1
+panic              = 'unwind'
+
+[profile.test]
+opt-level          = 0
+debug              = 2
+debug-assertions   = true
+rpath              = false
+lto                = false
+codegen-units      = 1
+
+[profile.bench]
+opt-level          = 3
+debug              = 0
+rpath              = false
+lto                = false
+debug-assertions   = false
+codegen-units      = 1
