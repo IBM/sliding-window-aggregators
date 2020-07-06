@@ -43,3 +43,6 @@ where
 
 /// Recalculate-From-Scratch
 pub mod recalc;
+
+/// Subtract-On-Evict
+pub mod soe;

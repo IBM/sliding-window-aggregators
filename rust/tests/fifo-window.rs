@@ -9,6 +9,7 @@ use alga::general::Operator;
 use alga::general::TwoSidedInverse;
 use rand::Rng;
 use swag::recalc::*;
+use swag::soe::*;
 use swag::*;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -99,4 +100,14 @@ fn test1_recalc() {
 #[test]
 fn test2_recalc() {
     test2::<ReCalc<Value, Sum>>();
+}
+
+#[test]
+fn test1_soe() {
+    test1::<SoE<Value, Sum>>();
+}
+
+#[test]
+fn test2_soe() {
+    test2::<SoE<Value, Sum>>();
 }
