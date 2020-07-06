@@ -21,6 +21,7 @@ path               = "src/lib.rs"
 num-traits         = "0.2.12"
 arrayvec           = "0.5.1"
 alga               = "0.9.3"
+rand               = "0.7.3"
 
 [dev-dependencies]
 criterion          = "0.3.3"
