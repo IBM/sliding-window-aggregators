@@ -40,3 +40,6 @@ where
     /// Returns the aggregate of a subwindow.
     fn range_query(&self, range: Range<Time>) -> Value;
 }
+
+/// Recalculate-From-Scratch
+pub mod recalc;
