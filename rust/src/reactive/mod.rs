@@ -40,10 +40,11 @@ where
             fat.update_ordered(
                 leaves[self.front..]
                     .iter()
-                    .chain(leaves[..self.back].iter()),
+                    .chain(leaves[..self.back].iter())
+                    .cloned(),
             );
         } else {
-            fat.update_ordered(leaves[self.front..self.back].iter());
+            fat.update_ordered(leaves[self.front..self.back].iter().cloned());
         }
         self.fat = fat;
         self.front = 0;
@@ -65,7 +66,7 @@ where
         }
     }
     fn push(&mut self, v: Value) {
-        self.fat.update(&[(self.back, v)]);
+        self.fat.update([(self.back, v)].iter().cloned());
         self.size += 1;
         self.back += 1;
         if self.size > (3 * self.fat.capacity) / 4 {
@@ -73,7 +74,8 @@ where
         }
     }
     fn pop(&mut self) {
-        self.fat.update(&[(self.front, Value::identity())]);
+        self.fat
+            .update([(self.front, Value::identity())].iter().cloned());
         self.size -= 1;
         self.front += 1;
         if self.size <= self.fat.capacity / 4 {

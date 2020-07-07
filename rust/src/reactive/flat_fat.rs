@@ -14,16 +14,14 @@ where
     fn with_capacity(capacity: usize) -> Self;
 
     /// Updates a non-contiguous batch of leaves
-    fn update<'a, I>(&mut self, batch: I)
+    fn update<I>(&mut self, batch: I)
     where
-        I: IntoIterator<Item = &'a (usize, Value)>,
-        Value: 'a;
+        I: IntoIterator<Item = (usize, Value)>;
 
     /// Updates a contiguous batch of leaves
-    fn update_ordered<'a, I>(&mut self, values: I)
+    fn update_ordered<I>(&mut self, values: I)
     where
-        I: IntoIterator<Item = &'a Value>,
-        Value: 'a;
+        I: IntoIterator<Item = Value>;
 
     /// Aggregates all nodes in the FAT and returns the result
     fn aggregate(&self) -> Value;
@@ -92,7 +90,7 @@ where
     fn new(values: &[Value]) -> Self {
         let capacity = values.len();
         let mut new = Self::with_capacity(capacity);
-        new.update_ordered(values);
+        new.update_ordered(values.iter().cloned());
         new
     }
 
@@ -105,16 +103,15 @@ where
         }
     }
 
-    fn update<'a, I>(&mut self, batch: I)
+    fn update<I>(&mut self, batch: I)
     where
-        I: IntoIterator<Item = &'a (usize, Value)>,
-        Value: 'a,
+        I: IntoIterator<Item = (usize, Value)>,
     {
         let mut parents: HashSet<usize> = batch
             .into_iter()
             .map(|(idx, val)| {
-                let leaf = self.leaf(*idx);
-                self.tree[leaf] = val.clone();
+                let leaf = self.leaf(idx);
+                self.tree[leaf] = val;
                 self.parent(leaf)
             })
             .collect();
@@ -136,14 +133,13 @@ where
         }
     }
 
-    fn update_ordered<'a, I>(&mut self, values: I)
+    fn update_ordered<I>(&mut self, values: I)
     where
-        I: IntoIterator<Item = &'a Value>,
-        Value: 'a,
+        I: IntoIterator<Item = Value>,
     {
         values.into_iter().enumerate().for_each(|(idx, val)| {
             let leaf = self.leaf(idx);
-            self.tree[leaf] = val.clone();
+            self.tree[leaf] = val;
         });
         (0..self.leaf(0)).into_iter().rev().for_each(|parent| {
             let left = self.left(parent);
