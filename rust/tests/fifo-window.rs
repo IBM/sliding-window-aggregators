@@ -10,6 +10,7 @@ use alga::general::TwoSidedInverse;
 use rand::Rng;
 use swag::recalc::*;
 use swag::soe::*;
+use swag::two_stacks::*;
 use swag::*;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -110,4 +111,14 @@ fn test1_soe() {
 #[test]
 fn test2_soe() {
     test2::<SoE<Value, Sum>>();
+}
+
+#[test]
+fn test1_two_stacks() {
+    test1::<TwoStacks<Value, Sum>>();
+}
+
+#[test]
+fn test2_two_stacks() {
+    test2::<TwoStacks<Value, Sum>>();
 }
