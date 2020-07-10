@@ -49,3 +49,7 @@ pub mod soe;
 
 /// Two-Stacks
 pub mod two_stacks;
+
+/// Reactive-Aggregator
+pub mod reactive;
+

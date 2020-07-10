@@ -8,6 +8,7 @@ use alga::general::Identity;
 use alga::general::Operator;
 use alga::general::TwoSidedInverse;
 use rand::Rng;
+use swag::reactive::*;
 use swag::recalc::*;
 use swag::soe::*;
 use swag::two_stacks::*;
@@ -121,4 +122,14 @@ fn test1_two_stacks() {
 #[test]
 fn test2_two_stacks() {
     test2::<TwoStacks<Value, Sum>>();
+}
+
+#[test]
+fn test1_reactive() {
+    test1::<Reactive<Value, Sum>>();
+}
+
+#[test]
+fn test2_reactive() {
+    test2::<Reactive<Value, Sum>>();
 }
