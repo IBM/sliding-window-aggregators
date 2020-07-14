@@ -1,5 +1,11 @@
 dist: bionic
-language: cpp
-jobs:
+matrix:
   include:
-      - script: cpp/build-and-test.sh
+    - language: cpp
+      rust: stable
+      jobs:
+        allow_failures:
+          - rust: nightly
+          fast_finish: true
+    - language: cpp
+      script: cpp/build-and-test.sh
