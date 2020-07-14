@@ -1,0 +1,9 @@
+mod common;
+use common::*;
+use swag::FifoWindow;
+use swag::soe::*;
+
+/// Should compile since Sum is invertible
+fn main() {
+    SoE::<Int, Sum>::new();
+}

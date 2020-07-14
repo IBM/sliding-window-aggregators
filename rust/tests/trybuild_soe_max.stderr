@@ -1,0 +1,19 @@
+error[E0599]: no function or associated item named `new` found for struct `swag::soe::SoE<common::Int, common::Max>` in the current scope
+ --> $DIR/trybuild_soe_max.fail:7:22
+  |
+7 |     SoE::<Int, Max>::new();
+  |                      ^^^ function or associated item not found in `swag::soe::SoE<common::Int, common::Max>`
+
+error[E0277]: the trait bound `common::Int: alga::general::one_operator::AbstractGroup<common::Max>` is not satisfied
+  --> $DIR/trybuild_soe_max.fail:7:5
+   |
+7  |     SoE::<Int, Max>::new();
+   |     ^^^^^^^^^^^^^^^^^^^^ the trait `alga::general::one_operator::AbstractGroup<common::Max>` is not implemented for `common::Int`
+   |
+  ::: $WORKSPACE/src/soe/mod.rs:10:12
+   |
+10 |     Value: AbstractGroup<BinOp> + Clone,
+   |            -------------------- required by this bound in `swag::soe::SoE`
+   |
+   = help: the following implementations were found:
+             <common::Int as alga::general::one_operator::AbstractGroup<common::Sum>>
