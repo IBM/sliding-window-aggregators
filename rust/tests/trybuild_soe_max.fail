@@ -1,0 +1,8 @@
+mod common;
+use common::*;
+use swag::soe::*;
+
+/// Should not compile since Max is not invertible
+fn main() {
+    SoE::<Int, Max>::new();
+}

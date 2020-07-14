@@ -25,6 +25,7 @@ rand               = "0.7.3"
 
 [dev-dependencies]
 criterion          = "0.3.3"
+trybuild           = "1.0.30"
 
 [profile.dev]
 opt-level          = 0
