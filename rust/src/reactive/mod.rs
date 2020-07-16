@@ -32,7 +32,7 @@ where
         }
     }
     fn inverted(&self) -> bool {
-        return self.front > self.back;
+        self.front > self.back
     }
     fn resize(&mut self, capacity: usize) {
         let leaves = self.fat.leaves();

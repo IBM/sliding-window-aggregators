@@ -63,7 +63,7 @@ where
     BinOp: Operator,
 {
     #[inline(always)]
-    fn agg(stack: &Vec<Item<Value>>) -> Value {
+    fn agg(stack: &[Item<Value>]) -> Value {
         if let Some(top) = stack.last() {
             top.agg.clone()
         } else {

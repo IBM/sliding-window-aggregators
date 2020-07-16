@@ -142,7 +142,7 @@ where
             let leaf = self.leaf(idx);
             self.tree[leaf] = val;
         });
-        (0..self.leaf(0)).into_iter().rev().for_each(|parent| {
+        (0..self.leaf(0)).rev().for_each(|parent| {
             let left = self.left(parent);
             let right = self.right(parent);
             self.tree[parent] = self.tree[left].operate(&self.tree[right]);
@@ -164,7 +164,7 @@ where
             }
             node = parent;
         }
-        return agg;
+        agg
     }
 
     fn suffix(&self, i: usize) -> Value {
@@ -177,6 +177,6 @@ where
             }
             node = parent;
         }
-        return agg;
+        agg
     }
 }
