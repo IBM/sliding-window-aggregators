@@ -108,7 +108,6 @@ where
     for v in values {
         window.push(v);
         window.pop();
-        window.query();
         assert_eq!(window.query(), Int(sum));
     }
 }
