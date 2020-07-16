@@ -19,8 +19,8 @@ where
     Value: AbstractMonoid<BinOp> + Clone,
     BinOp: Operator,
 {
-    fn new() -> ReCalc<Value, BinOp> {
-        ReCalc {
+    fn new() -> Self {
+        Self {
             stack: VecDeque::new(),
             op: PhantomData,
         }

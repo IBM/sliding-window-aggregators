@@ -20,8 +20,8 @@ where
     Value: AbstractGroup<BinOp> + Clone,
     BinOp: Operator,
 {
-    fn new() -> SoE<Value, BinOp> {
-        SoE {
+    fn new() -> Self {
+        Self {
             stack: VecDeque::new(),
             agg: Value::identity(),
             op: PhantomData,

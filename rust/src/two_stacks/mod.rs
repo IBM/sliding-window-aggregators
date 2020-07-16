@@ -28,8 +28,8 @@ where
     Value: AbstractMonoid<BinOp> + Clone,
     BinOp: Operator,
 {
-    fn new() -> TwoStacks<Value, BinOp> {
-        TwoStacks {
+    fn new() -> Self {
+        Self {
             front: Vec::new(),
             back: Vec::new(),
             op: PhantomData,
