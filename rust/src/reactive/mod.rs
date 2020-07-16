@@ -5,6 +5,7 @@ use crate::FifoWindow;
 use alga::general::AbstractMonoid;
 use alga::general::Operator;
 
+#[derive(Clone)]
 pub struct Reactive<Value, BinOp>
 where
     Value: AbstractMonoid<BinOp> + Clone,

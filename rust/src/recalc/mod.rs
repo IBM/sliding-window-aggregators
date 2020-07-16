@@ -1,10 +1,10 @@
 use crate::FifoWindow;
 use alga::general::AbstractMonoid;
 use alga::general::Operator;
-use std::marker::PhantomData;
 use std::collections::VecDeque;
+use std::marker::PhantomData;
 
-#[derive(Debug)]
+#[derive(Clone)]
 pub struct ReCalc<Value, BinOp>
 where
     Value: AbstractMonoid<BinOp> + Clone,

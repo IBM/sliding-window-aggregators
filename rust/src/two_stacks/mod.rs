@@ -3,7 +3,7 @@ use alga::general::AbstractMonoid;
 use alga::general::Operator;
 use std::marker::PhantomData;
 
-#[derive(Debug)]
+#[derive(Clone)]
 struct Item<Value>
 where
     Value: Clone,
@@ -12,7 +12,7 @@ where
     val: Value,
 }
 
-#[derive(Debug)]
+#[derive(Clone)]
 pub struct TwoStacks<Value, BinOp>
 where
     Value: AbstractMonoid<BinOp> + Clone,

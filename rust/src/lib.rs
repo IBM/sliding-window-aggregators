@@ -2,7 +2,7 @@ use alga::general::Operator;
 use std::ops::Range;
 
 /// An abstract data type which maintains a time-ordered sliding window.
-pub trait TimeWindow<Time, Value, BinOp>
+pub trait TimeWindow<Time, Value, BinOp>: Clone
 where
     Time: Ord,
     BinOp: Operator,
@@ -18,7 +18,7 @@ where
 }
 
 /// An abstract data type which maintains a fifo-ordered sliding window.
-pub trait FifoWindow<Value, BinOp>
+pub trait FifoWindow<Value, BinOp>: Clone
 where
     BinOp: Operator,
 {

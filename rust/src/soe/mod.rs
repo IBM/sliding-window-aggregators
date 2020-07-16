@@ -4,7 +4,7 @@ use alga::general::Operator;
 use std::collections::VecDeque;
 use std::marker::PhantomData;
 
-#[derive(Debug)]
+#[derive(Clone)]
 pub struct SoE<Value, BinOp>
 where
     Value: AbstractGroup<BinOp> + Clone,

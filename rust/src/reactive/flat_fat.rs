@@ -2,7 +2,7 @@ use alga::general::AbstractMonoid;
 use alga::general::Operator;
 use std::collections::HashSet;
 
-pub(crate) trait FAT<Value, BinOp>
+pub(crate) trait FAT<Value, BinOp>: Clone
 where
     Value: AbstractMonoid<BinOp> + Clone,
     BinOp: Operator,
@@ -33,6 +33,7 @@ where
     fn suffix(&self, i: usize) -> Value;
 }
 
+#[derive(Clone)]
 pub(crate) struct FlatFAT<Value, BinOp>
 where
     Value: AbstractMonoid<BinOp> + Clone,
