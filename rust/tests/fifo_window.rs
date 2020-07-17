@@ -98,75 +98,75 @@ where
 
 #[test]
 fn test1_recalc() {
-    test1::<ReCalc<Int, Sum>>();
+    test1::<ReCalc<_, _>>();
 }
 
 #[test]
 fn test2_recalc() {
-    test2::<ReCalc<Int, Sum>>();
+    test2::<ReCalc<_, _>>();
 }
 
 #[test]
 fn test3_recalc() {
-    test3::<ReCalc<Int, Max>>();
+    test3::<ReCalc<_, _>>();
 }
 
 #[test]
 fn test4_recalc() {
-    test4::<ReCalc<Int, Sum>>();
+    test4::<ReCalc<_, _>>();
 }
 
 #[test]
 fn test1_soe() {
-    test1::<SoE<Int, Sum>>();
+    test1::<SoE<_, _>>();
 }
 
 #[test]
 fn test2_soe() {
-    test2::<SoE<Int, Sum>>();
+    test2::<SoE<_, _>>();
 }
 
 #[test]
 fn test4_soe() {
-    test4::<SoE<Int, Sum>>();
+    test4::<SoE<_, _>>();
 }
 
 #[test]
 fn test1_two_stacks() {
-    test1::<TwoStacks<Int, Sum>>();
+    test1::<TwoStacks<_, _>>();
 }
 
 #[test]
 fn test2_two_stacks() {
-    test2::<TwoStacks<Int, Sum>>();
+    test2::<TwoStacks<_, _>>();
 }
 
 #[test]
 fn test3_two_stacks() {
-    test3::<TwoStacks<Int, Max>>();
+    test3::<TwoStacks<_, _>>();
 }
 
 #[test]
 fn test4_two_stacks() {
-    test4::<TwoStacks<Int, Sum>>();
+    test4::<TwoStacks<_, _>>();
 }
 
 #[test]
 fn test1_reactive() {
-    test1::<Reactive<Int, Sum>>();
+    test1::<Reactive<_, _>>();
 }
 
 #[test]
 fn test2_reactive() {
-    test2::<Reactive<Int, Sum>>();
+    test2::<Reactive<_, _>>();
 }
 
 #[test]
 fn test3_reactive() {
-    test3::<Reactive<Int, Max>>();
+    test3::<Reactive<_, _>>();
 }
 
 #[test]
 fn test4_reactive() {
-    test4::<Reactive<Int, Sum>>();
+    test4::<Reactive<_, _>>();
 }
