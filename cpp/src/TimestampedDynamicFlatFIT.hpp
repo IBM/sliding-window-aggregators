@@ -2,7 +2,6 @@
 #define __TIMESTAMPED_DYNAMIC_FLATFIT_H__
 
 #include<vector>
-#include<stack>
 #include<iterator>
 #include<algorithm>
 #include<cassert>
@@ -75,22 +74,22 @@ namespace timestamped_dynamic_flatfit {
 
 
     outT query() {
+      // invariant: _tracing_indicies is empty coming in
       if (_size == 0)
         return _binOp.lower(_identE);
 
       // for non-empty cases
-      std::stack<int> tracing_indices;
       for (int cur=_front;cur!=_back;cur=_buffer[cur]._next)
-        tracing_indices.push(cur);
+        _tracing_indices.push_back(cur);
 
       aggT theSum = _identE;
-      while (!tracing_indices.empty()) {
-        int index = tracing_indices.top();
+      while (!_tracing_indices.empty()) {
+        int index = _tracing_indices.back();
         theSum = _binOp.combine(_buffer[index]._val, theSum);
         _buffer[index] = AggT(theSum, _back, _buffer[index]._timestamp);
-        tracing_indices.pop();
+        _tracing_indices.pop_back();
       }
-
+      // invariant: _tracing_indicies is empty going out
       return _binOp.lower(_binOp.combine(theSum, _buffer[_back]._val));
     }
     timeT oldest() { return _buffer[_front]._timestamp; }
@@ -107,6 +106,7 @@ namespace timestamped_dynamic_flatfit {
   private:
     int _size;
     std::vector<AggT> _buffer;
+    std::vector<int> _tracing_indices;
     bool _ever_evicted;
     int32_t _front, _back;
 
