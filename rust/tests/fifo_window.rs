@@ -34,20 +34,20 @@ where
     assert_eq!(window.query(), Int(5));
 }
 
-fn generate() -> Vec<Int> {
+fn synthesize(size: usize) -> Vec<Int> {
     let mut rng = rand::thread_rng();
-    (0..1000)
+    (0..size)
         .map(|_| rng.gen_range(1, 5))
         .map(Int)
         .collect::<Vec<_>>()
 }
 
-/// Tries to aggregate the sum of 1000 randomly generated integers.
+/// Tries to aggregate the sum of 1M randomly generated integers.
 fn test2<Window>()
 where
     Window: FifoWindow<Int, Sum>,
 {
-    let values = generate();
+    let values = synthesize(1_000_000);
     let sum = values.iter().fold(0, |acc, Int(x)| acc + x);
     let mut window = Window::new();
     for v in values.clone() {
@@ -60,13 +60,13 @@ where
     assert_eq!(window.query(), Int(0));
 }
 
-/// Tries to find the maximum value out 1000 randomly generated integers.
+/// Tries to find the maximum value out 1M randomly generated integers.
 fn test3<Window>()
 where
     Window: FifoWindow<Int, Max>,
 {
     let mut window = Window::new();
-    let values = generate();
+    let values = synthesize(1_000_000);
     let max = values.iter().map(|Int(x)| *x).max().unwrap();
     for v in values.clone() {
         window.push(v);
