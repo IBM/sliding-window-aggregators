@@ -5,6 +5,7 @@ use crate::FifoWindow;
 use alga::general::AbstractMonoid;
 use alga::general::Operator;
 
+#[derive(Clone)]
 pub struct Reactive<Value, BinOp>
 where
     Value: AbstractMonoid<BinOp> + Clone,
@@ -31,7 +32,7 @@ where
         }
     }
     fn inverted(&self) -> bool {
-        return self.front > self.back;
+        self.front > self.back
     }
     fn resize(&mut self, capacity: usize) {
         let leaves = self.fat.leaves();

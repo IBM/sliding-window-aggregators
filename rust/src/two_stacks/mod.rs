@@ -3,7 +3,7 @@ use alga::general::AbstractMonoid;
 use alga::general::Operator;
 use std::marker::PhantomData;
 
-#[derive(Debug)]
+#[derive(Clone)]
 struct Item<Value>
 where
     Value: Clone,
@@ -12,7 +12,7 @@ where
     val: Value,
 }
 
-#[derive(Debug)]
+#[derive(Clone)]
 pub struct TwoStacks<Value, BinOp>
 where
     Value: AbstractMonoid<BinOp> + Clone,
@@ -28,8 +28,8 @@ where
     Value: AbstractMonoid<BinOp> + Clone,
     BinOp: Operator,
 {
-    fn new() -> TwoStacks<Value, BinOp> {
-        TwoStacks {
+    fn new() -> Self {
+        Self {
             front: Vec::new(),
             back: Vec::new(),
             op: PhantomData,
@@ -63,7 +63,7 @@ where
     BinOp: Operator,
 {
     #[inline(always)]
-    fn agg(stack: &Vec<Item<Value>>) -> Value {
+    fn agg(stack: &[Item<Value>]) -> Value {
         if let Some(top) = stack.last() {
             top.agg.clone()
         } else {

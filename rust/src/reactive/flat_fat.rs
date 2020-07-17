@@ -2,7 +2,7 @@ use alga::general::AbstractMonoid;
 use alga::general::Operator;
 use std::collections::HashSet;
 
-pub(crate) trait FAT<Value, BinOp>
+pub(crate) trait FAT<Value, BinOp>: Clone
 where
     Value: AbstractMonoid<BinOp> + Clone,
     BinOp: Operator,
@@ -33,6 +33,7 @@ where
     fn suffix(&self, i: usize) -> Value;
 }
 
+#[derive(Clone)]
 pub(crate) struct FlatFAT<Value, BinOp>
 where
     Value: AbstractMonoid<BinOp> + Clone,
@@ -141,7 +142,7 @@ where
             let leaf = self.leaf(idx);
             self.tree[leaf] = val;
         });
-        (0..self.leaf(0)).into_iter().rev().for_each(|parent| {
+        (0..self.leaf(0)).rev().for_each(|parent| {
             let left = self.left(parent);
             let right = self.right(parent);
             self.tree[parent] = self.tree[left].operate(&self.tree[right]);
@@ -163,7 +164,7 @@ where
             }
             node = parent;
         }
-        return agg;
+        agg
     }
 
     fn suffix(&self, i: usize) -> Value {
@@ -176,6 +177,6 @@ where
             }
             node = parent;
         }
-        return agg;
+        agg
     }
 }
