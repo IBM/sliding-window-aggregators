@@ -48,7 +48,7 @@ where
     Window: FifoWindow<Int, Sum>,
 {
     let values = generate();
-    let sum: i32 = values.iter().fold(0, |acc, Int(x)| acc + x);
+    let sum = values.iter().fold(0, |acc, Int(x)| acc + x);
     let mut window = Window::new();
     for v in values.clone() {
         window.push(v);
@@ -75,7 +75,7 @@ where
     for _ in values {
         window.pop();
     }
-    assert_eq!(window.query(), Int(std::i32::MIN));
+    assert_eq!(window.query(), Int(std::i64::MIN));
 }
 
 #[test]
