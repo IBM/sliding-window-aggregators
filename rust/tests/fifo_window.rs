@@ -78,6 +78,24 @@ where
     assert_eq!(window.query(), Int(std::i64::MIN));
 }
 
+/// Fills a window with 1M elements and pushes/pops/queries 1M times.
+fn test4<Window>()
+where
+    Window: FifoWindow<Int, Sum>,
+{
+    let mut window = Window::new();
+    let values = synthesize((2 as u64).pow(22) as usize);
+    let sum = values.iter().fold(0, |acc, Int(x)| acc + x);
+    for v in values.clone() {
+        window.push(v);
+    }
+    for v in values {
+        window.push(v);
+        window.pop();
+        assert_eq!(window.query(), Int(sum));
+    }
+}
+
 #[test]
 fn test1_recalc() {
     test1::<ReCalc<Int, Sum>>();
@@ -94,6 +112,11 @@ fn test3_recalc() {
 }
 
 #[test]
+fn test4_recalc() {
+    test4::<ReCalc<Int, Sum>>();
+}
+
+#[test]
 fn test1_soe() {
     test1::<SoE<Int, Sum>>();
 }
@@ -101,6 +124,11 @@ fn test1_soe() {
 #[test]
 fn test2_soe() {
     test2::<SoE<Int, Sum>>();
+}
+
+#[test]
+fn test4_soe() {
+    test4::<SoE<Int, Sum>>();
 }
 
 #[test]
@@ -119,6 +147,11 @@ fn test3_two_stacks() {
 }
 
 #[test]
+fn test4_two_stacks() {
+    test4::<TwoStacks<Int, Sum>>();
+}
+
+#[test]
 fn test1_reactive() {
     test1::<Reactive<Int, Sum>>();
 }
@@ -131,4 +164,9 @@ fn test2_reactive() {
 #[test]
 fn test3_reactive() {
     test3::<Reactive<Int, Max>>();
+}
+
+#[test]
+fn test4_reactive() {
+    test4::<Reactive<Int, Sum>>();
 }
