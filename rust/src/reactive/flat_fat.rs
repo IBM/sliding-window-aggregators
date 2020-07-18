@@ -1,6 +1,7 @@
 use alga::general::AbstractMonoid;
 use alga::general::Operator;
 use std::collections::HashSet;
+use std::marker::PhantomData;
 
 pub(crate) trait FAT<Value, BinOp>: Clone
 where
@@ -49,7 +50,7 @@ where
     pub(crate) tree: Vec<Value>,
     /// Number of leaves which can be stored in the tree
     pub(crate) capacity: usize,
-    binop: std::marker::PhantomData<BinOp>,
+    binop: PhantomData<BinOp>,
 }
 
 impl<Value, BinOp> FlatFAT<Value, BinOp>
@@ -99,7 +100,7 @@ where
         assert_ne!(capacity, 0, "Capacity of window must be greater than 0");
         Self {
             tree: vec![Value::identity(); 2 * capacity - 1],
-            binop: std::marker::PhantomData,
+            binop: PhantomData,
             capacity,
         }
     }
