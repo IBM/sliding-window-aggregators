@@ -126,10 +126,25 @@ where
     window.pop();
 }
 
+/// Pops more elements from a window than what it contains.
+fn test6<Window>()
+where
+    Window: FifoWindow<Int, Sum>,
+{
+    let mut window = Window::new();
+    window.push(Int(1));
+    window.push(Int(2));
+    window.push(Int(3));
+    window.pop();
+    window.push(Int(4));
+    window.push(Int(5));
+}
+
 test_matrix! {
     test1 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ],
     test2 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ],
     test3 => [ recalc::ReCalc,           reactive::Reactive, two_stacks::TwoStacks ],
     test4 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ],
-    test5 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ]
+    test5 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ],
+    test6 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ]
 }

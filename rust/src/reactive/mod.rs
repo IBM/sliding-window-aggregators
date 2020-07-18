@@ -32,7 +32,7 @@ where
         }
     }
     fn inverted(&self) -> bool {
-        self.front > self.back
+        self.front >= self.back
     }
     fn resize(&mut self, capacity: usize) {
         let leaves = self.fat.leaves();
@@ -69,7 +69,7 @@ where
     fn push(&mut self, v: Value) {
         self.fat.update([(self.back, v)].iter().cloned());
         self.size += 1;
-        self.back += 1;
+        self.back = (self.back + 1) % self.fat.capacity;
         if self.size > (3 * self.fat.capacity) / 4 {
             self.resize(self.fat.capacity * 2);
         }
@@ -79,7 +79,7 @@ where
             self.fat
                 .update([(self.front, Value::identity())].iter().cloned());
             self.size -= 1;
-            self.front += 1;
+            self.front = (self.front + 1) % self.fat.capacity;
             if self.size <= self.fat.capacity / 4 && self.size > 0 {
                 self.resize(self.fat.capacity / 2);
             }
