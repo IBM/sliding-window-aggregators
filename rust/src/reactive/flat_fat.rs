@@ -59,26 +59,32 @@ where
     BinOp: Operator,
 {
     /// Returns all leaf nodes of the tree
+    #[inline(always)]
     pub(crate) fn leaves(&self) -> &[Value] {
         &self.tree[self.leaf(0)..]
     }
     /// Returns the index of the root node
+    #[inline(always)]
     fn root(&self) -> usize {
         0
     }
     /// Returns the index of a leaf node
+    #[inline(always)]
     fn leaf(&self, i: usize) -> usize {
         i + self.capacity - 1
     }
     /// Returns the index of an node's left child
+    #[inline(always)]
     fn left(&self, i: usize) -> usize {
         2 * i + 1
     }
     /// Returns the index of an node's right child
+    #[inline(always)]
     fn right(&self, i: usize) -> usize {
         2 * i + 2
     }
     /// Returns the index of an node's parent
+    #[inline(always)]
     fn parent(&self, i: usize) -> usize {
         (i - 1) / 2
     }
