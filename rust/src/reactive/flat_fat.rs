@@ -103,7 +103,7 @@ where
     }
 
     fn with_capacity(capacity: usize) -> Self {
-        assert_ne!(capacity, 0, "Capacity of window must be greater than 0");
+        assert!(capacity > 1, "Capacity of window must be greater than 1");
         Self {
             tree: vec![Value::identity(); 2 * capacity - 1],
             binop: PhantomData,

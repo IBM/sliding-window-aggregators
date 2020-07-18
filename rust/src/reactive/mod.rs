@@ -60,7 +60,7 @@ where
 {
     fn new() -> Self {
         Self {
-            fat: FlatFAT::with_capacity(8),
+            fat: FlatFAT::with_capacity(2),
             size: 0,
             front: 0,
             back: 0,
@@ -75,12 +75,14 @@ where
         }
     }
     fn pop(&mut self) {
-        self.fat
-            .update([(self.front, Value::identity())].iter().cloned());
-        self.size -= 1;
-        self.front += 1;
-        if self.size <= self.fat.capacity / 4 {
-            self.resize(self.fat.capacity / 2);
+        if self.size > 0 {
+            self.fat
+                .update([(self.front, Value::identity())].iter().cloned());
+            self.size -= 1;
+            self.front += 1;
+            if self.size <= self.fat.capacity / 4 && self.size > 0 {
+                self.resize(self.fat.capacity / 2);
+            }
         }
     }
     fn query(&self) -> Value {
