@@ -30,6 +30,8 @@ where
     fn pop(&mut self);
     /// Combines the values in fifo order and returns the result, e.g., `1+v1+v2+...+vn`.
     fn query(&self) -> Value;
+    /// Returns the number of elements inside the window.
+    fn len(&self) -> usize;
 }
 
 /// An abstract data type which maintains sliding sub-window aggregates.

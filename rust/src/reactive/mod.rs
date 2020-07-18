@@ -94,4 +94,7 @@ where
             self.fat.aggregate()
         }
     }
+    fn len(&self) -> usize {
+        self.size
+    }
 }

@@ -39,4 +39,7 @@ where
     fn query(&self) -> Value {
         self.agg.clone()
     }
+    fn len(&self) -> usize {
+        self.stack.len()
+    }
 }

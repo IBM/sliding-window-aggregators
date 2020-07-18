@@ -55,6 +55,9 @@ where
     fn query(&self) -> Value {
         Self::agg(&self.front).operate(&Self::agg(&self.back))
     }
+    fn len(&self) -> usize {
+        self.front.len() + self.back.len()
+    }
 }
 
 impl<Value, BinOp> TwoStacks<Value, BinOp>

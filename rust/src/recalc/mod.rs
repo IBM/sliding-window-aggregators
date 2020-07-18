@@ -36,4 +36,7 @@ where
             .iter()
             .fold(Value::identity(), |acc, elem| acc.operate(&elem))
     }
+    fn len(&self) -> usize {
+        self.stack.len()
+    }
 }
