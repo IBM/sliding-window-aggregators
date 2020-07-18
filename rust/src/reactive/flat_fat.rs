@@ -72,11 +72,11 @@ where
     }
     /// Returns the index of an node's left child
     fn left(&self, i: usize) -> usize {
-        2 * (i + 1) - 1
+        2 * i + 1
     }
     /// Returns the index of an node's right child
     fn right(&self, i: usize) -> usize {
-        2 * (i + 1)
+        2 * i + 2
     }
     /// Returns the index of an node's parent
     fn parent(&self, i: usize) -> usize {
