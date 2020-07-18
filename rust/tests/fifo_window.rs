@@ -1,12 +1,28 @@
 use rand::Rng;
-use swag::reactive::*;
-use swag::recalc::*;
-use swag::soe::*;
-use swag::two_stacks::*;
 use swag::*;
 
 mod common;
 use common::*;
+
+/// Macro for generating test cases for different algorithms.
+macro_rules! test_matrix {
+    {
+        $(
+            $name:ident => [$($module:ident::$algorithm:ident),*]
+        ),*
+    } => {
+        $(
+            mod $name {
+                $(
+                    #[test]
+                    fn $module() {
+                        super::$name::<swag::$module::$algorithm<_,_>>();
+                    }
+                )*
+            }
+        )*
+    }
+}
 
 /// Basic test for integer sums.
 fn test1<Window>()
@@ -92,81 +108,28 @@ where
     for v in values {
         window.push(v);
         window.pop();
+        window.query();
         assert_eq!(window.query(), Int(sum));
     }
 }
 
-#[test]
-fn test1_recalc() {
-    test1::<ReCalc<_, _>>();
+/// Pops more elements from a window than what it contains.
+fn test5<Window>()
+where
+    Window: FifoWindow<Int, Sum>,
+{
+    let mut window = Window::new();
+    window.push(Int(0));
+    window.push(Int(0));
+    window.pop();
+    window.pop();
+    window.pop();
 }
 
-#[test]
-fn test2_recalc() {
-    test2::<ReCalc<_, _>>();
-}
-
-#[test]
-fn test3_recalc() {
-    test3::<ReCalc<_, _>>();
-}
-
-#[test]
-fn test4_recalc() {
-    test4::<ReCalc<_, _>>();
-}
-
-#[test]
-fn test1_soe() {
-    test1::<SoE<_, _>>();
-}
-
-#[test]
-fn test2_soe() {
-    test2::<SoE<_, _>>();
-}
-
-#[test]
-fn test4_soe() {
-    test4::<SoE<_, _>>();
-}
-
-#[test]
-fn test1_two_stacks() {
-    test1::<TwoStacks<_, _>>();
-}
-
-#[test]
-fn test2_two_stacks() {
-    test2::<TwoStacks<_, _>>();
-}
-
-#[test]
-fn test3_two_stacks() {
-    test3::<TwoStacks<_, _>>();
-}
-
-#[test]
-fn test4_two_stacks() {
-    test4::<TwoStacks<_, _>>();
-}
-
-#[test]
-fn test1_reactive() {
-    test1::<Reactive<_, _>>();
-}
-
-#[test]
-fn test2_reactive() {
-    test2::<Reactive<_, _>>();
-}
-
-#[test]
-fn test3_reactive() {
-    test3::<Reactive<_, _>>();
-}
-
-#[test]
-fn test4_reactive() {
-    test4::<Reactive<_, _>>();
+test_matrix! {
+    test1 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ],
+    test2 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ],
+    test3 => [ recalc::ReCalc,           reactive::Reactive, two_stacks::TwoStacks ],
+    test4 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ],
+    test5 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ]
 }
