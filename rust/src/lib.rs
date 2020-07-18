@@ -57,3 +57,5 @@ pub mod two_stacks;
 /// Reactive-Aggregator
 pub mod reactive;
 
+/// De-Amortized Banker's Aggregator
+pub mod daba;

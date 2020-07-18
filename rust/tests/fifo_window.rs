@@ -141,10 +141,10 @@ where
 }
 
 test_matrix! {
-    test1 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ],
-    test2 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ],
-    test3 => [ recalc::ReCalc,           reactive::Reactive, two_stacks::TwoStacks ],
-    test4 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ],
-    test5 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ],
-    test6 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ]
+    test1 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, daba::DABA ],
+    test2 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, daba::DABA ],
+    test3 => [ recalc::ReCalc,           reactive::Reactive, two_stacks::TwoStacks, daba::DABA ],
+    test4 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, daba::DABA ],
+    test5 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, daba::DABA ],
+    test6 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, daba::DABA ]
 }
