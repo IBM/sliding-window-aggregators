@@ -39,4 +39,7 @@ where
     fn len(&self) -> usize {
         self.stack.len()
     }
+    fn is_empty(&self) -> bool {
+        self.stack.is_empty()
+    }
 }

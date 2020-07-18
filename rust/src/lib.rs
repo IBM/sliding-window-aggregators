@@ -32,6 +32,8 @@ where
     fn query(&self) -> Value;
     /// Returns the number of elements inside the window.
     fn len(&self) -> usize;
+    /// Returns true if the window contains no elements.
+    fn is_empty(&self) -> bool;
 }
 
 /// An abstract data type which maintains sliding sub-window aggregates.

@@ -97,4 +97,7 @@ where
     fn len(&self) -> usize {
         self.size
     }
+    fn is_empty(&self) -> bool {
+        self.size == 0
+    }
 }

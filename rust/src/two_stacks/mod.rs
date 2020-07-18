@@ -58,6 +58,9 @@ where
     fn len(&self) -> usize {
         self.front.len() + self.back.len()
     }
+    fn is_empty(&self) -> bool {
+        self.front.is_empty() && self.back.is_empty()
+    }
 }
 
 impl<Value, BinOp> TwoStacks<Value, BinOp>
