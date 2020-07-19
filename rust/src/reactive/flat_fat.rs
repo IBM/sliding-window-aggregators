@@ -1,6 +1,6 @@
 use alga::general::AbstractMonoid;
 use alga::general::Operator;
-use std::collections::HashSet;
+use fxhash::FxHashSet as HashSet;
 use std::marker::PhantomData;
 
 pub(crate) trait FAT<Value, BinOp>: Clone
@@ -123,7 +123,7 @@ where
                 self.parent(leaf)
             })
             .collect();
-        let mut new_parents: HashSet<usize> = HashSet::new();
+        let mut new_parents: HashSet<usize> = HashSet::default();
         loop {
             parents.drain().for_each(|parent| {
                 let left = self.left(parent);
