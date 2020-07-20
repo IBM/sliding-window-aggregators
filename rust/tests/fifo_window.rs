@@ -139,11 +139,50 @@ where
     window.push(Int(5));
 }
 
+/// Push => Query
+fn test7<Window>()
+where
+    Window: FifoWindow<Int, Sum>,
+{
+    let mut window = Window::new();
+    window.push(Int(1));
+    assert_eq!(window.query(), Int(1));
+}
+
+/// Push => Push => Push => Pop => Pop => Query
+fn test8<Window>()
+where
+    Window: FifoWindow<Int, Sum>,
+{
+    let mut window = Window::new();
+    window.push(Int(1));
+    window.push(Int(2));
+    window.push(Int(3));
+    window.pop();
+    window.pop();
+    assert_eq!(window.query(), Int(3));
+}
+
+/// Push => Pop => Push => Query
+fn test9<Window>()
+where
+    Window: FifoWindow<Int, Sum>,
+{
+    let mut window = Window::new();
+    window.push(Int(1));
+    window.pop();
+    window.push(Int(2));
+    assert_eq!(window.query(), Int(2));
+}
+
 test_matrix! {
-    test1 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ],
-    test2 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ],
-    test3 => [ recalc::ReCalc,           reactive::Reactive, two_stacks::TwoStacks ],
-    test4 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ],
-    test5 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ],
-    test6 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ]
+    test1 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test2 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test3 => [ recalc::ReCalc,           reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test4 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test5 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test6 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test7 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test8 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test9 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ]
 }

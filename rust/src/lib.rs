@@ -57,3 +57,5 @@ pub mod two_stacks;
 /// Reactive-Aggregator
 pub mod reactive;
 
+/// Flat and Fast Index Traverser
+pub mod flatfit;
