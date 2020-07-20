@@ -1,6 +1,7 @@
 use alga::general::AbstractMonoid;
 use alga::general::Operator;
-use std::collections::HashSet;
+use fxhash::FxHashSet as HashSet;
+use std::marker::PhantomData;
 
 pub(crate) trait FAT<Value, BinOp>: Clone
 where
@@ -49,7 +50,7 @@ where
     pub(crate) tree: Vec<Value>,
     /// Number of leaves which can be stored in the tree
     pub(crate) capacity: usize,
-    binop: std::marker::PhantomData<BinOp>,
+    binop: PhantomData<BinOp>,
 }
 
 impl<Value, BinOp> FlatFAT<Value, BinOp>
@@ -58,26 +59,32 @@ where
     BinOp: Operator,
 {
     /// Returns all leaf nodes of the tree
+    #[inline(always)]
     pub(crate) fn leaves(&self) -> &[Value] {
         &self.tree[self.leaf(0)..]
     }
     /// Returns the index of the root node
+    #[inline(always)]
     fn root(&self) -> usize {
         0
     }
     /// Returns the index of a leaf node
+    #[inline(always)]
     fn leaf(&self, i: usize) -> usize {
         i + self.capacity - 1
     }
     /// Returns the index of an node's left child
+    #[inline(always)]
     fn left(&self, i: usize) -> usize {
-        2 * (i + 1) - 1
+        2 * i + 1
     }
     /// Returns the index of an node's right child
+    #[inline(always)]
     fn right(&self, i: usize) -> usize {
-        2 * (i + 1)
+        2 * i + 2
     }
     /// Returns the index of an node's parent
+    #[inline(always)]
     fn parent(&self, i: usize) -> usize {
         (i - 1) / 2
     }
@@ -96,10 +103,10 @@ where
     }
 
     fn with_capacity(capacity: usize) -> Self {
-        assert_ne!(capacity, 0, "Capacity of window must be greater than 0");
+        assert!(capacity > 1, "Capacity of window must be greater than 1");
         Self {
             tree: vec![Value::identity(); 2 * capacity - 1],
-            binop: std::marker::PhantomData,
+            binop: PhantomData,
             capacity,
         }
     }
@@ -116,7 +123,7 @@ where
                 self.parent(leaf)
             })
             .collect();
-        let mut new_parents: HashSet<usize> = HashSet::new();
+        let mut new_parents: HashSet<usize> = HashSet::default();
         loop {
             parents.drain().for_each(|parent| {
                 let left = self.left(parent);

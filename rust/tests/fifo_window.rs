@@ -1,12 +1,28 @@
 use rand::Rng;
-use swag::reactive::*;
-use swag::recalc::*;
-use swag::soe::*;
-use swag::two_stacks::*;
 use swag::*;
 
 mod common;
 use common::*;
+
+/// Macro for generating test cases for different algorithms.
+macro_rules! test_matrix {
+    {
+        $(
+            $name:ident => [$($module:ident::$algorithm:ident),*]
+        ),*
+    } => {
+        $(
+            mod $name {
+                $(
+                    #[test]
+                    fn $module() {
+                        super::$name::<swag::$module::$algorithm<_,_>>();
+                    }
+                )*
+            }
+        )*
+    }
+}
 
 /// Basic test for integer sums.
 fn test1<Window>()
@@ -34,21 +50,21 @@ where
     assert_eq!(window.query(), Int(5));
 }
 
-fn generate() -> Vec<Int> {
+fn synthesize(size: usize) -> Vec<Int> {
     let mut rng = rand::thread_rng();
-    (0..1000)
+    (0..size)
         .map(|_| rng.gen_range(1, 5))
         .map(Int)
         .collect::<Vec<_>>()
 }
 
-/// Tries to aggregate the sum of 1000 randomly generated integers.
+/// Tries to aggregate the sum of 1K randomly generated integers.
 fn test2<Window>()
 where
     Window: FifoWindow<Int, Sum>,
 {
-    let values = generate();
-    let sum: i32 = values.iter().fold(0, |acc, Int(x)| acc + x);
+    let values = synthesize(1_000);
+    let sum = values.iter().fold(0, |acc, Int(x)| acc + x);
     let mut window = Window::new();
     for v in values.clone() {
         window.push(v);
@@ -60,13 +76,13 @@ where
     assert_eq!(window.query(), Int(0));
 }
 
-/// Tries to find the maximum value out 1000 randomly generated integers.
+/// Tries to find the maximum value out 1K randomly generated integers.
 fn test3<Window>()
 where
     Window: FifoWindow<Int, Max>,
 {
     let mut window = Window::new();
-    let values = generate();
+    let values = synthesize(1_000);
     let max = values.iter().map(|Int(x)| *x).max().unwrap();
     for v in values.clone() {
         window.push(v);
@@ -75,60 +91,60 @@ where
     for _ in values {
         window.pop();
     }
-    assert_eq!(window.query(), Int(std::i32::MIN));
+    assert_eq!(window.query(), Int(std::i64::MIN));
 }
 
-#[test]
-fn test1_recalc() {
-    test1::<ReCalc<Int, Sum>>();
+/// Fills a window with 1K elements and pushes/pops/queries 1K times.
+fn test4<Window>()
+where
+    Window: FifoWindow<Int, Sum>,
+{
+    let mut window = Window::new();
+    let values = synthesize(1_000);
+    let sum = values.iter().fold(0, |acc, Int(x)| acc + x);
+    for v in values.clone() {
+        window.push(v);
+    }
+    for v in values {
+        window.push(v);
+        window.pop();
+        window.query();
+        assert_eq!(window.query(), Int(sum));
+    }
 }
 
-#[test]
-fn test2_recalc() {
-    test2::<ReCalc<Int, Sum>>();
+/// Pops more elements from a window than what it contains.
+fn test5<Window>()
+where
+    Window: FifoWindow<Int, Sum>,
+{
+    let mut window = Window::new();
+    window.push(Int(0));
+    window.push(Int(0));
+    window.pop();
+    window.pop();
+    window.pop();
 }
 
-#[test]
-fn test3_recalc() {
-    test3::<ReCalc<Int, Max>>();
+/// Pops more elements from a window than what it contains.
+fn test6<Window>()
+where
+    Window: FifoWindow<Int, Sum>,
+{
+    let mut window = Window::new();
+    window.push(Int(1));
+    window.push(Int(2));
+    window.push(Int(3));
+    window.pop();
+    window.push(Int(4));
+    window.push(Int(5));
 }
 
-#[test]
-fn test1_soe() {
-    test1::<SoE<Int, Sum>>();
-}
-
-#[test]
-fn test2_soe() {
-    test2::<SoE<Int, Sum>>();
-}
-
-#[test]
-fn test1_two_stacks() {
-    test1::<TwoStacks<Int, Sum>>();
-}
-
-#[test]
-fn test2_two_stacks() {
-    test2::<TwoStacks<Int, Sum>>();
-}
-
-#[test]
-fn test3_two_stacks() {
-    test3::<TwoStacks<Int, Max>>();
-}
-
-#[test]
-fn test1_reactive() {
-    test1::<Reactive<Int, Sum>>();
-}
-
-#[test]
-fn test2_reactive() {
-    test2::<Reactive<Int, Sum>>();
-}
-
-#[test]
-fn test3_reactive() {
-    test3::<Reactive<Int, Max>>();
+test_matrix! {
+    test1 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ],
+    test2 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ],
+    test3 => [ recalc::ReCalc,           reactive::Reactive, two_stacks::TwoStacks ],
+    test4 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ],
+    test5 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ],
+    test6 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks ]
 }

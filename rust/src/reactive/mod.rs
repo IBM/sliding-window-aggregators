@@ -32,7 +32,7 @@ where
         }
     }
     fn inverted(&self) -> bool {
-        self.front > self.back
+        self.front >= self.back
     }
     fn resize(&mut self, capacity: usize) {
         let leaves = self.fat.leaves();
@@ -60,7 +60,7 @@ where
 {
     fn new() -> Self {
         Self {
-            fat: FlatFAT::with_capacity(8),
+            fat: FlatFAT::with_capacity(2),
             size: 0,
             front: 0,
             back: 0,
@@ -69,18 +69,20 @@ where
     fn push(&mut self, v: Value) {
         self.fat.update([(self.back, v)].iter().cloned());
         self.size += 1;
-        self.back += 1;
+        self.back = (self.back + 1) % self.fat.capacity;
         if self.size > (3 * self.fat.capacity) / 4 {
             self.resize(self.fat.capacity * 2);
         }
     }
     fn pop(&mut self) {
-        self.fat
-            .update([(self.front, Value::identity())].iter().cloned());
-        self.size -= 1;
-        self.front += 1;
-        if self.size <= self.fat.capacity / 4 {
-            self.resize(self.fat.capacity / 2);
+        if self.size > 0 {
+            self.fat
+                .update([(self.front, Value::identity())].iter().cloned());
+            self.size -= 1;
+            self.front = (self.front + 1) % self.fat.capacity;
+            if self.size <= self.fat.capacity / 4 && self.size > 0 {
+                self.resize(self.fat.capacity / 2);
+            }
         }
     }
     fn query(&self) -> Value {
@@ -91,5 +93,11 @@ where
         } else {
             self.fat.aggregate()
         }
+    }
+    fn len(&self) -> usize {
+        self.size
+    }
+    fn is_empty(&self) -> bool {
+        self.size == 0
     }
 }
