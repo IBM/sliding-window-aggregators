@@ -117,6 +117,7 @@ where
             self.items[self.a].agg.clone()
         }
     }
+    #[inline(always)]
     fn fixup(&mut self) {
         if self.b == 0 {
             self.singleton()
