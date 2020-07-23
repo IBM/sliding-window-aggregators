@@ -1,3 +1,8 @@
+#![feature(linked_list_cursors)]
+#![feature(maybe_uninit_ref)]
+#![feature(maybe_uninit_extra)]
+#![feature(const_generics)]
+#![allow(incomplete_features)]
 use alga::general::Operator;
 use std::ops::Range;
 
@@ -57,3 +62,5 @@ pub mod two_stacks;
 /// Reactive-Aggregator
 pub mod reactive;
 
+/// De-Amortized Banker's Aggregator
+pub mod daba;
