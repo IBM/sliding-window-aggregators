@@ -1,3 +1,4 @@
+mod chunked_array_queue;
 use crate::FifoWindow;
 use alga::general::AbstractMonoid;
 use alga::general::Operator;
