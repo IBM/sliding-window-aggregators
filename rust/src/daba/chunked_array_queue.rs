@@ -84,41 +84,31 @@ where
         }
     }
     pub(crate) fn pop_back(&mut self) -> Option<Elem> {
-        if let Some(chunk) = self.chunks.back_mut() {
-            if chunk.front <= chunk.back {
-                unsafe {
-                    let val = chunk.elems[chunk.back].assume_init();
-                    chunk.elems[chunk.back] = MaybeUninit::uninit().assume_init();
-                    chunk.back -= 1;
-                    if chunk.back == 0 {
-                        self.chunks.pop_back();
-                    }
-                    Some(val)
+        match self.chunks.back_mut() {
+            Some(chunk) if chunk.front <= chunk.back => unsafe {
+                let val = chunk.elems[chunk.back].assume_init();
+                chunk.elems[chunk.back] = MaybeUninit::uninit().assume_init();
+                chunk.back -= 1;
+                if chunk.back == 0 {
+                    self.chunks.pop_back();
                 }
-            } else {
-                None
-            }
-        } else {
-            None
+                Some(val)
+            },
+            _ => None,
         }
     }
     pub(crate) fn pop_front(&mut self) -> Option<Elem> {
-        if let Some(chunk) = self.chunks.front_mut() {
-            if chunk.front <= chunk.back {
-                unsafe {
-                    let val = chunk.elems[chunk.front].assume_init();
-                    chunk.elems[chunk.front] = MaybeUninit::uninit().assume_init();
-                    chunk.front += 1;
-                    if chunk.front == SIZE {
-                        self.chunks.pop_front();
-                    }
-                    Some(val)
+        match self.chunks.front_mut() {
+            Some(chunk) if chunk.front <= chunk.back => unsafe {
+                let val = chunk.elems[chunk.front].assume_init();
+                chunk.elems[chunk.front] = MaybeUninit::uninit().assume_init();
+                chunk.front += 1;
+                if chunk.front == SIZE {
+                    self.chunks.pop_front();
                 }
-            } else {
-                None
-            }
-        } else {
-            None
+                Some(val)
+            },
+            _ => None,
         }
     }
     pub(crate) fn index_front(&mut self) -> Cursor<'_, Elem, SIZE> {
