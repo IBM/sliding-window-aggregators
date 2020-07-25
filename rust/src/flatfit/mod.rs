@@ -1,6 +1,7 @@
 use crate::FifoWindow;
 use alga::general::AbstractMonoid;
 use alga::general::Operator;
+use std::cell::RefCell;
 use std::marker::PhantomData;
 
 const LOW_CAP: usize = 2;
@@ -14,7 +15,7 @@ where
     front: usize,
     back: usize,
     size: usize,
-    buffer: Vec<Item<Value>>,
+    buffer: RefCell<Vec<Item<Value>>>,
     binop: PhantomData<BinOp>,
 }
 
@@ -40,27 +41,30 @@ where
             front: 0,
             back: 0,
             size: 0,
-            buffer: Vec::new(),
+            buffer: RefCell::new(Vec::new()),
             binop: PhantomData,
         }
     }
     fn push(&mut self, val: Value) {
-        if self.size + 1 > self.buffer.len() {
-            self.rescale(self.buffer.len() * 2)
+        let capacity = self.buffer.borrow().capacity();
+        if self.size + 1 > capacity {
+            self.rescale(capacity * 2)
         }
+        let mut buffer = self.buffer.borrow_mut();
         self.size += 1;
         let prev = self.back;
         self.back = (self.back + 1) % self.size;
-        self.buffer[self.back].val = val;
-        self.buffer[prev].next = self.back;
+        buffer[self.back].val = val;
+        buffer[prev].next = self.back;
     }
     fn pop(&mut self) -> Option<Value> {
         if self.size > 0 {
-            let item = self.buffer.get(self.front).map(|item| item.val.clone());
-            self.front = (self.front + 1) % self.buffer.capacity();
+            let item = self.buffer.borrow().get(self.front).map(|item| item.val.clone());
+            let capacity = self.buffer.borrow().capacity();
+            self.front = (self.front + 1) % capacity;
             self.size -= 1;
-            if self.size < self.buffer.len() / 2 {
-                self.rescale(self.buffer.len() / 2)
+            if self.size < capacity / 2 {
+                self.rescale(capacity / 2)
             }
             item
         } else {
@@ -69,22 +73,20 @@ where
     }
     fn query(&self) -> Value {
         let mut agg = Value::identity();
+        let mut buffer = self.buffer.borrow_mut();
         if self.size > 0 {
             let mut tracing_indices = Vec::new();
             let mut current = self.front;
             while current != self.back {
                 tracing_indices.push(current);
-                current = self.buffer[current].next;
+                current = buffer[current].next;
             }
-            unsafe {
-                // FlatFIT queries mutate the internal buffer
-                let buffer = &self.buffer as *const Vec<Item<Value>> as *mut Vec<Item<Value>>;
-                while let Some(i) = tracing_indices.pop() {
-                    agg = agg.operate(&self.buffer[i].val);
-                    (*buffer)[i] = Item::new(agg.clone(), self.back);
-                }
+            // FlatFIT queries mutate the internal buffer
+            while let Some(i) = tracing_indices.pop() {
+                agg = agg.operate(&buffer[i].val);
+                buffer[i] = Item::new(agg.clone(), self.back);
             }
-            agg = agg.operate(&self.buffer[self.back].val);
+            agg = agg.operate(&buffer[self.back].val);
         }
         agg
     }
@@ -108,14 +110,15 @@ where
             // Unsafe is used here so we don't need to initialize the buffer's contents
             new_buffer.set_len(new_capacity);
         }
-        let old_capacity = self.buffer.capacity();
+        let mut buffer = self.buffer.borrow_mut();
+        let old_capacity = buffer.len();
         for i in 0..self.size {
-            let item = &self.buffer[(self.front + i) % old_capacity];
+            let item = &buffer[(self.front + i) % old_capacity];
             let offset = (item.next + old_capacity - self.front) % old_capacity;
             new_buffer[i].val = item.val.clone();
             new_buffer[i].next = offset;
         }
-        self.buffer = new_buffer;
+        *buffer = new_buffer;
         self.front = 0;
         if self.size == 0 {
             self.back = 0;
