@@ -74,8 +74,9 @@ where
             self.resize(self.fat.capacity * 2);
         }
     }
-    fn pop(&mut self) {
+    fn pop(&mut self) -> Option<Value> {
         if self.size > 0 {
+            let val = self.fat.get(self.front).cloned();
             self.fat
                 .update([(self.front, Value::identity())].iter().cloned());
             self.size -= 1;
@@ -83,6 +84,9 @@ where
             if self.size <= self.fat.capacity / 4 && self.size > 0 {
                 self.resize(self.fat.capacity / 2);
             }
+            val
+        } else {
+            None
         }
     }
     fn query(&self) -> Value {

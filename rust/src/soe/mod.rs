@@ -31,9 +31,12 @@ where
         self.agg = self.agg.operate(&v);
         self.stack.push_back(v);
     }
-    fn pop(&mut self) {
+    fn pop(&mut self) -> Option<Value> {
         if let Some(top) = self.stack.pop_front() {
             self.agg = self.agg.operate(&top.two_sided_inverse());
+            Some(top)
+        } else {
+            None
         }
     }
     fn query(&self) -> Value {
