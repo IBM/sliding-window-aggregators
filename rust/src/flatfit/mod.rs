@@ -16,6 +16,7 @@ where
     back: usize,
     size: usize,
     buffer: RefCell<Vec<Item<Value>>>,
+    tracing_indices: RefCell<Vec<usize>>,
     binop: PhantomData<BinOp>,
 }
 
@@ -42,6 +43,7 @@ where
             back: 0,
             size: 0,
             buffer: RefCell::new(Vec::new()),
+            tracing_indices: RefCell::new(Vec::new()),
             binop: PhantomData,
         }
     }
@@ -75,7 +77,8 @@ where
         let mut agg = Value::identity();
         let mut buffer = self.buffer.borrow_mut();
         if self.size > 0 {
-            let mut tracing_indices = Vec::new();
+            let mut tracing_indices = self.tracing_indices.borrow_mut();
+            debug_assert!(tracing_indices.is_empty());
             let mut current = self.front;
             while current != self.back {
                 tracing_indices.push(current);
