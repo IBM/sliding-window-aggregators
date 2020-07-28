@@ -13,6 +13,10 @@ license-file       = "../LICENSE"
 edition            = "2018"
 publish            = false
 
+[[bench]]
+name               = "bench_main"
+harness            = false
+
 [lib]
 name               = "swag"
 path               = "src/lib.rs"
@@ -26,7 +30,12 @@ fxhash             = "0.2.1"
 
 [dev-dependencies]
 criterion          = "0.3.3"
+criterion-cpu-time = "0.1.0"
+criterion-cycles-per-byte = "0.1.1"
+criterion-perf-events = "0.1.1"
 trybuild           = "1.0.30"
+
+# https://doc.rust-lang.org/cargo/reference/profiles.html
 
 [profile.dev]
 opt-level          = 0
@@ -58,6 +67,7 @@ codegen-units      = 1
 opt-level          = 3
 debug              = 0
 rpath              = false
-lto                = false
+lto                = true
 debug-assertions   = false
 codegen-units      = 1
+overflow-checks    = false
