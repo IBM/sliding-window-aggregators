@@ -41,7 +41,7 @@ where
             val: v,
         });
     }
-    fn pop(&mut self) {
+    fn pop(&mut self) -> Option<Value> {
         if self.front.is_empty() {
             while let Some(top) = self.back.pop() {
                 self.front.push(Item {
@@ -50,7 +50,7 @@ where
                 })
             }
         }
-        self.front.pop();
+        self.front.pop().map(|item| item.val)
     }
     fn query(&self) -> Value {
         Self::agg(&self.front).operate(&Self::agg(&self.back))

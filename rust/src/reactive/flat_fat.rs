@@ -14,6 +14,9 @@ where
     /// Creates a new FAT with uninitialized values
     fn with_capacity(capacity: usize) -> Self;
 
+    /// Returns the value of the leaf at `idx`
+    fn get(&self, idx: usize) -> Option<&Value>;
+
     /// Updates a non-contiguous batch of leaves
     fn update<I>(&mut self, batch: I)
     where
@@ -109,6 +112,10 @@ where
             binop: PhantomData,
             capacity,
         }
+    }
+
+    fn get(&self, idx: usize) -> Option<&Value> {
+        self.tree.get(self.leaf(idx))
     }
 
     fn update<I>(&mut self, batch: I)

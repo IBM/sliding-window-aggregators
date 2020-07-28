@@ -28,8 +28,8 @@ where
     fn push(&mut self, v: Value) {
         self.stack.push_back(v);
     }
-    fn pop(&mut self) {
-        self.stack.pop_front();
+    fn pop(&mut self) -> Option<Value> {
+        self.stack.pop_front()
     }
     fn query(&self) -> Value {
         self.stack

@@ -12,7 +12,7 @@ where
     /// Inserts the tuple `(t,v)` at time `t` into the window.
     fn insert(&mut self, t: Time, v: Value);
     /// Removes the tuple `(t,v)` at time `t` from the window (if any).
-    fn evict(&mut self, t: Time);
+    fn evict(&mut self, t: Time) -> Option<Value>;
     /// Combines the values in time order and returns the result, e.g., `1+v1+v2+...+vn`.
     fn query(&self) -> Value;
 }
@@ -27,7 +27,7 @@ where
     /// Inserts a value at the back of the window.
     fn push(&mut self, v: Value);
     /// Removes a value at the front of the window (if any).
-    fn pop(&mut self);
+    fn pop(&mut self) -> Option<Value>;
     /// Combines the values in fifo order and returns the result, e.g., `1+v1+v2+...+vn`.
     fn query(&self) -> Value;
     /// Returns the number of elements inside the window.
