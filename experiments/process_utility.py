@@ -182,13 +182,14 @@ def make_violin_graph(data, aggs_sorted, name, title, preamble):
 
     ax.hlines(all_perc99, xmin=[x - 0.1 for x in pos], xmax=[x + 0.1 for x in pos])
     for x, y in zip(pos, all_perc99):
-        plt.text(x+0.15, y, '99.9%', va='center', fontsize=8)
+        plt.text(x+0.15, y, '99.9%', va='center', fontsize=10)
 
     ax.hlines(all_perc99999, xmin=[x - 0.1 for x in pos], xmax=[x + 0.1 for x in pos])
     for x, y in zip(pos, all_perc99999):
-        plt.text(x+0.15, y, '99.999%', va='center', fontsize=8)
+        plt.text(x+0.15, y, '99.999%', va='center', fontsize=10)
 
     plt.setp(ax, xticks=[x+1 for x in range(len(aggs_sorted))], xticklabels=[get_screen_name(agg) for agg in aggs_sorted])
+    graph.autofmt_xdate()
     graph.savefig('figures/' + preamble + '_violin_' + name + '.pdf', bbox_inches='tight')
     plt.close(graph)
 
