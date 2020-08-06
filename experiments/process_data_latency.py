@@ -30,13 +30,9 @@ functions = [
             ]
 
 def main():
-    # matplotlib.use('ps')
     u.create_figures_dir()
     u.set_fonts()
-    # plt.style.use('bmh')
-
-    # override these because otherwise our labels get smooshed
-    plt.rcParams['xtick.labelsize'] = 7
+    plt.rcParams['xtick.labelsize'] = 12
 
     preamble = 'latency_mfgdebs_data'
 
