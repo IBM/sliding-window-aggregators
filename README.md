@@ -10,34 +10,108 @@ semantics. We refer to the algorithms that tolerate disordered data as general
 algorithms.
 
 The algorithmic complexity of the algorithms is with respect to the size of the
-window.
+window, *n*.
 
 A [tutorial][swag_tutorial] and [encyclopedia][swag_encyclopedia] article
 provide more background on sliding window aggregation algorithms.
 
-## FIFO Algorithms
-- [DABA](cpp/src/DABA.hpp) and [DABA Lite](cpp/src/DABALite.hpp) are worst-case 
-  O(1). The reference paper for DABA is
-  [Low-Latency Sliding-Window Aggregation in Worst-Case Constant Time][debs2017].
-- [FlatFIT](cpp/src/FlatFIT.hpp) and [DynamicFlatFIT](cpp/src/DynamicFlatFIT.hpp) 
-  are average-case O(1) and worst-case O(*n*). The reference paper for FlatFIT is 
-  [FlatFIT: Accelerated Incremental Sliding-Window Aggregation For Real-Time Analytics][ssdbm2017].
-  Dynamic FlatFIT is an adaptation of FlatFIT that allows window resizing.
-- [IOA](cpp/src/OkasakisQueue.hpp) is the Imperative Okasaki Aggregator and it is 
-  worst-case O(1). It is based on Chris Okasaki's real time queues. The reference 
-  paper for IOA is [Low-Latency Sliding-Window Aggregation in Worst-Case Constant Time][debs2017].
-- [Two-Stacks](cpp/src/TwoStacks.hpp) and [Two-Stacks Lite](cpp/src/TwoStacksLite.hpp)
-  are average-case O(1) and worst-case O(*n*). Two-Stacks was originally described by 
-  [Jon Skeet on Stack Overflow][skeet2009].
+# DABA
+- **full name**: De-Amortized Banker's Aggregator
+- **ordering**: in-order required
+- **operator requirements**: associativity
+- **time complexity**: worst-case O(1)
+- **space requirements**: 2*n*
+- **first appeared**: [Low-Latency Sliding-Window Aggregation in Worst-Case Constant Time][debs2017]
+- **implementions**: [C++](cpp/src/DABA.hpp)
 
-## General Algorithms
-- [FiBA](cpp/src/FiBA.hpp) is the Finger B-Tree Aggregator and it is 
-  average-case O(log *d*) where *d* is the distance the newly arrived item is from 
-  being in-order, and worst-case O(log *n*). For in-order data, this reduces to 
-  average-case O(1) and worst-case O(log *n*). The reference paper for FiBA is 
-  [Optimal and General Out-of-Order Sliding-Window Aggregation][vldb2019].
-- [Reactive](cpp/src/Reactive.hpp) is worst-case O(log *n*). The reference paper is 
-  [General Incremental Sliding-Window Aggregation][vldb2015].
+# DABA Lite
+- **full name**: De-Amortized Banker's Aggregator Lite
+- **ordering**: in-order required
+- **operator requirements**: associativity
+- **time complexity**: worst-case O(1)
+- **space requirements**: *n* + 2
+- **first appeared**: *In-Order Sliding-Window Aggregation in Worst-Case Constant Time*, under review
+- **implementions**: [C++](cpp/src/DABALite.hpp)
+
+# FiBA
+- **full name**: Finger B-Tree Aggregator
+- **ordering**: out-of-order allowed, assumes data is timestamped
+- **operator requirements**: associativity
+- **time complexity**: average-case O(log *d*) where *d* is distance newly arrived data is from 
+                       being in-order, worst-case O(log *n*); for in-order data (*d* = 0),
+                       average-case O(1) and worst-case O(log *n*)
+- **space requirements**: *n*
+- **first appeared**: [Optimal and General Out-of-Order Sliding-Window Aggregation][vldb2019]
+- **implementions**: [C++](cpp/src/FiBA.hpp)
+
+# FlatFIT
+- **full name**: Flat and Fast Index Traverser
+- **ordering**: in-order required
+- **operator requirements**: associativity
+- **time complexity**: worst-case O(*n*), average-case O(1)
+- **space requirements**: 2*n*
+- **first appeared**: [FlatFIT: Accelerated Incremental Sliding-Window Aggregation For Real-Time Analytics][ssdbm2017]
+- **implementions**: [C++](cpp/src/FlatFIT.hpp) (static windows), 
+                     [C++](cpp/src/DynamicFlatFIT.hpp) (dynamic windows),
+                     [Rust](rust/src/flatfit/mod.rs) (dynamic windows)
+
+# IOA
+- **full name**: Imperative Okasaki Aggregator
+- **ordering**: in-order required
+- **operator requirements**: associativity
+- **time complexity**: worst-case O(1)
+- **space requirements**:
+- **first appeared**: [Low-Latency Sliding-Window Aggregation in Worst-Case Constant Time][debs2017]
+- **implementions**: [C++](cpp/src/OkasakisQueue.hpp)
+
+# Two-Stacks
+- **full name**: Two-Stacks
+- **ordering**: in-order required
+- **operator requirements**: associativity
+- **time complexity**: worst-case O(*n*), average-case O(1)
+- **space requirements**: 2*n*
+- **first appeared**: [Jon Skeet on Stack Overflow][skeet2009]
+- **implementions**: [C++](cpp/src/TwoStacks.hpp),
+                   [Rust](rust/src/two_stacks/mod.rs)
+
+# Two-Stacks Lite
+- **full name**: Two-Stacks Like
+- **ordering**: in-order required
+- **operator requirements**: associativity
+- **time complexity**: worst-case O(*n*), average-case O(1)
+- **space requirements**: *n* + 1 
+- **first appeared**: *In-Order Sliding-Window Aggregation in Worst-Case Constant Time*, under review
+- **implementions**: [C++](cpp/src/TwoStacksLite.hpp)
+
+# Reactive
+- **full name**: Reactive Aggregator
+- **ordering**: out-of-order allowed
+- **operator requirements**: associativity
+- **time complexity**: worst-case O(log *n*)
+- **space requirements**: O(*n*)
+- **first appeared**: [General Incremental Sliding-Window Aggregation][vldb2015]
+- **implementions**: [C++](cpp/src/Reactive.hpp),
+                    [Rust](rust/src/reactive/mod.rs)
+
+# Recalc
+- **full name**: Re-Calculate From Scratch
+- **ordering**: out-of-order allowed
+- **operator requirements**: none
+- **time complexity**: worst-case O(*n*), average-cast O(*n*)
+- **space requirements**: O(*n*)
+- **first appeared**: no known source
+- **implementations**: [C++](cpp/src/ReCalc.hpp),
+                      [Rust](rust/src/recalc/mod.rs)
+
+# SOE
+- **full name**: Subtract on Evict
+- **ordering**: out-of-order allowed
+- **operator requirements**: associativity, invertability
+- **time complexity**: worst-case O(*n*)
+- **space requirements**: O(*n*)
+- **first appeared**: no known source
+- **implementations**: [C++](cpp/src/SubtractOnEvict.hpp),
+                      [Rust](rust/src/soe/mod.rs)
 
 [swag_tutorial]: https://dl.acm.org/doi/abs/10.1145/3093742.3095107
 [swag_encyclopedia]: http://hirzels.com/martin/papers/encyc18-sliding-window.pdf
