@@ -70,7 +70,7 @@ provide more background on sliding window aggregation algorithms.
 - **operator requirements**: associativity
 - **time complexity**: worst-case O(*n*), amortized O(1)
 - **space requirements**: 2*n*
-- **first appeared**: [Jon Skeet on Stack Overflow][skeet2009]
+- **first appeared**: [adamax on Stack Overflow][adamax2011]
 - **implementions**: [C++](cpp/src/TwoStacks.hpp),
                    [Rust](rust/src/two_stacks/mod.rs)
 
@@ -116,7 +116,7 @@ provide more background on sliding window aggregation algorithms.
 [swag_tutorial]: https://dl.acm.org/doi/abs/10.1145/3093742.3095107
 [swag_encyclopedia]: http://hirzels.com/martin/papers/encyc18-sliding-window.pdf
 [debs2017]: https://dl.acm.org/doi/abs/10.1145/3093742.3093925
+[adamax2011]: https://stackoverflow.com/questions/4802038/implement-a-queue-in-which-push-rear-pop-front-and-get-min-are-all-consta
 [ssdbm2017]: https://dl.acm.org/doi/abs/10.1145/3085504.3085509
-[skeet2009]: https://stackoverflow.com/questions/685060/design-a-stack-such-that-getminimum-should-be-o1
 [vldb2019]: http://www.vldb.org/pvldb/vol12/p1167-tangwongsan.pdf
 [vldb2015]: http://www.vldb.org/pvldb/vol8/p702-tangwongsan.pdf
