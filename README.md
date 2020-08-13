@@ -97,7 +97,7 @@ provide more background on sliding window aggregation algorithms.
 - **full name**: Re-Calculate From Scratch
 - **ordering**: out-of-order allowed
 - **operator requirements**: none
-- **time complexity**: worst-case O(*n*), average-cast O(*n*)
+- **time complexity**: O(*n*)
 - **space requirements**: O(*n*)
 - **first appeared**: no known source
 - **implementations**: [C++](cpp/src/ReCalc.hpp),
