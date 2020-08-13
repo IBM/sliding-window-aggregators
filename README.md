@@ -40,7 +40,7 @@ provide more background on sliding window aggregation algorithms.
 - **time complexity**: amortized O(log *d*) where *d* is distance newly arrived data is from 
                        being in-order, worst-case O(log *n*); for in-order data (*d* = 0),
                        amortized O(1) and worst-case O(log *n*)
-- **space requirements**: *n*
+- **space requirements**: O(*n*)
 - **first appeared**: [Optimal and General Out-of-Order Sliding-Window Aggregation][vldb2019]
 - **implementions**: [C++](cpp/src/FiBA.hpp)
 
