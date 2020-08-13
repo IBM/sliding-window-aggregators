@@ -98,7 +98,7 @@ provide more background on sliding window aggregation algorithms.
 - **ordering**: out-of-order allowed
 - **operator requirements**: none
 - **time complexity**: O(*n*)
-- **space requirements**: O(*n*)
+- **space requirements**: *n*
 - **first appeared**: no known source
 - **implementations**: [C++](cpp/src/ReCalc.hpp),
                       [Rust](rust/src/recalc/mod.rs)
@@ -108,7 +108,7 @@ provide more background on sliding window aggregation algorithms.
 - **ordering**: out-of-order allowed
 - **operator requirements**: associativity, invertability
 - **time complexity**: worst-case O(1)
-- **space requirements**: O(*n*)
+- **space requirements**: *n*
 - **first appeared**: no known source
 - **implementations**: [C++](cpp/src/SubtractOnEvict.hpp) (strictly in-order),
                       [Rust](rust/src/soe/mod.rs) (strictly in-order)
