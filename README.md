@@ -37,10 +37,10 @@ provide more background on sliding window aggregation algorithms.
 - **full name**: Finger B-Tree Aggregator
 - **ordering**: out-of-order allowed, assumes data is timestamped
 - **operator requirements**: associativity
-- **time complexity**: average-case O(log *d*) where *d* is distance newly arrived data is from 
+- **time complexity**: amortized O(log *d*) where *d* is distance newly arrived data is from 
                        being in-order, worst-case O(log *n*); for in-order data (*d* = 0),
-                       average-case O(1) and worst-case O(log *n*)
-- **space requirements**: *n*
+                       amortized O(1) and worst-case O(log *n*)
+- **space requirements**: O(*n*)
 - **first appeared**: [Optimal and General Out-of-Order Sliding-Window Aggregation][vldb2019]
 - **implementions**: [C++](cpp/src/FiBA.hpp)
 
@@ -48,7 +48,7 @@ provide more background on sliding window aggregation algorithms.
 - **full name**: Flat and Fast Index Traverser
 - **ordering**: in-order required
 - **operator requirements**: associativity
-- **time complexity**: worst-case O(*n*), average-case O(1)
+- **time complexity**: worst-case O(*n*), amortized O(1)
 - **space requirements**: 2*n*
 - **first appeared**: [FlatFIT: Accelerated Incremental Sliding-Window Aggregation For Real-Time Analytics][ssdbm2017]
 - **implementions**: [C++](cpp/src/FlatFIT.hpp) (static windows), 
@@ -68,9 +68,9 @@ provide more background on sliding window aggregation algorithms.
 - **full name**: Two-Stacks
 - **ordering**: in-order required
 - **operator requirements**: associativity
-- **time complexity**: worst-case O(*n*), average-case O(1)
+- **time complexity**: worst-case O(*n*), amortized O(1)
 - **space requirements**: 2*n*
-- **first appeared**: [Jon Skeet on Stack Overflow][skeet2009]
+- **first appeared**: [adamax on Stack Overflow][adamax2011]
 - **implementions**: [C++](cpp/src/TwoStacks.hpp),
                    [Rust](rust/src/two_stacks/mod.rs)
 
@@ -78,7 +78,7 @@ provide more background on sliding window aggregation algorithms.
 - **full name**: Two-Stacks Like
 - **ordering**: in-order required
 - **operator requirements**: associativity
-- **time complexity**: worst-case O(*n*), average-case O(1)
+- **time complexity**: worst-case O(*n*), amortized O(1)
 - **space requirements**: *n* + 1 
 - **first appeared**: *In-Order Sliding-Window Aggregation in Worst-Case Constant Time*, under review
 - **implementions**: [C++](cpp/src/TwoStacksLite.hpp)
@@ -97,8 +97,8 @@ provide more background on sliding window aggregation algorithms.
 - **full name**: Re-Calculate From Scratch
 - **ordering**: out-of-order allowed
 - **operator requirements**: none
-- **time complexity**: worst-case O(*n*), average-cast O(*n*)
-- **space requirements**: O(*n*)
+- **time complexity**: O(*n*)
+- **space requirements**: *n*
 - **first appeared**: no known source
 - **implementations**: [C++](cpp/src/ReCalc.hpp),
                       [Rust](rust/src/recalc/mod.rs)
@@ -107,16 +107,16 @@ provide more background on sliding window aggregation algorithms.
 - **full name**: Subtract on Evict
 - **ordering**: out-of-order allowed
 - **operator requirements**: associativity, invertability
-- **time complexity**: worst-case O(*n*)
-- **space requirements**: O(*n*)
+- **time complexity**: worst-case O(1)
+- **space requirements**: *n*
 - **first appeared**: no known source
-- **implementations**: [C++](cpp/src/SubtractOnEvict.hpp),
-                      [Rust](rust/src/soe/mod.rs)
+- **implementations**: [C++](cpp/src/SubtractOnEvict.hpp) (strictly in-order),
+                      [Rust](rust/src/soe/mod.rs) (strictly in-order)
 
 [swag_tutorial]: https://dl.acm.org/doi/abs/10.1145/3093742.3095107
 [swag_encyclopedia]: http://hirzels.com/martin/papers/encyc18-sliding-window.pdf
 [debs2017]: https://dl.acm.org/doi/abs/10.1145/3093742.3093925
+[adamax2011]: https://stackoverflow.com/questions/4802038/implement-a-queue-in-which-push-rear-pop-front-and-get-min-are-all-consta
 [ssdbm2017]: https://dl.acm.org/doi/abs/10.1145/3085504.3085509
-[skeet2009]: https://stackoverflow.com/questions/685060/design-a-stack-such-that-getminimum-should-be-o1
 [vldb2019]: http://www.vldb.org/pvldb/vol12/p1167-tangwongsan.pdf
 [vldb2015]: http://www.vldb.org/pvldb/vol8/p702-tangwongsan.pdf
