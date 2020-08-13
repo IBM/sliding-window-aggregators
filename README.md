@@ -37,9 +37,9 @@ provide more background on sliding window aggregation algorithms.
 - **full name**: Finger B-Tree Aggregator
 - **ordering**: out-of-order allowed, assumes data is timestamped
 - **operator requirements**: associativity
-- **time complexity**: average-case O(log *d*) where *d* is distance newly arrived data is from 
+- **time complexity**: amortized O(log *d*) where *d* is distance newly arrived data is from 
                        being in-order, worst-case O(log *n*); for in-order data (*d* = 0),
-                       average-case O(1) and worst-case O(log *n*)
+                       amortized O(1) and worst-case O(log *n*)
 - **space requirements**: *n*
 - **first appeared**: [Optimal and General Out-of-Order Sliding-Window Aggregation][vldb2019]
 - **implementions**: [C++](cpp/src/FiBA.hpp)
@@ -48,7 +48,7 @@ provide more background on sliding window aggregation algorithms.
 - **full name**: Flat and Fast Index Traverser
 - **ordering**: in-order required
 - **operator requirements**: associativity
-- **time complexity**: worst-case O(*n*), average-case O(1)
+- **time complexity**: worst-case O(*n*), amortized O(1)
 - **space requirements**: 2*n*
 - **first appeared**: [FlatFIT: Accelerated Incremental Sliding-Window Aggregation For Real-Time Analytics][ssdbm2017]
 - **implementions**: [C++](cpp/src/FlatFIT.hpp) (static windows), 
@@ -68,7 +68,7 @@ provide more background on sliding window aggregation algorithms.
 - **full name**: Two-Stacks
 - **ordering**: in-order required
 - **operator requirements**: associativity
-- **time complexity**: worst-case O(*n*), average-case O(1)
+- **time complexity**: worst-case O(*n*), amortized O(1)
 - **space requirements**: 2*n*
 - **first appeared**: [Jon Skeet on Stack Overflow][skeet2009]
 - **implementions**: [C++](cpp/src/TwoStacks.hpp),
@@ -78,7 +78,7 @@ provide more background on sliding window aggregation algorithms.
 - **full name**: Two-Stacks Like
 - **ordering**: in-order required
 - **operator requirements**: associativity
-- **time complexity**: worst-case O(*n*), average-case O(1)
+- **time complexity**: worst-case O(*n*), amortized O(1)
 - **space requirements**: *n* + 1 
 - **first appeared**: *In-Order Sliding-Window Aggregation in Worst-Case Constant Time*, under review
 - **implementions**: [C++](cpp/src/TwoStacksLite.hpp)
