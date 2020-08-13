@@ -107,11 +107,11 @@ provide more background on sliding window aggregation algorithms.
 - **full name**: Subtract on Evict
 - **ordering**: out-of-order allowed
 - **operator requirements**: associativity, invertability
-- **time complexity**: worst-case O(*n*)
+- **time complexity**: worst-case O(1)
 - **space requirements**: O(*n*)
 - **first appeared**: no known source
-- **implementations**: [C++](cpp/src/SubtractOnEvict.hpp),
-                      [Rust](rust/src/soe/mod.rs)
+- **implementations**: [C++](cpp/src/SubtractOnEvict.hpp) (strictly in-order),
+                      [Rust](rust/src/soe/mod.rs) (strictly in-order)
 
 [swag_tutorial]: https://dl.acm.org/doi/abs/10.1145/3093742.3095107
 [swag_encyclopedia]: http://hirzels.com/martin/papers/encyc18-sliding-window.pdf
