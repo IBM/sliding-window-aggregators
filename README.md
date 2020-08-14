@@ -60,7 +60,7 @@ provide more background on sliding window aggregation algorithms.
 - **ordering**: in-order required
 - **operator requirements**: associativity
 - **time complexity**: worst-case O(1)
-- **space requirements**:
+- **space requirements**: O(*n*)
 - **first appeared**: [Low-Latency Sliding-Window Aggregation in Worst-Case Constant Time][debs2017]
 - **implementions**: [C++](cpp/src/OkasakisQueue.hpp)
 
