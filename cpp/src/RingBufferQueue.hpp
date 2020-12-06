@@ -81,7 +81,7 @@ private:
 
         E* rescaled_buffer = new E[new_size];
 
-        // pack and reindex the next pointers
+        // repack 
         size_t old_cap = _rb->capacity;
         int n = size(), f = _rb->front;
         for (int index=0;index<n;++index) {
@@ -93,6 +93,7 @@ private:
         delete[] rescaled_buffer;
         
         _rb->front = 0, _rb->back = n;
+        _rb->capacity = new_size;
     }
 
     ring_buffer* _rb;
