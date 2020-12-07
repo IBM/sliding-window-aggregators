@@ -9,6 +9,7 @@
 #include "DABALite.hpp"
 #include "TwoStacks.hpp"
 #include "TwoStacksLite.hpp"
+#include "ImplicitTwoStacksLite.hpp"
 #include "FlatFIT.hpp"
 #include "DynamicFlatFIT.hpp"
 #include "ImplicitQueueABA.hpp"
@@ -44,6 +45,7 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
     auto aba_agg = aba::make_aggregate(f, identity);
     auto twostacks_agg = twostacks::make_aggregate(f, identity);
     auto twostacks_lite_agg = twostackslite::make_aggregate(f, identity);
+    auto implicit_twostacks_lite_agg = implicit_twostackslite::make_aggregate(f, identity);
     auto flatfit_agg = flatfit::make_aggregate(f, identity);
     auto dyn_flatfit_agg = dynamic_flatfit::make_aggregate(f, identity);
     auto recalc_agg = recalc::make_aggregate(f, identity);
@@ -60,6 +62,7 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
         real_assert(sz == aba_agg.size(), name + ": recalc size != aba");
         real_assert(sz == twostacks_agg.size(), name + ": recalc size != two_stacks");
         real_assert(sz == twostacks_lite_agg.size(), name + ": recalc size != two_stacks_lite");
+        real_assert(sz == implicit_twostacks_lite_agg.size(), name + ": recalc size != implicit_two_stacks_lite");
         real_assert(sz == flatfit_agg.size(), name + ": recalc size != flatfit");
         real_assert(sz == dyn_flatfit_agg.size(), name + ": recalc size != dyn_flatfit");
         real_assert(sz == reactive_agg.size(), name + ": recalc size != reactive");
@@ -74,6 +77,7 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
             aba_agg.evict();
             twostacks_agg.evict();
             twostacks_lite_agg.evict();
+            implicit_twostacks_lite_agg.evict();
             flatfit_agg.evict();
             dyn_flatfit_agg.evict();
             recalc_agg.evict();
@@ -90,6 +94,7 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
         aba_agg.insert(i);
         twostacks_agg.insert(i);
         twostacks_lite_agg.insert(i);
+        implicit_twostacks_lite_agg.insert(i);
         flatfit_agg.insert(i);
         dyn_flatfit_agg.insert(i);
         reactive_agg.insert(i);
@@ -104,6 +109,7 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
         real_assert(res == aba_agg.query(), name + ": recalc != aba");
         real_assert(res == twostacks_agg.query(), name + ": recalc != two_stacks");
         real_assert(res == twostacks_lite_agg.query(), name + ": recalc != two_stacks_lite");
+        real_assert(res == implicit_twostacks_lite_agg.query(), name + ": recalc != implicit_two_stacks_lite");
         real_assert(res == flatfit_agg.query(), name + ": recalc != flatfit");
         real_assert(res == dyn_flatfit_agg.query(), name + ": recalc != dyn_flatfit");
         real_assert(res == reactive_agg.query(), name + ": recalc != reactive");
@@ -122,6 +128,7 @@ void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iteration
     auto aba_agg = aba::make_aggregate(f, identity);
     auto twostacks_agg = twostacks::make_aggregate(f, identity);
     auto twostacks_lite_agg = twostackslite::make_aggregate(f, identity);
+    auto implicit_twostacks_lite_agg = implicit_twostackslite::make_aggregate(f, identity);
     auto flatfit_agg = flatfit::make_aggregate(f, identity);
     auto dyn_flatfit_agg = dynamic_flatfit::make_aggregate(f, identity);
     auto soe_agg = soe::make_aggregate(f, identity);
@@ -138,6 +145,7 @@ void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iteration
         real_assert(sz == aba_agg.size(), name + ": recalc size != aba");
         real_assert(sz == twostacks_agg.size(), name + ": recalc size != two_stacks");
         real_assert(sz == twostacks_lite_agg.size(), name + ": recalc size != two_stacks_lite");
+        real_assert(sz == implicit_twostacks_lite_agg.size(), name + ": recalc size != implicit_two_stacks_lite");
         real_assert(sz == flatfit_agg.size(), name + ": recalc size != flatfit");
         real_assert(sz == dyn_flatfit_agg.size(), name + ": recalc size != dyn_flatfit");
         real_assert(sz == soe_agg.size(), name + ": recalc size != soe");
@@ -151,6 +159,7 @@ void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iteration
             aba_agg.evict();
             twostacks_agg.evict();
             twostacks_lite_agg.evict();
+            implicit_twostacks_lite_agg.evict();
             flatfit_agg.evict();
             dyn_flatfit_agg.evict();
             soe_agg.evict();
@@ -167,6 +176,7 @@ void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iteration
         aba_agg.insert(i);
         twostacks_agg.insert(i);
         twostacks_lite_agg.insert(i);
+        implicit_twostacks_lite_agg.insert(i);
         flatfit_agg.insert(i);
         dyn_flatfit_agg.insert(i);
         soe_agg.insert(i);
@@ -181,6 +191,7 @@ void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iteration
         real_assert(res == aba_agg.query(), name + ": recalc != aba");
         real_assert(res == twostacks_agg.query(), name + ": recalc != two_stacks");
         real_assert(res == twostacks_lite_agg.query(), name + ": recalc != two_stacks_lite");
+        real_assert(res == implicit_twostacks_lite_agg.query(), name + ": recalc != implicit_two_stacks_lite");
         real_assert(res == flatfit_agg.query(), name + ": recalc != flatfit");
         real_assert(res == dyn_flatfit_agg.query(), name + ": recalc != dyn_flatfit");
         real_assert(res == soe_agg.query(), name + ": recalc != soe");
@@ -531,15 +542,6 @@ void test_timestamped_fifo(F f, typename F::Partial identity, uint64_t iteration
 }
 
 int main() {
-  test_timestamped_fifo(MinCount<int>(), MinCount<int>::identity, 1000000, 100, "mincount");
-  test_timestamped_fifo(Sum<int>(), Sum<int>::identity, 1000000, 100, "sum");
-
-  test_range_query(Sum<int>(), 0, 50, "sum");
-  test_non_fifo_brute_force(Collect<int>(), Collect<int>::identity, 12345, 251, "collect");
-  test_non_fifo_brute_force(BloomFilter<int>(), BloomFilter<int>::identity, 997, 91, "bloom");
-  test_non_fifo_set(20000, 5000);
-  test_non_fifo_map(Sum<int>(), 0, 20000, 5000, "sum");
-
   test_alg_with_inverse(Sum<int>(), 0, 1000000, 100, "sum");
   test_alg_with_inverse(Mean<int>(), Mean<int>::identity, 1000000, 100, "mean");
   test_alg_with_inverse(SampleStdDev<int>(), SampleStdDev<int>::identity, 1000000, 100, "stddev");
@@ -553,6 +555,15 @@ int main() {
                       ArgMax<int, int, IdentityLifter<int>>::identity, 1000000, 100, "argmax");
   test_alg_no_inverse(Max<int>(), 0, 1000000, 100, "max");
 
+
+  test_timestamped_fifo(MinCount<int>(), MinCount<int>::identity, 1000000, 100, "mincount");
+  test_timestamped_fifo(Sum<int>(), Sum<int>::identity, 1000000, 100, "sum");
+
+  test_range_query(Sum<int>(), 0, 50, "sum");
+  test_non_fifo_brute_force(Collect<int>(), Collect<int>::identity, 12345, 251, "collect");
+  test_non_fifo_brute_force(BloomFilter<int>(), BloomFilter<int>::identity, 997, 91, "bloom");
+  test_non_fifo_set(20000, 5000);
+  test_non_fifo_map(Sum<int>(), 0, 20000, 5000, "sum");
 
   // test below fails when checking invariants
   //test_alg_no_inverse(GeometricMean<int>(), GeometricMean<int>::identity, 1000000, 100, "geomean");

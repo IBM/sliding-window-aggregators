@@ -101,7 +101,7 @@ public:
             return rb->buffer + aap;
         }
 
-        void normalize() {
+        inline void normalize() {
             if (aap >= rb->front && aap >= 2*rb->capacity) {
                 aap -= rb->capacity;
             }
