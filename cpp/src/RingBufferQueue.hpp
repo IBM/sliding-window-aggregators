@@ -16,7 +16,10 @@ private:
         ring_buffer(size_t c) 
             : buffer(new E[c]), size(0), capacity(c), front(0), back(0) {};
 
-        ~ring_buffer() { delete buffer; }
+        ~ring_buffer() { 
+            if (buffer != NULL) 
+                delete[] buffer; 
+        }
         
         E* buffer;
         int size, capacity;
@@ -94,15 +97,15 @@ public:
         }
     
         E& operator*() const {
-            return rb->buffer[aap];
+            return rb->buffer[aap%rb->capacity];
         }
 
         E* operator->() const { 
-            return rb->buffer + aap;
+            return rb->buffer + (aap%rb->capacity);
         }
 
         inline void normalize() {
-            if (aap >= rb->front && aap >= 2*rb->capacity) {
+            if (aap >= rb->front && aap > 2*rb->capacity) {
                 aap -= rb->capacity;
             }
         }
@@ -110,12 +113,16 @@ public:
         // comparison
         friend inline bool
         operator== (const iterator &x, const iterator &y){
-          return (x.aap == y.aap) && (x.rb == y.rb);
+            int xaap = x.aap % x.rb->capacity;
+            int yaap = y.aap % y.rb->capacity;
+            return (xaap == yaap) && (x.rb == y.rb);
         }
 
         friend inline bool
         operator != (const iterator &x, const iterator &y){
-          return (x.aap != y.aap) || (x.rb != y.rb);
+            int xaap = x.aap % x.rb->capacity;
+            int yaap = y.aap % y.rb->capacity;
+            return (xaap != yaap) || (x.rb != y.rb);
         }
         // where in the world are we?
         size_t aap; // "adjusted" absolute position
@@ -135,7 +142,7 @@ public:
 
     void push_back(E elem) {
         int n = size();
-        if (n >= _rb->capacity) 
+        if (n+1 >= _rb->capacity) 
             rescale_to(THRES*_rb->capacity, n+1);
 
         _rb->size++; 

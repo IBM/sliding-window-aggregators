@@ -213,6 +213,7 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
   auto aba_agg = aba::make_aggregate(f, identity);
   auto twostacks_agg = twostacks::make_aggregate(f, identity);
   auto twostacks_lite_agg = twostackslite::make_aggregate(f, identity);
+  auto implicit_twostacks_lite_agg = implicit_twostackslite::make_aggregate(f, identity);
   auto flatfit_agg = flatfit::make_aggregate(f, identity);
   auto dyn_flatfit_agg = dynamic_flatfit::make_aggregate(f, identity);
   auto recalc_agg = recalc::make_aggregate(f, identity);
@@ -229,6 +230,7 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
       aba_agg.insert(i);
       twostacks_agg.insert(i);
       twostacks_lite_agg.insert(i);
+      implicit_twostacks_lite_agg.insert(i);
       flatfit_agg.insert(i);
       dyn_flatfit_agg.insert(i);
       reactive_agg.insert(i);
@@ -242,6 +244,7 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
       real_assert(res == aba_agg.query(), name + ": recalc != aba");
       real_assert(res == twostacks_agg.query(), name + ": recalc != two_stacks");
       real_assert(res == twostacks_lite_agg.query(), name + ": recalc != two_stacks_lite");
+      real_assert(res == implicit_twostacks_lite_agg.query(), name + ": recalc != implicit_two_stacks_lite");      
       real_assert(res == flatfit_agg.query(), name + ": recalc != flatfit");
       real_assert(res == dyn_flatfit_agg.query(), name + ": recalc != dyn_flatfit");
       real_assert(res == reactive_agg.query(), name + ": recalc != reactive");
@@ -256,6 +259,7 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
       aba_agg.evict();
       twostacks_agg.evict();
       twostacks_lite_agg.evict();
+      implicit_twostacks_lite_agg.evict();      
       flatfit_agg.evict();
       dyn_flatfit_agg.evict();
       recalc_agg.evict();
@@ -270,6 +274,7 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
       real_assert(res == aba_agg.query(), name + ": recalc != aba");
       real_assert(res == twostacks_agg.query(), name + ": recalc != two_stacks");
       real_assert(res == twostacks_lite_agg.query(), name + ": recalc != two_stacks_lite");
+      real_assert(res == implicit_twostacks_lite_agg.query(), name + ": recalc != implicit_two_stacks_lite");      
       real_assert(res == flatfit_agg.query(), name + ": recalc != flatfit");
       real_assert(res == dyn_flatfit_agg.query(), name + ": recalc != dyn_flatfit");
       real_assert(res == reactive_agg.query(), name + ": recalc != reactive");
@@ -277,6 +282,7 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
       real_assert(res == bknuckle_agg.query(), name + ": recalc != bknuckle");
       real_assert(res == bfinger_agg.query(), name + ": recalc != bfinger");
     }
+    std::cout << "round over" << std::endl;
   }
   std::cout << "sawtooth:" << name << " passed" << std::endl;
 }
