@@ -67,6 +67,7 @@ void call_benchmarks(std::ifstream& in, int samples, const std::string& data_set
 
                   query_call_data_benchmark<DataSet, timestamped_twostacks::MakeAggregate>("two_stacks", aggregator, function, exp, gen, out) ||
                   query_call_data_benchmark<DataSet, timestamped_twostacks_lite::MakeAggregate>("two_stacks_lite", aggregator, function, exp, gen, out) ||
+                  query_call_data_benchmark<DataSet, timestamped_implicit_twostackslite::MakeAggregate>("im_two_stacks_lite", aggregator, function, exp, gen, out) ||
                   query_call_data_benchmark<DataSet, timestamped_dynamic_flatfit::MakeAggregate>("flatfit", aggregator, function, exp, gen, out) ||
                   query_call_data_benchmark<DataSet, timestamped_daba::MakeAggregate, false>("daba", aggregator, function, exp, gen, out) ||
                   query_call_data_benchmark<DataSet, timestamped_dabalite::MakeAggregate>("daba_lite", aggregator, function, exp, gen, out)
