@@ -16,6 +16,7 @@
 #include "SubtractOnEvict.hpp"
 #include "TimestampedFifo.hpp"
 #include "TimestampedTwoStacks.hpp"
+#include "TimestampedImplicitTwoStacksLite.hpp"
 #include "ReCalc.hpp"
 #include "AggregationFunctions.hpp"
 #include "Reactive.hpp"
@@ -589,6 +590,7 @@ void test_timestamped_fifo(F f, typename F::Partial identity, uint64_t iteration
     auto daba_lite_agg = timestampedfifo::make_aggregate<timestamp, dabalite::Aggregate<F>>(f, identity);
     auto twostacks_agg = timestampedfifo::make_aggregate<timestamp, twostacks::Aggregate<F>>(f, identity);
     auto twostacks_lite_agg = timestampedfifo::make_aggregate<timestamp, twostackslite::Aggregate<F>>(f, identity);
+    auto implicit_twostacks_lite_agg = timestamped_implicit_twostackslite::make_aggregate<timestamp, F>(f, identity);
     auto flatfit_agg = timestampedfifo::make_aggregate<timestamp, flatfit::Aggregate<F>>(f, identity);
     auto recalc_agg = timestampedfifo::make_aggregate<timestamp, recalc::Aggregate<F>>(f, identity);
     auto bclassic_agg = btree::make_aggregate<timestamp, 2, btree::classic>(f, identity);
@@ -600,6 +602,7 @@ void test_timestamped_fifo(F f, typename F::Partial identity, uint64_t iteration
         real_assert(sz == daba_lite_agg.size(), name + ": recalc size != daba_lite");
         real_assert(sz == twostacks_agg.size(), name + ": recalc size != two_stacks");
         real_assert(sz == twostacks_lite_agg.size(), name + ": recalc size != two_stacks_lite");
+        real_assert(sz == implicit_twostacks_lite_agg.size(), name + ": recalc size != implicit_two_stacks_lite");
         real_assert(sz == flatfit_agg.size(), name + ": recalc size != flatfit");
         real_assert(sz == bclassic_agg.size(), name + ": recalc size != bclassic");
         real_assert(sz == bfinger_agg.size(), name + ": recalc size != bfinger");
@@ -609,6 +612,7 @@ void test_timestamped_fifo(F f, typename F::Partial identity, uint64_t iteration
             daba_lite_agg.evict();
             twostacks_agg.evict();
             twostacks_lite_agg.evict();
+            implicit_twostacks_lite_agg.evict();            
             flatfit_agg.evict();
             recalc_agg.evict();
             bclassic_agg.evict();
@@ -620,6 +624,7 @@ void test_timestamped_fifo(F f, typename F::Partial identity, uint64_t iteration
         daba_lite_agg.insert(i, i);
         twostacks_agg.insert(i, i);
         twostacks_lite_agg.insert(i, i);
+        implicit_twostacks_lite_agg.insert(i, i);        
         flatfit_agg.insert(i, i);
         bclassic_agg.insert(i, i);
         bfinger_agg.insert(i, i);        
@@ -629,6 +634,7 @@ void test_timestamped_fifo(F f, typename F::Partial identity, uint64_t iteration
         real_assert(res == daba_lite_agg.query(), name + ": recalc != daba_lite");
         real_assert(res == twostacks_agg.query(), name + ": recalc != two_stacks");
         real_assert(res == twostacks_lite_agg.query(), name + ": recalc != two_stacks_lite");
+        real_assert(res == implicit_twostacks_lite_agg.query(), name + ": recalc != implicit_two_stacks_lite");
         real_assert(res == flatfit_agg.query(), name + ": recalc != flatfit");
         real_assert(res == bclassic_agg.query(), name + ": recalc != bclassic");
         real_assert(res == bfinger_agg.query(), name + ": recalc != bfinger");
