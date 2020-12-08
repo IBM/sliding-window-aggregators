@@ -287,6 +287,95 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
   std::cout << "sawtooth:" << name << " passed" << std::endl;
 }
 
+
+template <class F>
+void test_alg_no_inverse_thirds(F f, typename F::Partial identity,
+                                   uint64_t rep,
+                                   uint64_t window_size,
+                                   std::string name) {
+  auto daba_agg = daba::make_aggregate<true>(f, identity);
+  auto daba_lite_agg = dabalite::make_aggregate(f, identity);
+  auto aba_agg = aba::make_aggregate(f, identity);
+  auto twostacks_agg = twostacks::make_aggregate(f, identity);
+  auto twostacks_lite_agg = twostackslite::make_aggregate(f, identity);
+  auto implicit_twostacks_lite_agg = implicit_twostackslite::make_aggregate(f, identity);
+  auto flatfit_agg = flatfit::make_aggregate(f, identity);
+  auto dyn_flatfit_agg = dynamic_flatfit::make_aggregate(f, identity);
+  auto recalc_agg = recalc::make_aggregate(f, identity);
+  auto reactive_agg = reactive::make_aggregate(f, identity);
+  auto bclassic_agg = btree::make_aggregate<timestamp, 2, btree::classic>(f, identity);
+  auto bknuckle_agg = btree::make_aggregate<timestamp, 2, btree::knuckle>(f, identity);
+  auto bfinger_agg = btree::make_aggregate<timestamp, 2, btree::finger>(f, identity);
+
+  uint64_t third = window_size / 3;
+  // seesawing between 1/3 and n
+  uint64_t epoch_no = 0;
+  while (rep-- > 0) {
+    while (recalc_agg.size() < window_size) {
+      epoch_no++;
+      recalc_agg.insert(epoch_no);
+      daba_agg.insert(epoch_no);
+      daba_lite_agg.insert(epoch_no);
+      aba_agg.insert(epoch_no);
+      twostacks_agg.insert(epoch_no);
+      twostacks_lite_agg.insert(epoch_no);
+      implicit_twostacks_lite_agg.insert(epoch_no);
+      flatfit_agg.insert(epoch_no);
+      dyn_flatfit_agg.insert(epoch_no);
+      reactive_agg.insert(epoch_no);
+      bclassic_agg.insert(epoch_no);
+      bknuckle_agg.insert(epoch_no);
+      bfinger_agg.insert(epoch_no);
+
+      typename F::Out res = recalc_agg.query();
+      real_assert(res == daba_agg.query(), name + ": recalc != daba");
+      real_assert(res == daba_lite_agg.query(), name + ": recalc != daba_lite");
+      real_assert(res == aba_agg.query(), name + ": recalc != aba");
+      real_assert(res == twostacks_agg.query(), name + ": recalc != two_stacks");
+      real_assert(res == twostacks_lite_agg.query(), name + ": recalc != two_stacks_lite");
+      real_assert(res == implicit_twostacks_lite_agg.query(), name + ": recalc != implicit_two_stacks_lite");      
+      real_assert(res == flatfit_agg.query(), name + ": recalc != flatfit");
+      real_assert(res == dyn_flatfit_agg.query(), name + ": recalc != dyn_flatfit");
+      real_assert(res == reactive_agg.query(), name + ": recalc != reactive");
+      real_assert(res == bclassic_agg.query(), name + ": recalc != bclassic");
+      real_assert(res == bknuckle_agg.query(), name + ": recalc != bknuckle");
+      real_assert(res == bfinger_agg.query(), name + ": recalc != bfinger");
+    }
+    // drain down to 1/3
+    while (recalc_agg.size() > third) {
+      daba_agg.evict();
+      daba_lite_agg.evict();
+      aba_agg.evict();
+      twostacks_agg.evict();
+      twostacks_lite_agg.evict();
+      implicit_twostacks_lite_agg.evict();      
+      flatfit_agg.evict();
+      dyn_flatfit_agg.evict();
+      recalc_agg.evict();
+      reactive_agg.evict();
+      bclassic_agg.evict();
+      bknuckle_agg.evict();
+      bfinger_agg.evict();
+
+      typename F::Out res = recalc_agg.query();
+      real_assert(res == daba_agg.query(), name + ": recalc != daba");
+      real_assert(res == daba_lite_agg.query(), name + ": recalc != daba_lite");
+      real_assert(res == aba_agg.query(), name + ": recalc != aba");
+      real_assert(res == twostacks_agg.query(), name + ": recalc != two_stacks");
+      real_assert(res == twostacks_lite_agg.query(), name + ": recalc != two_stacks_lite");
+      real_assert(res == implicit_twostacks_lite_agg.query(), name + ": recalc != implicit_two_stacks_lite");      
+      real_assert(res == flatfit_agg.query(), name + ": recalc != flatfit");
+      real_assert(res == dyn_flatfit_agg.query(), name + ": recalc != dyn_flatfit");
+      real_assert(res == reactive_agg.query(), name + ": recalc != reactive");
+      real_assert(res == bclassic_agg.query(), name + ": recalc != bclassic");
+      real_assert(res == bknuckle_agg.query(), name + ": recalc != bknuckle");
+      real_assert(res == bfinger_agg.query(), name + ": recalc != bfinger");
+    }
+    std::cout << "round over" << std::endl;
+  }
+  std::cout << "thirds:" << name << " passed" << std::endl;
+}
+
 void test_non_fifo_set(uint64_t iterations, uint64_t window_size) {
     srand(12345);
     std::multiset<timestamp> ms;
@@ -555,6 +644,9 @@ int main() {
 
   test_alg_no_inverse_sawtooth(MinCount<int>(), MinCount<int>::identity, 3, 1921, "mincount");
   test_alg_no_inverse_sawtooth(Collect<int>(), Collect<int>::identity, 3, 519, "collect");
+
+  test_alg_no_inverse_thirds(MinCount<int>(), MinCount<int>::identity, 5, 1921, "mincount");
+  test_alg_no_inverse_thirds(Collect<int>(), Collect<int>::identity, 5, 519, "collect");
 
   test_alg_no_inverse(MinCount<int>(), MinCount<int>::identity, 1000000, 100, "mincount");
   test_alg_no_inverse(ArgMax<int, int, IdentityLifter<int>>(),

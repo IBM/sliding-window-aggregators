@@ -31,7 +31,7 @@ int main(int argc, char const *argv[])
         }
     }
 
-    
+    RingBufferQueue<int>::iterator eob = rb.end();
     while (rb.size() > 0) {
         std::cout << rb.front() << " " << rb.back() << std::endl;
         rb.pop_front();
@@ -39,6 +39,10 @@ int main(int argc, char const *argv[])
         std::cout << "fix4: " << (*fix4) << std::endl;
         std::cout << "++++++" << std::endl;
     }
+
+    std::cout << "rb.capacity=" << rb._rb->capacity << ", end.aap=" << rb.end().aap 
+    << ", begin.aap=" << rb.begin().aap
+    << ", eob.aap=" << eob.aap << std::endl;
 
     std::cout << "---------------" << std::endl;
 

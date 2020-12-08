@@ -35,10 +35,10 @@ public:
         typedef size_t difference_type;
 
         iterator()
-            : aap(0), last_cap(0), rb(NULL) {}
+            : aap(0), rb(NULL) {}
         
-        iterator(size_t aap_, size_t last_cap_, ring_buffer* rb_) 
-            : last_cap(last_cap_), rb(rb_) {
+        iterator(size_t aap_, ring_buffer* rb_) 
+            : rb(rb_) {
             if (aap_ >= rb->front) 
                 aap = aap_;
             else
@@ -46,7 +46,7 @@ public:
         }
 
         iterator(const iterator &that)
-            : aap(that.aap), last_cap(that.last_cap), rb(that.rb) {}
+            : aap(that.aap), rb(that.rb) {}
 
         _Self& operator++() {
             ++aap;
@@ -90,7 +90,7 @@ public:
  
         _Self& operator=(const _Self& other) { // copy assignment
             if (this != &other) { // self-assignment check expected
-                aap = other.aap, last_cap = other.last_cap, rb = other.rb;
+                aap = other.aap, rb = other.rb;
                 normalize();
             }
             return *this;
@@ -126,7 +126,6 @@ public:
         }
         // where in the world are we?
         size_t aap; // "adjusted" absolute position
-        size_t last_cap; // the capacity recorded when aap was computed
         ring_buffer* rb; // the actual ring buffer
     };
 
@@ -170,13 +169,13 @@ public:
         return _rb->buffer[(_rb->back + c - 1)%c];
     }
 
-    const iterator begin() { return iterator(_rb->front, _rb->capacity, _rb); } 
-    const iterator end() { return iterator(_rb->front + _rb->size, _rb->capacity, _rb); } 
+    const iterator begin() { return iterator(_rb->front, _rb); } 
+    const iterator end() { return iterator(_rb->front + _rb->size, _rb); } 
   
 
 private:
     const int THRES = 2;
-    const int MAGIC_MINIMUM_RING_SIZE = 2;
+    const int MAGIC_MINIMUM_RING_SIZE = 4;
 
     void rescale_to(size_t new_size, size_t ensure_size) {
         new_size = std::max(new_size, (size_t) MAGIC_MINIMUM_RING_SIZE);
@@ -199,7 +198,7 @@ private:
         _rb->front %= new_size, _rb->back = (f + n)%new_size;
         _rb->capacity = new_size;
     }
-
+public:
     ring_buffer* _rb;
 };
 

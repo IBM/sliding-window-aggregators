@@ -5,12 +5,6 @@
 #include<cassert>
 #include "RingBufferQueue.hpp"
 
-// #ifdef DEBUG
-// #define _IFDEBUG(x) x
-// #else
-// #define _IFDEBUG(x)
-// #endif
-
 namespace implicit_twostackslite {
     using namespace std;
 
@@ -33,27 +27,19 @@ namespace implicit_twostackslite {
         typedef __AggT<aggT> AggT;
 
         Aggregate(binOpFunc binOp_, aggT identE_) 
-            : _q(), _binOp(binOp_), _backSum(identE_), _identE(identE_) {
-                _split = _q.begin();
-        }
+            : _q(), _num_flipped(0), _binOp(binOp_), _backSum(identE_), _identE(identE_) {}
 
         size_t size() { return _q.size(); }
 
         void insert(inT v) {
-            // _IFDEBUG(std::cerr << "inserting " << v << std::endl;);
-            // std::cerr << "--inserting " << v << std::endl;
             aggT lifted = _binOp.lift(v);
             _backSum = _binOp.combine(_backSum, lifted);
-            // _IFDEBUG(std::cerr << "inserted backSum=" << _backSum << std::endl;);
-            // std::cerr << "inserted backSum=" << _backSum << std::endl;
             _q.push_back(AggT(lifted));
         }
 
-        bool front_empty() { return _q.begin() == _split; }
-
         void evict() { 
             if (front_empty()) {
-                std::cerr << "evict: flippping" << std::endl;
+                // std::cerr << "evict: flippping" << std::endl;
                 // front is empty, let's turn the "stack" implicity.
                 iterT front = _q.begin();
                 iterT it = _q.end()-1;
@@ -66,16 +52,16 @@ namespace implicit_twostackslite {
                     // std::cerr << "running_sum " << running_sum << std::endl;
                     --it;
                 }
-                _split = _q.end();
                 _backSum = _identE;
+                _num_flipped = size();
             }
             _q.pop_front();
-            if (_q.size() == 0) _split = _q.begin();
+            _num_flipped--;
         }
 
         outT query() {
             auto bp = _backSum;
-            auto fp = (size()==0 || front_empty())?_identE:_q.front()._val;
+            auto fp = (front_empty())?_identE:_q.front()._val;
 
             // std::cerr << "prequery: " << _binOp.combine(fp, bp) << std::endl;
             auto answer = _binOp.lower(_binOp.combine(fp, bp));
@@ -83,9 +69,11 @@ namespace implicit_twostackslite {
             return  answer;
         }
     private:
+        bool front_empty() { return _num_flipped == 0; }
+
         queueT _q;
         typedef typename queueT::iterator iterT;
-        iterT _split;
+        size_t _num_flipped;
         // the binary operator deck
         binOpFunc _binOp;
         aggT _backSum;
