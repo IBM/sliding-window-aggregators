@@ -69,7 +69,7 @@ namespace implicit_twostackslite {
             return  answer;
         }
     private:
-        bool front_empty() { return _num_flipped == 0; }
+        inline bool front_empty() { return _num_flipped == 0; }
 
         queueT _q;
         typedef typename queueT::iterator iterT;

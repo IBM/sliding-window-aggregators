@@ -14,6 +14,7 @@
 #include "DABALite.hpp"
 #include "TwoStacks.hpp"
 #include "TwoStacksLite.hpp"
+#include "ImplicitTwoStacksLite.hpp"
 #include "FlatFIT.hpp"
 #include "FlatFIT.hpp"
 #include "DynamicFlatFIT.hpp"
@@ -28,6 +29,7 @@
 
 #include "TimestampedTwoStacks.hpp"
 #include "TimestampedTwoStacksLite.hpp"
+#include "TimestampedImplicitTwoStacksLite.hpp"
 #include "TimestampedDynamicFlatFIT.hpp"
 #include "TimestampedDABA.hpp"
 #include "TimestampedDABALite.hpp"

@@ -76,7 +76,7 @@ namespace timestamped_implicit_twostackslite {
         timeT youngest() {  return _q.back()._timestamp; }
 
     private:
-        bool front_empty() { return _num_flipped == 0; }
+        inline bool front_empty() { return _num_flipped == 0; }
 
         queueT _q;
         typedef typename queueT::iterator iterT;
