@@ -194,9 +194,9 @@ private:
         size_t old_cap = _rb->capacity;
         int n = size(), f_src = _rb->front, f_dst = _rb->front;
         for (int index=0;index<n;++index) {
-            rescaled_buffer[f_dst++] = _rb->buffer[f_src++];
             if (f_dst >= new_size) f_dst -= new_size;
             if (f_src >= old_cap) f_src -= old_cap;
+            rescaled_buffer[f_dst++] = _rb->buffer[f_src++];
         }
 
         std::swap(rescaled_buffer, _rb->buffer);
