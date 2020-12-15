@@ -3,7 +3,7 @@
 
 #include<cstddef>
 #include<iterator>
-#include<algorithm> 
+#include<algorithm>
 #include<cassert>
 
 template <typename E>
@@ -13,17 +13,17 @@ private:
         ring_buffer()
             : buffer(NULL), size(0), capacity(0), front(0), back(0) {};
 
-        ring_buffer(size_t c) 
+        ring_buffer(size_t c)
             : buffer(new E[c]), size(0), capacity(c), front(0), back(0) {};
 
-        ~ring_buffer() { 
-            if (buffer != NULL) 
-                delete[] buffer; 
+        ~ring_buffer() {
+            if (buffer != NULL)
+                delete[] buffer;
         }
-        
+
         E* buffer;
         int size, capacity;
-        int front, back;    
+        int front, back;
     };
 public:
     struct iterator {
@@ -36,10 +36,10 @@ public:
 
         iterator()
             : aap(0), rb(NULL) {}
-        
-        iterator(size_t aap_, ring_buffer* rb_) 
+
+        iterator(size_t aap_, ring_buffer* rb_)
             : rb(rb_) {
-            if (aap_ >= rb->front) 
+            if (aap_ >= rb->front)
                 aap = aap_;
             else
                 aap = aap_ + rb->capacity;
@@ -87,7 +87,7 @@ public:
             --it;
             return it;
         }
- 
+
         _Self& operator=(const _Self& other) { // copy assignment
             if (this != &other) { // self-assignment check expected
                 aap = other.aap, rb = other.rb;
@@ -95,12 +95,12 @@ public:
             }
             return *this;
         }
-    
+
         E& operator*() const {
             return rb->buffer[aap%rb->capacity];
         }
 
-        E* operator->() const { 
+        E* operator->() const {
             return rb->buffer + (aap%rb->capacity);
         }
 
@@ -129,7 +129,7 @@ public:
         ring_buffer* rb; // the actual ring buffer
     };
 
-    RingBufferQueue() 
+    RingBufferQueue()
         : _rb(new ring_buffer(MAGIC_MINIMUM_RING_SIZE)) {
     }
 
@@ -141,20 +141,24 @@ public:
 
     void push_back(E elem) {
         int n = size();
-        if (n+1 >= _rb->capacity) 
+        if (n+1 >= _rb->capacity)
             rescale_to(THRES*_rb->capacity, n+1);
 
-        _rb->size++; 
+        _rb->size++;
         _rb->buffer[_rb->back++] = elem;
-        _rb->back %= _rb->capacity; 
+
+        if (_rb->back >= _rb->capacity)
+            _rb->back -= _rb->capacity;
     }
 
     void pop_front() {
-        _rb->front = (1 + _rb->front)%_rb->capacity;
+        _rb->front++;
+        if (_rb->front >= _rb->capacity)
+            _rb->front -= _rb->capacity;
         _rb->size--;
 
         int n = size();
-        if (n <= _rb->capacity/(2*THRES)) 
+        if (n <= _rb->capacity/(2*THRES))
             rescale_to(_rb->capacity/THRES, n);
     }
 
@@ -165,13 +169,15 @@ public:
 
     E back() {
         assert(size() > 0);
-        int c = _rb->capacity;
-        return _rb->buffer[(_rb->back + c - 1)%c];
+        int bi = _rb->back - 1;
+        if (bi < 0)
+            bi += _rb->capacity;
+        return _rb->buffer[bi];
     }
 
-    const iterator begin() { return iterator(_rb->front, _rb); } 
-    const iterator end() { return iterator(_rb->front + _rb->size, _rb); } 
-  
+    const iterator begin() { return iterator(_rb->front, _rb); }
+    const iterator end() { return iterator(_rb->front + _rb->size, _rb); }
+
 
 private:
     const int THRES = 2;
@@ -188,19 +194,18 @@ private:
         size_t old_cap = _rb->capacity;
         int n = size(), f = _rb->front;
         for (int index=0;index<n;++index) {
-            rescaled_buffer[(f + index)%new_size] = _rb->buffer[(f + index)%old_cap];        
+            rescaled_buffer[(f + index)%new_size] = _rb->buffer[(f + index)%old_cap];
         }
 
         std::swap(rescaled_buffer, _rb->buffer);
 
         delete[] rescaled_buffer;
-        
+
         _rb->front %= new_size, _rb->back = (f + n)%new_size;
         _rb->capacity = new_size;
     }
 public:
     ring_buffer* _rb;
 };
-
 
 #endif
