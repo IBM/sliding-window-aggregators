@@ -26,7 +26,7 @@ namespace implicit_twostackslite {
         typedef typename binOpFunc::Out outT;
         typedef __AggT<aggT> AggT;
 
-        Aggregate(binOpFunc binOp_, aggT identE_) 
+        Aggregate(binOpFunc binOp_, aggT identE_)
             : _q(), _num_flipped(0), _binOp(binOp_), _backSum(identE_), _identE(identE_) {}
 
         size_t size() { return _q.size(); }
@@ -37,24 +37,9 @@ namespace implicit_twostackslite {
             _q.push_back(AggT(lifted));
         }
 
-        void evict() { 
-            if (front_empty()) {
-                // std::cerr << "evict: flippping" << std::endl;
-                // front is empty, let's turn the "stack" implicity.
-                iterT front = _q.begin();
-                iterT it = _q.end()-1;
-                aggT running_sum = _identE;
-                // std::cerr << "evict: ++++ (initial) running_sum " << running_sum << std::endl;
-                while (it != front) {
-                    // std::cerr << "evict: ++++ val " << it->_val << " ";
-                    running_sum = _binOp.combine(it->_val, running_sum);
-                    it->_val = running_sum;
-                    // std::cerr << "running_sum " << running_sum << std::endl;
-                    --it;
-                }
-                _backSum = _identE;
-                _num_flipped = size();
-            }
+        void evict() {
+            if (front_empty())
+                flip();
             _q.pop_front();
             _num_flipped--;
         }
@@ -70,6 +55,31 @@ namespace implicit_twostackslite {
         }
     private:
         inline bool front_empty() { return _num_flipped == 0; }
+        inline int decr(int it) {
+            it--;
+            if (it < 0)
+                it += _q._rb->capacity;
+            return it;
+        }
+        inline void flip() {
+            // std::cerr << "evict: flippping" << std::endl;
+            // front is empty, let's turn the "stack" implicity.
+            int it = decr(_q._rb->back);
+            size_t n = size();
+            aggT running_sum = _identE;
+            // std::cerr << "evict: ++++ (initial) running_sum " << running_sum << std::endl;
+            for (size_t rep=0;rep<n;rep++) {
+                AggT &local_agg = _q._rb->buffer[it];
+                // std::cerr << "evict: ++++ val " << local_agg._val << " ";
+                running_sum = _binOp.combine(local_agg._val, running_sum);
+                // std::cerr << "running_sum " << running_sum << std::endl;
+                local_agg._val = running_sum;
+                it = decr(it);
+            }
+            // reset the "back" stack
+            _backSum = _identE;
+            _num_flipped = n;
+        }
 
         queueT _q;
         typedef typename queueT::iterator iterT;
