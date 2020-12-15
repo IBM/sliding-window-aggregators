@@ -192,16 +192,18 @@ private:
 
         // copy while preserving the positions (modulo new_size)
         size_t old_cap = _rb->capacity;
-        int n = size(), f = _rb->front;
+        int n = size(), f_src = _rb->front, f_dst = _rb->front;
         for (int index=0;index<n;++index) {
-            rescaled_buffer[(f + index)%new_size] = _rb->buffer[(f + index)%old_cap];
+            rescaled_buffer[f_dst++] = _rb->buffer[f_src++];
+            if (f_dst >= new_size) f_dst -= new_size;
+            if (f_src >= old_cap) f_src -= old_cap;
         }
 
         std::swap(rescaled_buffer, _rb->buffer);
 
         delete[] rescaled_buffer;
 
-        _rb->front %= new_size, _rb->back = (f + n)%new_size;
+        _rb->front %= new_size, _rb->back = (_rb->front + n)%new_size;
         _rb->capacity = new_size;
     }
 public:
