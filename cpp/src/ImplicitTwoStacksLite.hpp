@@ -64,17 +64,16 @@ namespace implicit_twostackslite {
         inline void flip() {
             // std::cerr << "evict: flippping" << std::endl;
             // front is empty, let's turn the "stack" implicity.
-            int it = decr(_q._rb->back);
+            iterT it = _q.end() - 1;
             size_t n = size();
             aggT running_sum = _identE;
             // std::cerr << "evict: ++++ (initial) running_sum " << running_sum << std::endl;
             for (size_t rep=0;rep<n;rep++) {
-                AggT &local_agg = _q._rb->buffer[it];
                 // std::cerr << "evict: ++++ val " << local_agg._val << " ";
-                running_sum = _binOp.combine(local_agg._val, running_sum);
+                running_sum = _binOp.combine(it->_val, running_sum);
                 // std::cerr << "running_sum " << running_sum << std::endl;
-                local_agg._val = running_sum;
-                it = decr(it);
+                it->_val = running_sum;
+                --it;
             }
             // reset the "back" stack
             _backSum = _identE;
