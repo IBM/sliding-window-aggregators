@@ -88,7 +88,8 @@ int main(int argc, char** argv) {
           query_call_benchmark<aba::MakeAggregate>("aba", aggregator, function, exp) ||
           query_call_benchmark<twostacks::MakeAggregate>("two_stacks", aggregator, function, exp) ||
           query_call_benchmark<twostackslite::MakeAggregate>("two_stacks_lite", aggregator, function, exp) ||
-          query_call_benchmark<implicit_twostackslite::MakeAggregate>("im_two_stacks_lite", aggregator, function, exp) ||
+          query_call_benchmark<rb_twostackslite::MakeAggregate>("rb_two_stacks_lite", aggregator, function, exp) ||
+          query_call_benchmark<chunked_twostackslite::MakeAggregate>("chunked_two_stacks_lite", aggregator, function, exp) ||
           query_call_benchmark<dynamic_flatfit::MakeAggregate>("flatfit", aggregator, function, exp) ||
           query_call_benchmark<reactive::MakeAggregate>("reactive", aggregator, function, exp) ||
           query_call_benchmark<recalc::MakeAggregate>("recalc", aggregator, function, exp) ||

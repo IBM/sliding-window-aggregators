@@ -46,7 +46,8 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
     auto aba_agg = aba::make_aggregate(f, identity);
     auto twostacks_agg = twostacks::make_aggregate(f, identity);
     auto twostacks_lite_agg = twostackslite::make_aggregate(f, identity);
-    auto implicit_twostacks_lite_agg = implicit_twostackslite::make_aggregate(f, identity);
+    auto rb_twostacks_lite_agg = rb_twostackslite::make_aggregate(f, identity);
+    auto chunked_twostacks_lite_agg = chunked_twostackslite::make_aggregate(f, identity);
     auto flatfit_agg = flatfit::make_aggregate(f, identity);
     auto dyn_flatfit_agg = dynamic_flatfit::make_aggregate(f, identity);
     auto recalc_agg = recalc::make_aggregate(f, identity);
@@ -63,14 +64,15 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
         real_assert(sz == aba_agg.size(), name + ": recalc size != aba");
         real_assert(sz == twostacks_agg.size(), name + ": recalc size != two_stacks");
         real_assert(sz == twostacks_lite_agg.size(), name + ": recalc size != two_stacks_lite");
-        real_assert(sz == implicit_twostacks_lite_agg.size(), name + ": recalc size != implicit_two_stacks_lite");
+        real_assert(sz == rb_twostacks_lite_agg.size(), name + ": recalc size != rb_two_stacks_lite");
+        real_assert(sz == chunked_twostacks_lite_agg.size(), name + ": recalc size != chunked_two_stacks_lite");
         real_assert(sz == flatfit_agg.size(), name + ": recalc size != flatfit");
         real_assert(sz == dyn_flatfit_agg.size(), name + ": recalc size != dyn_flatfit");
         real_assert(sz == reactive_agg.size(), name + ": recalc size != reactive");
         real_assert(sz == okasakis_agg.size(), name + ": recalc size != okasaki");
         real_assert(sz == bclassic_agg.size(), name + ": recalc size != bclassic");
         real_assert(sz == bknuckle_agg.size(), name + ": recalc size != bknuckle");
-        real_assert(sz == bfinger_agg.size(), name + ": recalc size != bfinger");        
+        real_assert(sz == bfinger_agg.size(), name + ": recalc size != bfinger");
 
         if (recalc_agg.size() == window_size) {
             daba_agg.evict();
@@ -78,7 +80,8 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
             aba_agg.evict();
             twostacks_agg.evict();
             twostacks_lite_agg.evict();
-            implicit_twostacks_lite_agg.evict();
+            rb_twostacks_lite_agg.evict();
+            chunked_twostacks_lite_agg.evict();
             flatfit_agg.evict();
             dyn_flatfit_agg.evict();
             recalc_agg.evict();
@@ -86,7 +89,7 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
             okasakis_agg.evict();
             bclassic_agg.evict();
             bknuckle_agg.evict();
-            bfinger_agg.evict();            
+            bfinger_agg.evict();
         }
 
         recalc_agg.insert(i);
@@ -95,7 +98,8 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
         aba_agg.insert(i);
         twostacks_agg.insert(i);
         twostacks_lite_agg.insert(i);
-        implicit_twostacks_lite_agg.insert(i);
+        rb_twostacks_lite_agg.insert(i);
+        chunked_twostacks_lite_agg.insert(i);
         flatfit_agg.insert(i);
         dyn_flatfit_agg.insert(i);
         reactive_agg.insert(i);
@@ -110,7 +114,8 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
         real_assert(res == aba_agg.query(), name + ": recalc != aba");
         real_assert(res == twostacks_agg.query(), name + ": recalc != two_stacks");
         real_assert(res == twostacks_lite_agg.query(), name + ": recalc != two_stacks_lite");
-        real_assert(res == implicit_twostacks_lite_agg.query(), name + ": recalc != implicit_two_stacks_lite");
+        real_assert(res == rb_twostacks_lite_agg.query(), name + ": recalc != rb_two_stacks_lite");
+        real_assert(res == chunked_twostacks_lite_agg.query(), name + ": recalc != chunked_two_stacks_lite");
         real_assert(res == flatfit_agg.query(), name + ": recalc != flatfit");
         real_assert(res == dyn_flatfit_agg.query(), name + ": recalc != dyn_flatfit");
         real_assert(res == reactive_agg.query(), name + ": recalc != reactive");
@@ -129,7 +134,8 @@ void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iteration
     auto aba_agg = aba::make_aggregate(f, identity);
     auto twostacks_agg = twostacks::make_aggregate(f, identity);
     auto twostacks_lite_agg = twostackslite::make_aggregate(f, identity);
-    auto implicit_twostacks_lite_agg = implicit_twostackslite::make_aggregate(f, identity);
+    auto rb_twostacks_lite_agg = rb_twostackslite::make_aggregate(f, identity);
+    auto chunked_twostacks_lite_agg = chunked_twostackslite::make_aggregate(f, identity);
     auto flatfit_agg = flatfit::make_aggregate(f, identity);
     auto dyn_flatfit_agg = dynamic_flatfit::make_aggregate(f, identity);
     auto soe_agg = soe::make_aggregate(f, identity);
@@ -146,7 +152,8 @@ void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iteration
         real_assert(sz == aba_agg.size(), name + ": recalc size != aba");
         real_assert(sz == twostacks_agg.size(), name + ": recalc size != two_stacks");
         real_assert(sz == twostacks_lite_agg.size(), name + ": recalc size != two_stacks_lite");
-        real_assert(sz == implicit_twostacks_lite_agg.size(), name + ": recalc size != implicit_two_stacks_lite");
+        real_assert(sz == rb_twostacks_lite_agg.size(), name + ": recalc size != rb_two_stacks_lite");
+        real_assert(sz == chunked_twostacks_lite_agg.size(), name + ": recalc size != chunked_two_stacks_lite");
         real_assert(sz == flatfit_agg.size(), name + ": recalc size != flatfit");
         real_assert(sz == dyn_flatfit_agg.size(), name + ": recalc size != dyn_flatfit");
         real_assert(sz == soe_agg.size(), name + ": recalc size != soe");
@@ -160,7 +167,8 @@ void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iteration
             aba_agg.evict();
             twostacks_agg.evict();
             twostacks_lite_agg.evict();
-            implicit_twostacks_lite_agg.evict();
+            rb_twostacks_lite_agg.evict();
+            chunked_twostacks_lite_agg.evict();
             flatfit_agg.evict();
             dyn_flatfit_agg.evict();
             soe_agg.evict();
@@ -177,7 +185,8 @@ void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iteration
         aba_agg.insert(i);
         twostacks_agg.insert(i);
         twostacks_lite_agg.insert(i);
-        implicit_twostacks_lite_agg.insert(i);
+        rb_twostacks_lite_agg.insert(i);
+        chunked_twostacks_lite_agg.insert(i);
         flatfit_agg.insert(i);
         dyn_flatfit_agg.insert(i);
         soe_agg.insert(i);
@@ -192,7 +201,8 @@ void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iteration
         real_assert(res == aba_agg.query(), name + ": recalc != aba");
         real_assert(res == twostacks_agg.query(), name + ": recalc != two_stacks");
         real_assert(res == twostacks_lite_agg.query(), name + ": recalc != two_stacks_lite");
-        real_assert(res == implicit_twostacks_lite_agg.query(), name + ": recalc != implicit_two_stacks_lite");
+        real_assert(res == rb_twostacks_lite_agg.query(), name + ": recalc != rb_two_stacks_lite");
+        real_assert(res == chunked_twostacks_lite_agg.query(), name + ": recalc != chunked_two_stacks_lite");
         real_assert(res == flatfit_agg.query(), name + ": recalc != flatfit");
         real_assert(res == dyn_flatfit_agg.query(), name + ": recalc != dyn_flatfit");
         real_assert(res == soe_agg.query(), name + ": recalc != soe");
@@ -214,7 +224,8 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
   auto aba_agg = aba::make_aggregate(f, identity);
   auto twostacks_agg = twostacks::make_aggregate(f, identity);
   auto twostacks_lite_agg = twostackslite::make_aggregate(f, identity);
-  auto implicit_twostacks_lite_agg = implicit_twostackslite::make_aggregate(f, identity);
+  auto rb_twostacks_lite_agg = rb_twostackslite::make_aggregate(f, identity);
+  auto chunked_twostacks_lite_agg = chunked_twostackslite::make_aggregate(f, identity);
   auto flatfit_agg = flatfit::make_aggregate(f, identity);
   auto dyn_flatfit_agg = dynamic_flatfit::make_aggregate(f, identity);
   auto recalc_agg = recalc::make_aggregate(f, identity);
@@ -222,7 +233,7 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
   auto bclassic_agg = btree::make_aggregate<timestamp, 2, btree::classic>(f, identity);
   auto bknuckle_agg = btree::make_aggregate<timestamp, 2, btree::knuckle>(f, identity);
   auto bfinger_agg = btree::make_aggregate<timestamp, 2, btree::finger>(f, identity);
-  
+
   while (rep-- > 0) {
     for (uint64_t i=0;i<window_size;i++) {
       recalc_agg.insert(i);
@@ -231,7 +242,8 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
       aba_agg.insert(i);
       twostacks_agg.insert(i);
       twostacks_lite_agg.insert(i);
-      implicit_twostacks_lite_agg.insert(i);
+      rb_twostacks_lite_agg.insert(i);
+      chunked_twostacks_lite_agg.insert(i);
       flatfit_agg.insert(i);
       dyn_flatfit_agg.insert(i);
       reactive_agg.insert(i);
@@ -245,7 +257,8 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
       real_assert(res == aba_agg.query(), name + ": recalc != aba");
       real_assert(res == twostacks_agg.query(), name + ": recalc != two_stacks");
       real_assert(res == twostacks_lite_agg.query(), name + ": recalc != two_stacks_lite");
-      real_assert(res == implicit_twostacks_lite_agg.query(), name + ": recalc != implicit_two_stacks_lite");      
+      real_assert(res == rb_twostacks_lite_agg.query(), name + ": recalc != rb_two_stacks_lite");
+      real_assert(res == chunked_twostacks_lite_agg.query(), name + ": recalc != chunked_two_stacks_lite");
       real_assert(res == flatfit_agg.query(), name + ": recalc != flatfit");
       real_assert(res == dyn_flatfit_agg.query(), name + ": recalc != dyn_flatfit");
       real_assert(res == reactive_agg.query(), name + ": recalc != reactive");
@@ -260,7 +273,8 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
       aba_agg.evict();
       twostacks_agg.evict();
       twostacks_lite_agg.evict();
-      implicit_twostacks_lite_agg.evict();      
+      rb_twostacks_lite_agg.evict();
+      chunked_twostacks_lite_agg.evict();
       flatfit_agg.evict();
       dyn_flatfit_agg.evict();
       recalc_agg.evict();
@@ -275,7 +289,8 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
       real_assert(res == aba_agg.query(), name + ": recalc != aba");
       real_assert(res == twostacks_agg.query(), name + ": recalc != two_stacks");
       real_assert(res == twostacks_lite_agg.query(), name + ": recalc != two_stacks_lite");
-      real_assert(res == implicit_twostacks_lite_agg.query(), name + ": recalc != implicit_two_stacks_lite");      
+      real_assert(res == rb_twostacks_lite_agg.query(), name + ": recalc != rb_two_stacks_lite");
+      real_assert(res == chunked_twostacks_lite_agg.query(), name + ": recalc != chunked_two_stacks_lite");
       real_assert(res == flatfit_agg.query(), name + ": recalc != flatfit");
       real_assert(res == dyn_flatfit_agg.query(), name + ": recalc != dyn_flatfit");
       real_assert(res == reactive_agg.query(), name + ": recalc != reactive");
@@ -299,7 +314,8 @@ void test_alg_no_inverse_thirds(F f, typename F::Partial identity,
   auto aba_agg = aba::make_aggregate(f, identity);
   auto twostacks_agg = twostacks::make_aggregate(f, identity);
   auto twostacks_lite_agg = twostackslite::make_aggregate(f, identity);
-  auto implicit_twostacks_lite_agg = implicit_twostackslite::make_aggregate(f, identity);
+  auto rb_twostacks_lite_agg = rb_twostackslite::make_aggregate(f, identity);
+  auto chunked_twostacks_lite_agg = chunked_twostackslite::make_aggregate(f, identity);
   auto flatfit_agg = flatfit::make_aggregate(f, identity);
   auto dyn_flatfit_agg = dynamic_flatfit::make_aggregate(f, identity);
   auto recalc_agg = recalc::make_aggregate(f, identity);
@@ -320,7 +336,8 @@ void test_alg_no_inverse_thirds(F f, typename F::Partial identity,
       aba_agg.insert(epoch_no);
       twostacks_agg.insert(epoch_no);
       twostacks_lite_agg.insert(epoch_no);
-      implicit_twostacks_lite_agg.insert(epoch_no);
+      rb_twostacks_lite_agg.insert(epoch_no);
+      chunked_twostacks_lite_agg.insert(epoch_no);
       flatfit_agg.insert(epoch_no);
       dyn_flatfit_agg.insert(epoch_no);
       reactive_agg.insert(epoch_no);
@@ -334,7 +351,8 @@ void test_alg_no_inverse_thirds(F f, typename F::Partial identity,
       real_assert(res == aba_agg.query(), name + ": recalc != aba");
       real_assert(res == twostacks_agg.query(), name + ": recalc != two_stacks");
       real_assert(res == twostacks_lite_agg.query(), name + ": recalc != two_stacks_lite");
-      real_assert(res == implicit_twostacks_lite_agg.query(), name + ": recalc != implicit_two_stacks_lite");      
+      real_assert(res == rb_twostacks_lite_agg.query(), name + ": recalc != rb_two_stacks_lite");
+      real_assert(res == chunked_twostacks_lite_agg.query(), name + ": recalc != chunked_two_stacks_lite");
       real_assert(res == flatfit_agg.query(), name + ": recalc != flatfit");
       real_assert(res == dyn_flatfit_agg.query(), name + ": recalc != dyn_flatfit");
       real_assert(res == reactive_agg.query(), name + ": recalc != reactive");
@@ -349,7 +367,8 @@ void test_alg_no_inverse_thirds(F f, typename F::Partial identity,
       aba_agg.evict();
       twostacks_agg.evict();
       twostacks_lite_agg.evict();
-      implicit_twostacks_lite_agg.evict();      
+      rb_twostacks_lite_agg.evict();
+      chunked_twostacks_lite_agg.evict();
       flatfit_agg.evict();
       dyn_flatfit_agg.evict();
       recalc_agg.evict();
@@ -364,7 +383,8 @@ void test_alg_no_inverse_thirds(F f, typename F::Partial identity,
       real_assert(res == aba_agg.query(), name + ": recalc != aba");
       real_assert(res == twostacks_agg.query(), name + ": recalc != two_stacks");
       real_assert(res == twostacks_lite_agg.query(), name + ": recalc != two_stacks_lite");
-      real_assert(res == implicit_twostacks_lite_agg.query(), name + ": recalc != implicit_two_stacks_lite");      
+      real_assert(res == rb_twostacks_lite_agg.query(), name + ": recalc != rb_two_stacks_lite");
+      real_assert(res == chunked_twostacks_lite_agg.query(), name + ": recalc != chunked_two_stacks_lite");
       real_assert(res == flatfit_agg.query(), name + ": recalc != flatfit");
       real_assert(res == dyn_flatfit_agg.query(), name + ": recalc != dyn_flatfit");
       real_assert(res == reactive_agg.query(), name + ": recalc != reactive");
@@ -612,7 +632,7 @@ void test_timestamped_fifo(F f, typename F::Partial identity, uint64_t iteration
             daba_lite_agg.evict();
             twostacks_agg.evict();
             twostacks_lite_agg.evict();
-            implicit_twostacks_lite_agg.evict();            
+            implicit_twostacks_lite_agg.evict();
             flatfit_agg.evict();
             recalc_agg.evict();
             bclassic_agg.evict();
@@ -624,10 +644,10 @@ void test_timestamped_fifo(F f, typename F::Partial identity, uint64_t iteration
         daba_lite_agg.insert(i, i);
         twostacks_agg.insert(i, i);
         twostacks_lite_agg.insert(i, i);
-        implicit_twostacks_lite_agg.insert(i, i);        
+        implicit_twostacks_lite_agg.insert(i, i);
         flatfit_agg.insert(i, i);
         bclassic_agg.insert(i, i);
-        bfinger_agg.insert(i, i);        
+        bfinger_agg.insert(i, i);
 
         typename F::Out res = recalc_agg.query();
         real_assert(res == daba_agg.query(), name + ": recalc != daba");
