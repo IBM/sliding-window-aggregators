@@ -26,6 +26,11 @@ private:
         int front, back;
     };
 public:
+    // iterator:
+    //    WARNING: iterators aren't guaranteed to work after modifications to the collection.
+    //    The current implementation should survive push_back and pop_front as long as there is
+    //    no resizing of the underlying buffer. This is to allow further optimization
+    //    to data access (A previous version did support this and was rather slow).
     struct iterator {
         typedef std::input_iterator_tag iterator_category;
         typedef iterator  _Self;
@@ -35,22 +40,22 @@ public:
         typedef size_t difference_type;
 
         iterator()
-            : aap(0), rb(NULL) {}
+            : it(NULL), rb(NULL) {}
 
-        iterator(size_t aap_, ring_buffer* rb_)
+        iterator(size_t pos, ring_buffer* rb_)
             : rb(rb_) {
-            if (aap_ >= rb->front)
-                aap = aap_;
-            else
-                aap = aap_ + rb->capacity;
+            if (pos >= rb->capacity)
+                pos -= rb->capacity;
+            it = rb->buffer + pos;
         }
 
         iterator(const iterator &that)
-            : aap(that.aap), rb(that.rb) {}
+            : it(that.it), rb(that.rb) {}
 
         _Self& operator++() {
-            ++aap;
-            normalize();
+            ++it;
+            if (it >= (rb->buffer + rb->capacity))
+                it -= rb->capacity;
             return *this;
         }
 
@@ -61,8 +66,9 @@ public:
         }
 
         _Self& operator--(){
-            --aap;
-            normalize();
+            --it;
+            if (it < rb->buffer)
+                it += rb->capacity;
             return *this;
         }
 
@@ -90,42 +96,31 @@ public:
 
         _Self& operator=(const _Self& other) { // copy assignment
             if (this != &other) { // self-assignment check expected
-                aap = other.aap, rb = other.rb;
-                normalize();
+                it = other.it, rb = other.rb;
             }
             return *this;
         }
 
         E& operator*() const {
-            return rb->buffer[aap%rb->capacity];
+            return *it;
         }
 
         E* operator->() const {
-            return rb->buffer + (aap%rb->capacity);
-        }
-
-        inline void normalize() {
-            if (aap >= rb->front && aap > 2*rb->capacity) {
-                aap -= rb->capacity;
-            }
+            return it;
         }
 
         // comparison
         friend inline bool
         operator== (const iterator &x, const iterator &y){
-            int xaap = x.aap % x.rb->capacity;
-            int yaap = y.aap % y.rb->capacity;
-            return (xaap == yaap) && (x.rb == y.rb);
+            return x.it == y.it;
         }
 
         friend inline bool
-        operator != (const iterator &x, const iterator &y){
-            int xaap = x.aap % x.rb->capacity;
-            int yaap = y.aap % y.rb->capacity;
-            return (xaap != yaap) || (x.rb != y.rb);
+        operator != (const iterator &x, const iterator &y) {
+            return x.it != y.it;
         }
         // where in the world are we?
-        size_t aap; // "adjusted" absolute position
+        pointer it; // where the iterator is pointing to
         ring_buffer* rb; // the actual ring buffer
     };
 

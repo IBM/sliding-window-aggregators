@@ -4,6 +4,7 @@
 #include<iterator>
 #include<cassert>
 #include "RingBufferQueue.hpp"
+#include "ChunkedArrayQueue.hpp"
 
 namespace implicit_twostackslite {
     using namespace std;
@@ -55,26 +56,20 @@ namespace implicit_twostackslite {
         }
     private:
         inline bool front_empty() { return _num_flipped == 0; }
-        inline int decr(int it) {
-            it--;
-            if (it < 0)
-                it += _q._rb->capacity;
-            return it;
-        }
+
         inline void flip() {
             // std::cerr << "evict: flippping" << std::endl;
             // front is empty, let's turn the "stack" implicity.
-            int it = decr(_q._rb->back);
+            iterT it = _q.end();
             size_t n = size();
             aggT running_sum = _identE;
             // std::cerr << "evict: ++++ (initial) running_sum " << running_sum << std::endl;
             for (size_t rep=0;rep<n;rep++) {
-                AggT &local_agg = _q._rb->buffer[it];
                 // std::cerr << "evict: ++++ val " << local_agg._val << " ";
-                running_sum = _binOp.combine(local_agg._val, running_sum);
+                --it;
+                running_sum = _binOp.combine(it->_val, running_sum);
                 // std::cerr << "running_sum " << running_sum << std::endl;
-                local_agg._val = running_sum;
-                it = decr(it);
+                it->_val = running_sum;
             }
             // reset the "back" stack
             _backSum = _identE;
@@ -89,6 +84,50 @@ namespace implicit_twostackslite {
         aggT _backSum;
         aggT _identE;
     };
+
+    template <class BinaryFunction, class T>
+    Aggregate<BinaryFunction> make_aggregate(BinaryFunction f, T elem) {
+        return Aggregate<BinaryFunction>(f, elem);
+    }
+
+    template <typename BinaryFunction>
+    struct MakeAggregate {
+        template <typename T>
+        Aggregate<BinaryFunction> operator()(T elem) {
+            BinaryFunction f;
+            return make_aggregate(f, elem);
+        }
+    };
+}
+
+namespace rb_twostackslite {
+
+    template<typename binOpFunc>
+        using Aggregate = implicit_twostackslite::Aggregate <
+            binOpFunc,
+            RingBufferQueue<implicit_twostackslite::__AggT<typename binOpFunc::Partial> > >;
+
+    template <class BinaryFunction, class T>
+    Aggregate<BinaryFunction> make_aggregate(BinaryFunction f, T elem) {
+        return Aggregate<BinaryFunction>(f, elem);
+    }
+
+    template <typename BinaryFunction>
+    struct MakeAggregate {
+        template <typename T>
+        Aggregate<BinaryFunction> operator()(T elem) {
+            BinaryFunction f;
+            return make_aggregate(f, elem);
+        }
+    };
+}
+
+namespace chunked_twostackslite {
+
+    template<typename binOpFunc>
+        using Aggregate = implicit_twostackslite::Aggregate <
+            binOpFunc,
+            ChunkedArrayQueue<implicit_twostackslite::__AggT<typename binOpFunc::Partial> > >;
 
     template <class BinaryFunction, class T>
     Aggregate<BinaryFunction> make_aggregate(BinaryFunction f, T elem) {

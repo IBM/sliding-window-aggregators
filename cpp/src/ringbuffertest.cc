@@ -5,8 +5,10 @@
 void printUsingIter(RingBufferQueue<int> &rb) {
     RingBufferQueue<int>::iterator it = rb.begin();
 
-    std::cout << "|> " << it.aap << std::endl;
-    std::cout << ">| " << rb.end().aap << std::endl;
+    // std::cout << "|> " << it.aap << std::endl;
+    // std::cout << ">| " << rb.end().aap << std::endl;
+    std::cout << "|> " << (it.it - it.rb->buffer) << ", "; // std::endl;
+    std::cout << ">| " << (rb.end().it - it.rb->buffer) << std::endl;
     
     while (it != rb.end()) {
         std::cout << (*it)  << " ";
@@ -20,29 +22,38 @@ int main(int argc, char const *argv[])
     RingBufferQueue<int> rb;
 
     int pb[] = {3, 1, 4, 9, 2, 6};
-    RingBufferQueue<int>::iterator fix4;
     for (auto val: pb) {
         rb.push_back(val);
-        std::cout << rb.front() << " " << rb.back() << std::endl;
+        std::cout << "#++" << rb.front() << " " << rb.back() << std::endl;
         printUsingIter(rb);
         std::cout << "++++++" << std::endl;
-        if (val == 4) {
-            fix4 = rb.end() - 1;
-        }
+    }
+
+    while (rb.size() > 0) {
+        std::cout<< "#--"  << rb.front() << " " << rb.back() << std::endl;
+        rb.pop_front();
+        printUsingIter(rb);
+        // std::cout << "fix4: " << (*fix4) << std::endl;
+        // std::cout << "++++++" << std::endl;
+    }
+
+    for (auto val: pb) {
+        rb.push_back(val);
+        std::cout << "#++" << rb.front() << " " << rb.back() << std::endl;
+        printUsingIter(rb);
+        std::cout << "++++++" << std::endl;
+    }
+    while (rb.size() > 0) {
+        std::cout << "#--" << rb.front() << " " << rb.back() << std::endl;
+        rb.pop_front();
+        printUsingIter(rb);
     }
 
     RingBufferQueue<int>::iterator eob = rb.end();
-    while (rb.size() > 0) {
-        std::cout << rb.front() << " " << rb.back() << std::endl;
-        rb.pop_front();
-        printUsingIter(rb);
-        std::cout << "fix4: " << (*fix4) << std::endl;
-        std::cout << "++++++" << std::endl;
-    }
 
-    std::cout << "rb.capacity=" << rb._rb->capacity << ", end.aap=" << rb.end().aap 
-    << ", begin.aap=" << rb.begin().aap
-    << ", eob.aap=" << eob.aap << std::endl;
+    std::cout << "rb.capacity=" << rb._rb->capacity << ", end.it=" << rb.end().it 
+    << ", begin.it=" << rb.begin().it
+    << ", eob.it=" << eob.it << std::endl;
 
     std::cout << "---------------" << std::endl;
 
