@@ -32,7 +32,8 @@ int main(int argc, char** argv) {
           query_call_dynamic_benchmark<dabalite::MakeAggregate>("daba_lite", aggregator, function, exp) ||
           query_call_dynamic_benchmark<twostacks::MakeAggregate>("two_stacks", aggregator, function, exp) ||
           query_call_dynamic_benchmark<twostackslite::MakeAggregate>("two_stacks_lite", aggregator, function, exp) ||
-          query_call_dynamic_benchmark<implicit_twostackslite::MakeAggregate>("im_two_stacks_lite", aggregator, function, exp) ||
+          query_call_dynamic_benchmark<rb_twostackslite::MakeAggregate>("rb_two_stacks_lite", aggregator, function, exp) ||
+          query_call_dynamic_benchmark<chunked_twostackslite::MakeAggregate>("chunked_two_stacks_lite", aggregator, function, exp) ||
           query_call_dynamic_benchmark<flatfit::MakeAggregate>("flatfit", aggregator, function, exp) ||
           query_call_dynamic_benchmark<dynamic_flatfit::MakeAggregate>("dynamic_flatfit", aggregator, function, exp) ||
 
