@@ -108,14 +108,21 @@ namespace timestamped_implicit_twostackslite {
 }
 
 namespace timestamped_rb_twostackslite {
-    template<typename binOpFunc, typename Timestamp>
+    template<typename binOpFunc,
+             typename Timestamp>
         using Aggregate = timestamped_implicit_twostackslite::Aggregate <
             binOpFunc,
             Timestamp,
             RingBufferQueue<
-                timestamped_implicit_twostackslite::__AggT<typename binOpFunc::Partial, Timestamp> > >;
-    template <typename timeT, class BinaryFunction, class T>
+                timestamped_implicit_twostackslite::__AggT<
+                    typename binOpFunc::Partial, 
+                    Timestamp
+                > 
+            > 
+        >;
 
+
+    template <typename timeT, class BinaryFunction, class T>
     Aggregate<BinaryFunction, timeT> make_aggregate(BinaryFunction f, T elem) {
         return Aggregate<BinaryFunction, timeT>(f, elem);
     }
@@ -131,14 +138,21 @@ namespace timestamped_rb_twostackslite {
 }
 
 namespace timestamped_chunked_twostackslite {
-    template<typename binOpFunc, typename Timestamp>
+    template<typename binOpFunc,
+             typename Timestamp>
         using Aggregate = timestamped_implicit_twostackslite::Aggregate <
             binOpFunc,
             Timestamp,
-            ChunkedArrayQueue<
-                timestamped_implicit_twostackslite::__AggT<typename binOpFunc::Partial, Timestamp> > >;
-    template <typename timeT, class BinaryFunction, class T>
+            RingBufferQueue<
+                timestamped_implicit_twostackslite::__AggT<
+                    typename binOpFunc::Partial, 
+                    Timestamp
+                > 
+            > 
+        >;
 
+
+    template <typename timeT, class BinaryFunction, class T>
     Aggregate<BinaryFunction, timeT> make_aggregate(BinaryFunction f, T elem) {
         return Aggregate<BinaryFunction, timeT>(f, elem);
     }
