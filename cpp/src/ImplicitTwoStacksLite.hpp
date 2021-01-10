@@ -56,12 +56,7 @@ namespace implicit_twostackslite {
         }
     private:
         inline bool front_empty() { return _num_flipped == 0; }
-        inline int decr(int it) {
-            it--;
-            if (it < 0)
-                it += _q._rb->capacity;
-            return it;
-        }
+
         inline void flip() {
             // std::cerr << "evict: flippping" << std::endl;
             // front is empty, let's turn the "stack" implicity.
