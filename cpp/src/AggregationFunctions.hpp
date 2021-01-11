@@ -312,7 +312,7 @@ const typename ArgMax<I, C, IL>::Partial ArgMax<I, C, IL>::identity = {I(), C()}
 
 // depends on std::hash providing a hash function; otherwise, you should supply
 // one.
-template <typename _In, typename _Out=_In, int N=16384, int K=4>
+template <typename _In, typename _Out=_In, int N=4096, int K=4>
 class BloomFilter {
 public:
   typedef _In In;
