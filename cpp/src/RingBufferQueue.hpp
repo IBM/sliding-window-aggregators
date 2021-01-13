@@ -5,8 +5,15 @@
 #include<iterator>
 #include<algorithm>
 #include<cassert>
+//
+// ** if PRESET_CAP == 0, the RingBufferQueue operates in dynamic mode. That is,
+// the buffer will resize automatically. 
+//
+// ** if PRESET_CAP > 0, the RingBufferQueue operates in static mode. That is,
+// it is initialized to a fixed size as specified by PRESET_CAP. In this mode, 
+// resizing is *not* allowed.
 
-template <typename E>
+template <typename E, size_t PRESET_CAP=0>
 class RingBufferQueue {
 private:
     struct ring_buffer {
@@ -124,8 +131,12 @@ public:
         ring_buffer* rb; // the actual ring buffer
     };
 
-    RingBufferQueue()
-        : _rb(new ring_buffer(MAGIC_MINIMUM_RING_SIZE)) {
+    RingBufferQueue() {
+        // if in dynamic mode (i.e., no fixed preset cap)
+        if constexpr (PRESET_CAP == 0)
+            _rb = new ring_buffer(MAGIC_MINIMUM_RING_SIZE);
+        else
+            _rb = new ring_buffer(PRESET_CAP);
     }
 
     ~RingBufferQueue() {
@@ -152,9 +163,13 @@ public:
             _rb->front -= _rb->capacity;
         _rb->size--;
 
-        int n = size();
-        if (n <= _rb->capacity/(2*THRES))
-            rescale_to(_rb->capacity/THRES, n);
+        // only check to downsize if the ring buffer is in dynamic mode
+        // i.e., no fixed preset capacity.
+        if constexpr (PRESET_CAP == 0) {
+            int n = size();
+            if (n <= _rb->capacity/(2*THRES))
+                rescale_to(_rb->capacity/THRES, n);
+        }
     }
 
     E front() {
@@ -179,6 +194,10 @@ private:
     const int MAGIC_MINIMUM_RING_SIZE = 4;
 
     void rescale_to(size_t new_size, size_t ensure_size) {
+        // if the capacity has been prespecified, resizing is *not* allowed
+        if constexpr (PRESET_CAP > 0)
+            throw 1;
+
         new_size = std::max(new_size, (size_t) MAGIC_MINIMUM_RING_SIZE);
 
         if (ensure_size > new_size) { throw 1; } // this should never happen
