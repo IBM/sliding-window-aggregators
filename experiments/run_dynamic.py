@@ -7,6 +7,8 @@ aggregators = [
     "daba_lite",
     "two_stacks",
     "two_stacks_lite",
+    "rb_two_stacks_lite",
+    "chunked_two_stacks_lite",
     "flatfit",
     "bclassic4",
     "bfinger4",
@@ -23,7 +25,7 @@ base_iterations = 200 * u.MILLION
 functions = { 
     "sum": (base_iterations, base_window_sizes),
     "geomean": (base_iterations, base_window_sizes),
-    "bloom": (base_iterations/50, base_window_sizes),
+    "bloom": (base_iterations/25, base_window_sizes),
 }
 
 def main():
