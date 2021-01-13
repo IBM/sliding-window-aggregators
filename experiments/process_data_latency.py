@@ -11,7 +11,7 @@ import process_utility as u
 aggs_sorted = [
                "daba", "daba_lite",
                "two_stacks", "two_stacks_lite",
-               "rb_two_stacks_lite", "chunked_two_stacks_lite",               
+               "rb_two_stacks_lite", "chunked_two_stacks_lite",
                "flatfit",
                "bfinger4",
               ]

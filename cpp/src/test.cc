@@ -648,7 +648,7 @@ void test_timestamped_fifo(F f, typename F::Partial identity, uint64_t iteration
         twostacks_agg.insert(i, i);
         twostacks_lite_agg.insert(i, i);
         rb_twostacks_lite_agg.insert(i, i);
-        chunked_twostacks_lite_agg.insert(i, i);        
+        chunked_twostacks_lite_agg.insert(i, i);
         flatfit_agg.insert(i, i);
         bclassic_agg.insert(i, i);
         bfinger_agg.insert(i, i);

@@ -22,7 +22,7 @@ windows = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512,
 
 functions = {"sum": base_iterations,
              "geomean": base_iterations,
-             "bloom": base_iterations/10,
+             "bloom": base_iterations/25,
             }
 
 def main():

@@ -25,7 +25,7 @@ base_iterations = 200 * u.MILLION
 functions = { 
     "sum": (base_iterations, base_window_sizes),
     "geomean": (base_iterations, base_window_sizes),
-    "bloom": (base_iterations/10, base_window_sizes),
+    "bloom": (base_iterations/25, base_window_sizes),
 }
 
 def main():
