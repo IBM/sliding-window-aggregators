@@ -298,7 +298,7 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
       real_assert(res == bknuckle_agg.query(), name + ": recalc != bknuckle");
       real_assert(res == bfinger_agg.query(), name + ": recalc != bfinger");
     }
-    std::cout << "round over" << std::endl;
+    // std::cout << "round over" << std::endl;
   }
   std::cout << "sawtooth:" << name << " passed" << std::endl;
 }
@@ -392,7 +392,7 @@ void test_alg_no_inverse_thirds(F f, typename F::Partial identity,
       real_assert(res == bknuckle_agg.query(), name + ": recalc != bknuckle");
       real_assert(res == bfinger_agg.query(), name + ": recalc != bfinger");
     }
-    std::cout << "round over" << std::endl;
+    // std::cout << "round over" << std::endl;
   }
   std::cout << "thirds:" << name << " passed" << std::endl;
 }
@@ -635,7 +635,7 @@ void test_timestamped_fifo(F f, typename F::Partial identity, uint64_t iteration
             twostacks_agg.evict();
             twostacks_lite_agg.evict();
             rb_twostacks_lite_agg.evict();
-            chunked_twostacks_lite_agg.evict();            
+            chunked_twostacks_lite_agg.evict();
             flatfit_agg.evict();
             recalc_agg.evict();
             bclassic_agg.evict();

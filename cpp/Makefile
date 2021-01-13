@@ -1,4 +1,4 @@
-CXXFLAGS=-std=gnu++11 -static -O3 -DNDEBUG ${EXTRAS}
+CXXFLAGS=-std=gnu++17 -DHAS_UNCAUGHT_EXCEPTIONS=1 -static -O3 -DNDEBUG ${EXTRAS}
 SWAG_ALGOS=src/ChunkedArrayQueue.hpp \
 		   src/TwoStacks.hpp src/TwoStacksLite.hpp\
            src/ImplicitQueueABA.hpp src/DABA.hpp src/DABALite.hpp \
@@ -25,7 +25,7 @@ builder-image:
 test: bin/test
 
 bin/test: log src/test.cc $(SWAG_ALGOS)
-	$(CXX) -std=gnu++11 -ggdb src/test.cc -o bin/test
+	$(CXX) -std=gnu++17 -DHAS_UNCAUGHT_EXCEPTIONS=1 -ggdb src/test.cc -o bin/test
 
 benchmark_driver: log src/benchmark_driver.cc src/benchmark_core.h $(SWAG_ALGOS)
 	$(CXX) $(CXXFLAGS) src/benchmark_driver.cc -o bin/benchmark_driver

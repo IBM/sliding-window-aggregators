@@ -7,6 +7,8 @@ aggregators = [
     "daba_lite",
     "two_stacks",
     "two_stacks_lite",
+    "rb_two_stacks_lite",
+    "chunked_two_stacks_lite",
     "flatfit",
     "bclassic4",
     "bfinger4",
@@ -29,8 +31,8 @@ data_sets = {
 
 functions = [ 
              "sum",
-             "geomean",
-             "bloom",
+#             "geomean",
+#             "bloom",
              "relvar"
             ] 
 

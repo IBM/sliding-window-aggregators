@@ -9,6 +9,8 @@ aggregators = [u.Aggregator("daba", '-', 'black'),
                u.Aggregator("daba_lite", '--', 'black'),
                u.Aggregator("two_stacks", '-', 'red'),
                u.Aggregator("two_stacks_lite", '--', 'red'),
+               u.Aggregator("rb_two_stacks_lite", '-', 'darkorchid'),
+               u.Aggregator("chunked_two_stacks_lite", '--', 'darkorchid'),
                u.Aggregator("flatfit", '-', 'blue'),
                u.Aggregator("bfinger4", '-', 'green'),
               ]
@@ -20,7 +22,7 @@ windows = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512,
 
 functions = {"sum": base_iterations,
              "geomean": base_iterations,
-             "bloom": base_iterations/50,
+             "bloom": base_iterations/25,
             }
 
 def main():
