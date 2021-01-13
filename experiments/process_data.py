@@ -8,6 +8,8 @@ aggregators = [
                u.Aggregator("daba_lite", '--', 'black'),
                u.Aggregator("two_stacks", '-', 'red'),
                u.Aggregator("two_stacks_lite", '--', 'red'),
+               u.Aggregator("rb_two_stacks_lite", '-', 'darkorchid'),
+               u.Aggregator("chunked_two_stacks_lite", '--', 'darkorchid'),
                u.Aggregator("flatfit", '-', 'blue'),
                u.Aggregator("bfinger4", '-', 'green'),
               ]
@@ -19,8 +21,8 @@ windows = [
           ]
 
 functions = [ "sum",
-             "geomean",
-             "bloom",
+            #  "geomean",
+            #  "bloom",
              "relvar", 
             ]
 
