@@ -159,7 +159,7 @@ namespace rb_dabalite {
     return Aggregate<BinaryFunction, MAX_CAPACITY>(f, elem);
   }
 
-  template <size_t MAX_CAPACITY, typename BinaryFunction>
+  template <typename BinaryFunction, size_t MAX_CAPACITY>
   struct MakeAggregate {
     template <typename T>
     Aggregate<BinaryFunction, MAX_CAPACITY> operator()(T elem) {

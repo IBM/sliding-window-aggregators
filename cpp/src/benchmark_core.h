@@ -12,6 +12,7 @@
 
 #include "DABA.hpp"
 #include "DABALite.hpp"
+#include "RingBufferDABALite.hpp"
 #include "TwoStacks.hpp"
 #include "TwoStacksLite.hpp"
 #include "ImplicitTwoStacksLite.hpp"
@@ -566,6 +567,57 @@ bool query_call_benchmark(std::string aggregator, std::string aggregator_req, st
     }
     else if (aggregator_req == aggregator && function_req == "busyloop") {
         benchmark(MakeAggregate<BusyLoop<int>, caching>()(0), exp);
+        return true;
+    }
+    return false;
+}
+
+template <
+    template <
+        typename, 
+        size_t MAX_CAPACITY
+    > class MakeAggregate, 
+    size_t MAX_CAPACITY
+>
+bool query_call_benchmark(std::string aggregator, std::string aggregator_req, std::string function_req, Experiment exp) {
+    if (aggregator_req == aggregator && function_req == "sum") {
+        benchmark(MakeAggregate<Sum<int>, MAX_CAPACITY>()(0), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "max") {
+        benchmark(MakeAggregate<Max<int>, MAX_CAPACITY>()(0), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "mean") {
+        benchmark(MakeAggregate<Mean<int>, MAX_CAPACITY>()(Mean<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "stddev") {
+        benchmark(MakeAggregate<SampleStdDev<int>, MAX_CAPACITY>()(SampleStdDev<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "argmax") {
+        benchmark(MakeAggregate<ArgMax<int, int, IdentityLifter<int>>, MAX_CAPACITY>()(ArgMax<int, int, IdentityLifter<int>>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "bloom") {
+        benchmark(MakeAggregate<BloomFilter<int>, MAX_CAPACITY>()(BloomFilter<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "collect") {
+        benchmark(MakeAggregate<Collect<int>, MAX_CAPACITY>()(Collect<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "mincount") {
+        benchmark(MakeAggregate<MinCount<int>, MAX_CAPACITY>()(MinCount<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "geomean") {
+        benchmark(MakeAggregate<GeometricMean<int>, MAX_CAPACITY>()(GeometricMean<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "busyloop") {
+        benchmark(MakeAggregate<BusyLoop<int>, MAX_CAPACITY>()(0), exp);
         return true;
     }
     return false;
