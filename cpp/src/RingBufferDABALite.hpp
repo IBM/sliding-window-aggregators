@@ -4,6 +4,7 @@
 #include<iostream>
 #include<iterator>
 #include<cassert>
+#include "RingBufferQueue.hpp"
 
 #ifdef DEBUG
 #define _IFDEBUG(x) x
@@ -11,7 +12,7 @@
 #define _IFDEBUG(x)
 #endif
 
-namespace dabalite {
+namespace rb_dabalite {
   template<typename valT>
   class __AggT {
   public:
@@ -21,7 +22,7 @@ namespace dabalite {
       : _val(val_) {}
   };
 
-  template<typename binOpFunc>
+  template<typename binOpFunc, size_t MAX_CAPACITY>
   class Aggregate {
   public:
     typedef typename binOpFunc::In inT;
@@ -30,33 +31,33 @@ namespace dabalite {
     typedef __AggT<aggT> AggT;
 
     Aggregate(binOpFunc binOp_, aggT identE_)
-      : _rb(), _binOp(binOp_), _identE(identE_),
+      : _q(), _binOp(binOp_), _identE(identE_),
         _midSum(identE_), _backSum(identE_) {
-      l = _rb.begin(), b = _rb.begin();
-      a = _rb.begin(), r = _rb.begin();
+      l = _q.begin(), b = _q.begin();
+      a = _q.begin(), r = _q.begin();
     }
 
-    size_t size() { return _size; }
+    size_t size() { return _q.size(); }
 
     void insert(inT v) {
       _IFDEBUG(std::cerr << "inserting " << v << std::endl;);      
       aggT lifted = _binOp.lift(v);
       _backSum = _binOp.combine(_backSum, lifted);
 
-      _rb.push_back(AggT(lifted));
+      _q.push_back(AggT(lifted));
 
       _step();
     }
 
     void evict() {
       _IFDEBUG(std::cerr << "evicting" << std::endl;);
-      _rb.pop_front();
+      _q.pop_front();
 
       _step();
     }
 
     outT query() {
-      if (_rb.size() > 0) {
+      if (_q.size() > 0) {
         aggT alpha = _get_alpha(), back = _get_back();
 
         return _binOp.lower(_binOp.combine(alpha, back));
@@ -70,11 +71,10 @@ namespace dabalite {
     }
 
   private:
+    typedef RingBufferQueue<AggT, MAX_CAPACITY> dequeT;
     typedef typename dequeT::iterator iterT;
 
-    aggT* _rb;
-    size_t _cap;
-    size_t _size;
+    dequeT _q;
 
     // pointers into the queue
     iterT l,r,a,b;
@@ -99,7 +99,7 @@ namespace dabalite {
       _IFDEBUG(__debugPtrs(););
 
       // work if front stuff isn't empty
-      if (_rb.begin() != b) {
+      if (_q.begin() != b) {
         _IFDEBUG(__debugPtrs(););
         if (a != r) {
           // a moves left
@@ -115,11 +115,11 @@ namespace dabalite {
           //          auto gamma = _get_gamma();
           //          auto delta = _get_delta();
           l->_val = _binOp.combine(l->_val, _midSum);
-          assert(l!=_rb.end());
+          assert(l!=_q.end());
           ++l;
         } else { // moves together with r (and perhaps a)
           _IFDEBUG(std::cerr << "l==r, advancing l, free riding" << std::endl;);
-          assert(l!=_rb.end());
+          assert(l!=_q.end());
           ++l; ++r; ++a;
           _midSum = _get_delta();
           assert(l==r && a==l);
@@ -136,33 +136,33 @@ namespace dabalite {
     }
 
 
-    inline bool is_back_empty() { return b == _rb.end(); }
-    inline bool is_front_empty() { return b == _rb.begin(); }
+    inline bool is_back_empty() { return b == _q.end(); }
+    inline bool is_front_empty() { return b == _q.begin(); }
     inline bool is_delta_empty() { return a == b; }
     inline bool is_gamma_empty() { return a == r; }
     inline aggT _get_back() { return _backSum; }
-    inline aggT _get_alpha() { return is_front_empty() ? _identE : _rb.front()._val; }
+    inline aggT _get_alpha() { return is_front_empty() ? _identE : _q.front()._val; }
     inline aggT _get_delta() { return is_delta_empty() ? _identE : a->_val; }
     inline aggT _get_gamma() { return is_gamma_empty() ? _identE : (a-1)->_val; }
     inline void _flip() {
       _IFDEBUG(std::cerr << "flipping" << std::endl;);
-      l = _rb.begin(); r = b;
-      a = _rb.end(); b = _rb.end();
+      l = _q.begin(); r = b;
+      a = _q.end(); b = _q.end();
       _midSum = _backSum;
       _backSum = _identE;
 
     }
   };
 
-  template <class BinaryFunction, class T>
-  Aggregate<BinaryFunction> make_aggregate(BinaryFunction f, T elem) {
-    return Aggregate<BinaryFunction>(f, elem);
+  template <size_t MAX_CAPACITY, class BinaryFunction, class T>
+  Aggregate<BinaryFunction, MAX_CAPACITY> make_aggregate(BinaryFunction f, T elem) {
+    return Aggregate<BinaryFunction, MAX_CAPACITY>(f, elem);
   }
 
-  template <typename BinaryFunction>
+  template <size_t MAX_CAPACITY, typename BinaryFunction>
   struct MakeAggregate {
     template <typename T>
-    Aggregate<BinaryFunction> operator()(T elem) {
+    Aggregate<BinaryFunction, MAX_CAPACITY> operator()(T elem) {
       BinaryFunction f;
       return make_aggregate(f, elem);
     }

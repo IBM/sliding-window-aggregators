@@ -7,6 +7,7 @@
 
 #include "DABA.hpp"
 #include "DABALite.hpp"
+#include "RingBufferDABALite.hpp"
 #include "TwoStacks.hpp"
 #include "TwoStacksLite.hpp"
 #include "ImplicitTwoStacksLite.hpp"
@@ -43,6 +44,7 @@ template <class F>
 void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations, uint64_t window_size, std::string name) {
     auto daba_agg = daba::make_aggregate<true>(f, identity);
     auto daba_lite_agg = dabalite::make_aggregate(f, identity);
+    auto rb_daba_lite_agg = rb_dabalite::make_aggregate<4*1024*1024>(f, identity);
     auto aba_agg = aba::make_aggregate(f, identity);
     auto twostacks_agg = twostacks::make_aggregate(f, identity);
     auto twostacks_lite_agg = twostackslite::make_aggregate(f, identity);
@@ -61,6 +63,7 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
         size_t sz = recalc_agg.size();
         real_assert(sz == daba_agg.size(), name + ": recalc size != daba");
         real_assert(sz == daba_lite_agg.size(), name + ": recalc size != daba_lite");
+        real_assert(sz == rb_daba_lite_agg.size(), name + ": recalc size != rb_daba_lite");
         real_assert(sz == aba_agg.size(), name + ": recalc size != aba");
         real_assert(sz == twostacks_agg.size(), name + ": recalc size != two_stacks");
         real_assert(sz == twostacks_lite_agg.size(), name + ": recalc size != two_stacks_lite");
@@ -77,6 +80,7 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
         if (recalc_agg.size() == window_size) {
             daba_agg.evict();
             daba_lite_agg.evict();
+            rb_daba_lite_agg.evict();
             aba_agg.evict();
             twostacks_agg.evict();
             twostacks_lite_agg.evict();
@@ -95,6 +99,7 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
         recalc_agg.insert(i);
         daba_agg.insert(i);
         daba_lite_agg.insert(i);
+        rb_daba_lite_agg.insert(i);
         aba_agg.insert(i);
         twostacks_agg.insert(i);
         twostacks_lite_agg.insert(i);
@@ -111,6 +116,7 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
         typename F::Out res = recalc_agg.query();
         real_assert(res == daba_agg.query(), name + ": recalc != daba");
         real_assert(res == daba_lite_agg.query(), name + ": recalc != daba_lite");
+        real_assert(res == rb_daba_lite_agg.query(), name + ": recalc != rb_daba_lite");
         real_assert(res == aba_agg.query(), name + ": recalc != aba");
         real_assert(res == twostacks_agg.query(), name + ": recalc != two_stacks");
         real_assert(res == twostacks_lite_agg.query(), name + ": recalc != two_stacks_lite");
@@ -131,6 +137,7 @@ template <class F>
 void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iterations, uint64_t window_size, std::string name) {
     auto daba_agg = daba::make_aggregate<true>(f, identity);
     auto daba_lite_agg = dabalite::make_aggregate(f, identity);
+    auto rb_daba_lite_agg = rb_dabalite::make_aggregate<4*1024*1024>(f, identity);
     auto aba_agg = aba::make_aggregate(f, identity);
     auto twostacks_agg = twostacks::make_aggregate(f, identity);
     auto twostacks_lite_agg = twostackslite::make_aggregate(f, identity);
@@ -149,6 +156,7 @@ void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iteration
         size_t sz = recalc_agg.size();
         real_assert(sz == daba_agg.size(), name + ": recalc size != daba");
         real_assert(sz == daba_lite_agg.size(), name + ": recalc size != daba_lite");
+        real_assert(sz == rb_daba_lite_agg.size(), name + ": recalc size != rb_daba_lite");
         real_assert(sz == aba_agg.size(), name + ": recalc size != aba");
         real_assert(sz == twostacks_agg.size(), name + ": recalc size != two_stacks");
         real_assert(sz == twostacks_lite_agg.size(), name + ": recalc size != two_stacks_lite");
@@ -164,6 +172,7 @@ void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iteration
         if (recalc_agg.size() == window_size) {
             daba_agg.evict();
             daba_lite_agg.evict();
+            rb_daba_lite_agg.evict();
             aba_agg.evict();
             twostacks_agg.evict();
             twostacks_lite_agg.evict();
@@ -182,6 +191,7 @@ void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iteration
         recalc_agg.insert(i);
         daba_agg.insert(i);
         daba_lite_agg.insert(i);
+        rb_daba_lite_agg.insert(i);        
         aba_agg.insert(i);
         twostacks_agg.insert(i);
         twostacks_lite_agg.insert(i);
@@ -198,6 +208,7 @@ void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iteration
         typename F::Out res = recalc_agg.query();
         real_assert(res == daba_agg.query(), name + ": recalc != daba");
         real_assert(res == daba_lite_agg.query(), name + ": recalc != daba_lite");
+        real_assert(res == rb_daba_lite_agg.query(), name + ": recalc != rb_daba_lite");
         real_assert(res == aba_agg.query(), name + ": recalc != aba");
         real_assert(res == twostacks_agg.query(), name + ": recalc != two_stacks");
         real_assert(res == twostacks_lite_agg.query(), name + ": recalc != two_stacks_lite");
@@ -221,6 +232,7 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
                                    std::string name) {
   auto daba_agg = daba::make_aggregate<true>(f, identity);
   auto daba_lite_agg = dabalite::make_aggregate(f, identity);
+  auto rb_daba_lite_agg = rb_dabalite::make_aggregate<4*1024*1024>(f, identity);
   auto aba_agg = aba::make_aggregate(f, identity);
   auto twostacks_agg = twostacks::make_aggregate(f, identity);
   auto twostacks_lite_agg = twostackslite::make_aggregate(f, identity);
@@ -239,6 +251,7 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
       recalc_agg.insert(i);
       daba_agg.insert(i);
       daba_lite_agg.insert(i);
+      rb_daba_lite_agg.insert(i);
       aba_agg.insert(i);
       twostacks_agg.insert(i);
       twostacks_lite_agg.insert(i);
@@ -254,6 +267,7 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
       typename F::Out res = recalc_agg.query();
       real_assert(res == daba_agg.query(), name + ": recalc != daba");
       real_assert(res == daba_lite_agg.query(), name + ": recalc != daba_lite");
+      real_assert(res == rb_daba_lite_agg.query(), name + ": recalc != rb_daba_lite");
       real_assert(res == aba_agg.query(), name + ": recalc != aba");
       real_assert(res == twostacks_agg.query(), name + ": recalc != two_stacks");
       real_assert(res == twostacks_lite_agg.query(), name + ": recalc != two_stacks_lite");
@@ -270,6 +284,7 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
     while (recalc_agg.size() > 0) {
       daba_agg.evict();
       daba_lite_agg.evict();
+      rb_daba_lite_agg.evict();
       aba_agg.evict();
       twostacks_agg.evict();
       twostacks_lite_agg.evict();
@@ -286,6 +301,7 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
       typename F::Out res = recalc_agg.query();
       real_assert(res == daba_agg.query(), name + ": recalc != daba");
       real_assert(res == daba_lite_agg.query(), name + ": recalc != daba_lite");
+      real_assert(res == rb_daba_lite_agg.query(), name + ": recalc != rb_daba_lite");
       real_assert(res == aba_agg.query(), name + ": recalc != aba");
       real_assert(res == twostacks_agg.query(), name + ": recalc != two_stacks");
       real_assert(res == twostacks_lite_agg.query(), name + ": recalc != two_stacks_lite");
@@ -311,6 +327,7 @@ void test_alg_no_inverse_thirds(F f, typename F::Partial identity,
                                    std::string name) {
   auto daba_agg = daba::make_aggregate<true>(f, identity);
   auto daba_lite_agg = dabalite::make_aggregate(f, identity);
+  auto rb_daba_lite_agg = rb_dabalite::make_aggregate<4*1024*1024>(f, identity);
   auto aba_agg = aba::make_aggregate(f, identity);
   auto twostacks_agg = twostacks::make_aggregate(f, identity);
   auto twostacks_lite_agg = twostackslite::make_aggregate(f, identity);
@@ -333,6 +350,7 @@ void test_alg_no_inverse_thirds(F f, typename F::Partial identity,
       recalc_agg.insert(epoch_no);
       daba_agg.insert(epoch_no);
       daba_lite_agg.insert(epoch_no);
+      rb_daba_lite_agg.insert(epoch_no);
       aba_agg.insert(epoch_no);
       twostacks_agg.insert(epoch_no);
       twostacks_lite_agg.insert(epoch_no);
@@ -348,6 +366,7 @@ void test_alg_no_inverse_thirds(F f, typename F::Partial identity,
       typename F::Out res = recalc_agg.query();
       real_assert(res == daba_agg.query(), name + ": recalc != daba");
       real_assert(res == daba_lite_agg.query(), name + ": recalc != daba_lite");
+      real_assert(res == rb_daba_lite_agg.query(), name + ": recalc != rb_daba_lite");
       real_assert(res == aba_agg.query(), name + ": recalc != aba");
       real_assert(res == twostacks_agg.query(), name + ": recalc != two_stacks");
       real_assert(res == twostacks_lite_agg.query(), name + ": recalc != two_stacks_lite");
@@ -364,6 +383,7 @@ void test_alg_no_inverse_thirds(F f, typename F::Partial identity,
     while (recalc_agg.size() > third) {
       daba_agg.evict();
       daba_lite_agg.evict();
+      rb_daba_lite_agg.evict();
       aba_agg.evict();
       twostacks_agg.evict();
       twostacks_lite_agg.evict();
@@ -380,6 +400,7 @@ void test_alg_no_inverse_thirds(F f, typename F::Partial identity,
       typename F::Out res = recalc_agg.query();
       real_assert(res == daba_agg.query(), name + ": recalc != daba");
       real_assert(res == daba_lite_agg.query(), name + ": recalc != daba_lite");
+      real_assert(res == rb_daba_lite_agg.query(), name + ": recalc != rb_daba_lite");
       real_assert(res == aba_agg.query(), name + ": recalc != aba");
       real_assert(res == twostacks_agg.query(), name + ": recalc != two_stacks");
       real_assert(res == twostacks_lite_agg.query(), name + ": recalc != two_stacks_lite");
