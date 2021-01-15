@@ -3,6 +3,7 @@
 
 #include<deque>
 #include"ChunkedArrayQueue.hpp"
+#include"RingBufferQueue.hpp"
 #include<iostream>
 #include<iterator>
 #include<cassert>
@@ -234,6 +235,34 @@ namespace dabalite {
     Aggregate<BinaryFunction> operator()(T elem) {
       BinaryFunction f;
       return make_aggregate(f, elem);
+    }
+  };
+}
+
+namespace rb_dabalite {
+  template<typename binOpFunc,
+          size_t MAX_CAPACITY>
+  using Aggregate = dabalite::Aggregate <
+            binOpFunc,            
+            RingBufferQueue<
+                dabalite::__AggT<
+                    typename binOpFunc::Partial
+                >,
+                MAX_CAPACITY
+            > 
+        >;
+
+  template <size_t MAX_CAPACITY, class BinaryFunction, class T>
+  Aggregate<BinaryFunction, MAX_CAPACITY> make_aggregate(BinaryFunction f, T elem) {
+    return Aggregate<BinaryFunction, MAX_CAPACITY>(f, elem);
+  }
+
+  template <typename BinaryFunction, size_t MAX_CAPACITY>
+  struct MakeAggregate {
+    template <typename T>
+    Aggregate<BinaryFunction, MAX_CAPACITY> operator()(T elem) {
+      BinaryFunction f;
+      return make_aggregate<MAX_CAPACITY>(f, elem);
     }
   };
 }
