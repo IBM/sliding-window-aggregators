@@ -249,4 +249,35 @@ namespace timestamped_dabalite {
   };
 }
 
+namespace timestamped_rb_dabalite {
+    template<typename binOpFunc,
+             typename Timestamp,
+             size_t MAX_CAPACITY>
+    using Aggregate = timestamped_dabalite::Aggregate <
+            binOpFunc,
+            Timestamp,
+            RingBufferQueue<
+                timestamped_dabalite::__AggT<
+                    typename binOpFunc::Partial, 
+                    Timestamp
+                >,
+                MAX_CAPACITY
+            > 
+        >;
+
+  template <size_t MAX_CAPACITY, typename timeT, class BinaryFunction, class T>
+  Aggregate<BinaryFunction, timeT, MAX_CAPACITY> make_aggregate(BinaryFunction f, T elem) {
+      return Aggregate<BinaryFunction, timeT, MAX_CAPACITY>(f, elem);
+  }
+
+  template <typename BinaryFunction, typename timeT, size_t MAX_CAPACITY>
+  struct MakeAggregate {
+    template <typename T>
+    Aggregate<BinaryFunction, timeT, MAX_CAPACITY> operator()(T elem) {
+        BinaryFunction f;
+        return make_aggregate<MAX_CAPACITY, timeT, BinaryFunction>(f, elem);
+    }
+  };      
+}
+
 #endif

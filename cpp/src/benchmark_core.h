@@ -574,6 +574,58 @@ bool query_call_benchmark(std::string aggregator, std::string aggregator_req, st
 template <
     template <
         typename, 
+        size_t MAX_CAPACITY
+    > class MakeAggregate, 
+    size_t MAX_CAPACITY,
+    int magic
+>
+bool query_call_benchmark(std::string aggregator, std::string aggregator_req, std::string function_req, Experiment exp) {
+    if (aggregator_req == aggregator && function_req == "sum") {
+        benchmark(MakeAggregate<Sum<int>, MAX_CAPACITY>()(0), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "max") {
+        benchmark(MakeAggregate<Max<int>, MAX_CAPACITY>()(0), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "mean") {
+        benchmark(MakeAggregate<Mean<int>, MAX_CAPACITY>()(Mean<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "stddev") {
+        benchmark(MakeAggregate<SampleStdDev<int>, MAX_CAPACITY>()(SampleStdDev<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "argmax") {
+        benchmark(MakeAggregate<ArgMax<int, int, IdentityLifter<int>>, MAX_CAPACITY>()(ArgMax<int, int, IdentityLifter<int>>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "bloom") {
+        benchmark(MakeAggregate<BloomFilter<int>, MAX_CAPACITY>()(BloomFilter<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "collect") {
+        benchmark(MakeAggregate<Collect<int>, MAX_CAPACITY>()(Collect<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "mincount") {
+        benchmark(MakeAggregate<MinCount<int>, MAX_CAPACITY>()(MinCount<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "geomean") {
+        benchmark(MakeAggregate<GeometricMean<int>, MAX_CAPACITY>()(GeometricMean<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "busyloop") {
+        benchmark(MakeAggregate<BusyLoop<int>, MAX_CAPACITY>()(0), exp);
+        return true;
+    }
+    return false;
+}
+
+template <
+    template <
+        typename, 
         typename time, 
         int minDegree, 
         btree::Kind kind
@@ -642,6 +694,30 @@ bool query_call_dynamic_benchmark(std::string aggregator, std::string aggregator
     }
     else if (aggregator_req == aggregator && function_req == "geomean") {
         dynamic_benchmark(MakeAggregate<GeometricMean<int>>()(GeometricMean<int>::identity), exp);
+        return true;
+    }
+    return false;
+}
+
+template <
+    template <
+        typename,
+        size_t MAX_CAPACITY
+    > class MakeAggregate,
+    size_t MAX_CAPACITY,
+    int magic_no
+>
+bool query_call_dynamic_benchmark(std::string aggregator, std::string aggregator_req, std::string function_req, Experiment exp) {
+    if (aggregator_req == aggregator && function_req == "sum") {
+        dynamic_benchmark(MakeAggregate<Sum<int>, MAX_CAPACITY>()(0), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "bloom") {
+        dynamic_benchmark(MakeAggregate<BloomFilter<int>, MAX_CAPACITY>()(BloomFilter<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "geomean") {
+        dynamic_benchmark(MakeAggregate<GeometricMean<int>, MAX_CAPACITY>()(GeometricMean<int>::identity), exp);
         return true;
     }
     return false;
@@ -1258,5 +1334,52 @@ bool query_call_data_benchmark(const std::string& aggregator,
 
     return false;
 }
+
+template <
+    typename Data,
+    template <
+        typename,
+        typename,
+        size_t MAX_CAPACITY
+    > class MakeAggregate,
+    size_t MAX_CAPACITY,
+    int magic_no,
+    typename Generator
+>
+bool query_call_data_benchmark(const std::string& aggregator,
+                               const std::string& aggregator_req,
+                               const std::string& function_req,
+                               const DataExperiment& exp,
+                               Generator& gen,
+                               std::ostream& out) {
+    if (aggregator_req == aggregator && function_req == "sum") {
+        using SumOp = Sum<Data,int,int>;
+        data_benchmark<Data>(MakeAggregate<SumOp, typename Data::timestamp, MAX_CAPACITY>()(SumOp::identity), exp, gen, out);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "max") {
+        using MaxOp = Max<Data,typename Data::timestamp,typename Data::timestamp>;
+        data_benchmark<Data>(MakeAggregate<MaxOp, typename Data::timestamp, MAX_CAPACITY>()(MaxOp::identity), exp, gen, out);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "geomean") {
+        using GeoOp = GeometricMean<Data,double>;
+        data_benchmark<Data>(MakeAggregate<GeoOp, typename Data::timestamp, MAX_CAPACITY>()(GeoOp::identity), exp, gen, out);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "bloom") {
+        using BloomOp = BloomFilter<Data,uint64_t>;
+        data_benchmark<Data>(MakeAggregate<BloomOp, typename Data::timestamp, MAX_CAPACITY>()(BloomOp::identity), exp, gen, out);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "relvar") {
+        using RelVar = RelativeVariation<Data,double>;
+        data_benchmark<Data>(MakeAggregate<RelVar, typename Data::timestamp, MAX_CAPACITY>()(RelVar::identity), exp, gen, out);
+        return true;
+    }
+
+    return false;
+}
+
 
 #endif // _BENCHMARK_CORE_H

@@ -85,6 +85,9 @@ int main(int argc, char** argv) {
           query_call_benchmark<daba::MakeAggregate, false>("daba", aggregator, function, exp) || // daba: no caching
           query_call_benchmark<daba::MakeAggregate, true>("daba_caching", aggregator, function, exp) || // daba: with caching
           query_call_benchmark<dabalite::MakeAggregate>("daba_lite", aggregator, function, exp) ||
+          // 3-param "hack" to distinguish it from 2-param templates with
+          // similar types.
+          query_call_benchmark<rb_dabalite::MakeAggregate, 5*1024*1024, 42>("rb_daba_lite", aggregator, function, exp) ||   
           query_call_benchmark<aba::MakeAggregate>("aba", aggregator, function, exp) ||
           query_call_benchmark<twostacks::MakeAggregate>("two_stacks", aggregator, function, exp) ||
           query_call_benchmark<twostackslite::MakeAggregate>("two_stacks_lite", aggregator, function, exp) ||

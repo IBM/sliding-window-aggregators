@@ -21,7 +21,9 @@ private:
             : buffer(NULL), size(0), capacity(0), front(0), back(0) {};
 
         ring_buffer(size_t c)
-            : buffer(new E[c]), size(0), capacity(c), front(0), back(0) {};
+            : buffer(new E[c]), size(0), capacity(c), front(0), back(0) {
+                front_ptr = back_ptr = buffer;
+            };
 
         ~ring_buffer() {
             if (buffer != NULL)
@@ -31,6 +33,8 @@ private:
         E* buffer;
         int size, capacity;
         int front, back;
+        E* front_ptr;
+        E* back_ptr;
     };
 public:
     // iterator:
@@ -55,6 +59,8 @@ public:
                 pos -= rb->capacity;
             it = rb->buffer + pos;
         }
+        iterator(pointer loc_, ring_buffer* rb_)
+            : it(loc_), rb(rb_) {}
 
         iterator(const iterator &that)
             : it(that.it), rb(that.rb) {}
@@ -151,16 +157,21 @@ public:
             rescale_to(THRES*_rb->capacity, n+1);
 
         _rb->size++;
-        _rb->buffer[_rb->back++] = elem;
+        *(_rb->back_ptr) = elem;
+        _rb->back_ptr++, _rb->back++;        
 
-        if (_rb->back >= _rb->capacity)
+        if (_rb->back >= _rb->capacity) {
             _rb->back -= _rb->capacity;
+            _rb->back_ptr -= _rb->capacity;
+        }
     }
 
     void pop_front() {
-        _rb->front++;
-        if (_rb->front >= _rb->capacity)
+        _rb->front++, _rb->front_ptr++;
+        if (_rb->front >= _rb->capacity) {
             _rb->front -= _rb->capacity;
+            _rb->front_ptr -= _rb->capacity;
+        }
         _rb->size--;
 
         // only check to downsize if the ring buffer is in dynamic mode
@@ -174,19 +185,23 @@ public:
 
     E front() {
         assert(size() > 0);
-        return _rb->buffer[_rb->front];
+        // return _rb->buffer[_rb->front];
+        return *(_rb->front_ptr);
     }
 
     E back() {
         assert(size() > 0);
-        int bi = _rb->back - 1;
-        if (bi < 0)
-            bi += _rb->capacity;
-        return _rb->buffer[bi];
+        E* trueBackPtr = _rb->back_ptr - 1;
+        if (trueBackPtr < _rb->buffer) 
+            _rb->buffer += _rb->capacity;
+        // return _rb->buffer[bi];
+        return *trueBackPtr;
     }
 
-    const iterator begin() { return iterator(_rb->front, _rb); }
-    const iterator end() { return iterator(_rb->front + _rb->size, _rb); }
+    // const iterator begin() { return iterator(_rb->front, _rb); }
+    // const iterator end() { return iterator(_rb->front + _rb->size, _rb); }
+    const iterator begin() { return iterator(_rb->front_ptr, _rb); }
+    const iterator end() { return iterator(_rb->back_ptr, _rb); }
 
 
 private:
@@ -218,6 +233,8 @@ private:
         delete[] rescaled_buffer;
 
         _rb->front %= new_size, _rb->back = (_rb->front + n)%new_size;
+        _rb->front_ptr = _rb->buffer + _rb->front;
+        _rb->back_ptr = _rb->buffer + _rb->back;
         _rb->capacity = new_size;
     }
 public:
