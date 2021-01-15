@@ -5,6 +5,7 @@ import run_utility as u
 aggregators = [
     "daba",
     "daba_lite",
+    "rb_daba_lite",
     "two_stacks",
     "two_stacks_lite",
     "rb_two_stacks_lite",
@@ -22,7 +23,7 @@ base_window_sizes = [
 
 base_iterations = 200 * u.MILLION
 
-functions = { 
+functions = {
     "sum": (base_iterations, base_window_sizes),
     "geomean": (base_iterations, base_window_sizes),
     "bloom": (base_iterations/25, base_window_sizes),

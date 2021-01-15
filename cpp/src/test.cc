@@ -7,7 +7,6 @@
 
 #include "DABA.hpp"
 #include "DABALite.hpp"
-#include "RingBufferDABALite.hpp"
 #include "TwoStacks.hpp"
 #include "TwoStacksLite.hpp"
 #include "ImplicitTwoStacksLite.hpp"

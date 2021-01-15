@@ -71,7 +71,7 @@ void call_benchmarks(std::ifstream& in, int samples, const std::string& data_set
                   query_call_data_benchmark<DataSet, timestamped_chunked_twostackslite::MakeAggregate>("chunked_two_stacks_lite", aggregator, function, exp, gen, out) ||
                   query_call_data_benchmark<DataSet, timestamped_dynamic_flatfit::MakeAggregate>("flatfit", aggregator, function, exp, gen, out) ||
                   query_call_data_benchmark<DataSet, timestamped_daba::MakeAggregate, false>("daba", aggregator, function, exp, gen, out) ||
-                  query_call_data_benchmark<DataSet, timestamped_rb_dabalite::MakeAggregate, 5*1024*1024, 0x42>("daba_lite", aggregator, function, exp, gen, out) ||
+                  query_call_data_benchmark<DataSet, timestamped_rb_dabalite::MakeAggregate, 5*1024*1024, 0x42>("rb_daba_lite", aggregator, function, exp, gen, out) ||
                   query_call_data_benchmark<DataSet, timestamped_dabalite::MakeAggregate>("daba_lite", aggregator, function, exp, gen, out)
                   )) {
                 std::cerr << "error: no matching kind of experiment: " << aggregator << ", " << function << std::endl;

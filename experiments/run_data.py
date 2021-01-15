@@ -5,6 +5,7 @@ import run_utility as u
 aggregators = [
     "daba",
     "daba_lite",
+    "rb_daba_lite",
     "two_stacks",
     "two_stacks_lite",
     "rb_two_stacks_lite",
@@ -30,7 +31,7 @@ durations = [10,
              15*MINUTE,
              1000*SECOND,
              30*MINUTE,
-             HOUR, 2*HOUR, 
+             HOUR, 2*HOUR,
              10000*SECOND,
              3*HOUR, 4*HOUR, 5*HOUR, 6*HOUR]
 
@@ -38,12 +39,12 @@ data_sets = {
                 "mfgdebs": "../experiments/data/DEBS2012-cleaned-v3.txt",
             }
 
-functions = [ 
+functions = [
              "sum",
 #             "geomean",
 #             "bloom",
              "relvar"
-            ] 
+            ]
 
 def main():
     u.run_data(aggregators, functions, durations, data_sets, 'data', latency='', sample_size=10)
