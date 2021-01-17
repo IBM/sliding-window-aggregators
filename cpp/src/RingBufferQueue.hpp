@@ -193,7 +193,7 @@ public:
         assert(size() > 0);
         E* trueBackPtr = _rb->back_ptr - 1;
         if (trueBackPtr < _rb->buffer) 
-            _rb->buffer += _rb->capacity;
+            trueBackPtr += _rb->capacity;
         // return _rb->buffer[bi];
         return *trueBackPtr;
     }
