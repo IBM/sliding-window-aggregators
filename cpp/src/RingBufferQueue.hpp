@@ -15,14 +15,17 @@
 
 template <typename E, size_t PRESET_CAP=0>
 class RingBufferQueue {
+public:
+    struct iterator;
 private:
     struct ring_buffer {
         ring_buffer()
-            : buffer(NULL), size(0), capacity(0), front(0), back(0) {};
+            : buffer(NULL), size(0), capacity(0) {};
 
         ring_buffer(size_t c)
-            : buffer(new E[c]), size(0), capacity(c), front(0), back(0) {
-                front_ptr = back_ptr = buffer;
+            : buffer(new E[c]), size(0), capacity(c) {
+                front_it = iterator((size_t) 0, this);
+                back_it = iterator((size_t) 0, this);
             };
 
         ~ring_buffer() {
@@ -32,9 +35,7 @@ private:
 
         E* buffer;
         int size, capacity;
-        int front, back;
-        E* front_ptr;
-        E* back_ptr;
+        iterator front_it, back_it;
     };
 public:
     // iterator:
@@ -55,8 +56,7 @@ public:
 
         iterator(size_t pos, ring_buffer* rb_)
             : rb(rb_) {
-            if (pos >= rb->capacity)
-                pos -= rb->capacity;
+            while (pos >= rb->capacity) { pos -= rb->capacity; }
             it = rb->buffer + pos;
         }
         iterator(pointer loc_, ring_buffer* rb_)
@@ -154,58 +154,52 @@ public:
     void push_back(E elem) {
         int n = size();
         if (n+1 >= _rb->capacity)
-            rescale_to(THRES*_rb->capacity, n+1);
+            rescale_to(2*_rb->capacity, n+1);
 
         _rb->size++;
-        *(_rb->back_ptr) = elem;
-        _rb->back_ptr++, _rb->back++;        
-
-        if (_rb->back >= _rb->capacity) {
-            _rb->back -= _rb->capacity;
-            _rb->back_ptr -= _rb->capacity;
-        }
+        *(_rb->back_it++) = elem;
     }
 
     void pop_front() {
-        _rb->front++, _rb->front_ptr++;
-        if (_rb->front >= _rb->capacity) {
-            _rb->front -= _rb->capacity;
-            _rb->front_ptr -= _rb->capacity;
-        }
+        _rb->front_it++;
         _rb->size--;
 
         // only check to downsize if the ring buffer is in dynamic mode
         // i.e., no fixed preset capacity.
         if constexpr (PRESET_CAP == 0) {
             int n = size();
-            if (n <= _rb->capacity/(2*THRES))
-                rescale_to(_rb->capacity/THRES, n);
+            if (n <= _rb->capacity/4)
+                rescale_to(_rb->capacity/2, n);
         }
     }
 
     E front() {
         assert(size() > 0);
         // return _rb->buffer[_rb->front];
-        return *(_rb->front_ptr);
+        return *(_rb->front_it);
     }
 
     E back() {
         assert(size() > 0);
+<<<<<<< HEAD
         E* trueBackPtr = _rb->back_ptr - 1;
         if (trueBackPtr < _rb->buffer) 
             trueBackPtr += _rb->capacity;
         // return _rb->buffer[bi];
         return *trueBackPtr;
+=======
+        iterator true_back = _rb->back_it - 1;
+        return *true_back;
+>>>>>>> Perf optimization: all pointers
     }
 
     // const iterator begin() { return iterator(_rb->front, _rb); }
     // const iterator end() { return iterator(_rb->front + _rb->size, _rb); }
-    const iterator begin() { return iterator(_rb->front_ptr, _rb); }
-    const iterator end() { return iterator(_rb->back_ptr, _rb); }
+    const iterator begin() { return iterator(_rb->front_it); }
+    const iterator end() { return iterator(_rb->back_it); }
 
 
 private:
-    const int THRES = 2;
     const int MAGIC_MINIMUM_RING_SIZE = 4;
 
     void rescale_to(size_t new_size, size_t ensure_size) {
@@ -221,21 +215,23 @@ private:
 
         // copy while preserving the positions (modulo new_size)
         size_t old_cap = _rb->capacity;
-        int n = size(), f_src = _rb->front, f_dst = _rb->front;
+        int n = size();
+        E* src = _rb->front_it.it;
+        E* dst = rescaled_buffer + (_rb->front_it.it - _rb->buffer);
+        if (dst >= rescaled_buffer + new_size) dst -= new_size;
         for (int index=0;index<n;++index) {
-            if (f_dst >= new_size) f_dst -= new_size;
-            if (f_src >= old_cap) f_src -= old_cap;
-            rescaled_buffer[f_dst++] = _rb->buffer[f_src++];
+            if (dst >= rescaled_buffer + new_size) dst -= new_size;
+            if (src >= _rb->buffer + old_cap) src -= old_cap;
+            *(dst++) = *(src++);
         }
-
+        int front_index = _rb->front_it.it - _rb->buffer;
         std::swap(rescaled_buffer, _rb->buffer);
 
         delete[] rescaled_buffer;
 
-        _rb->front %= new_size, _rb->back = (_rb->front + n)%new_size;
-        _rb->front_ptr = _rb->buffer + _rb->front;
-        _rb->back_ptr = _rb->buffer + _rb->back;
         _rb->capacity = new_size;
+        _rb->front_it = iterator((size_t) front_index, _rb);
+        _rb->back_it = iterator((size_t) (front_index+n), _rb);
     }
 public:
     ring_buffer* _rb;
