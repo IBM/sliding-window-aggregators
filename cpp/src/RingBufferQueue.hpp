@@ -181,16 +181,8 @@ public:
 
     E back() {
         assert(size() > 0);
-<<<<<<< HEAD
-        E* trueBackPtr = _rb->back_ptr - 1;
-        if (trueBackPtr < _rb->buffer) 
-            trueBackPtr += _rb->capacity;
-        // return _rb->buffer[bi];
-        return *trueBackPtr;
-=======
         iterator true_back = _rb->back_it - 1;
         return *true_back;
->>>>>>> Perf optimization: all pointers
     }
 
     // const iterator begin() { return iterator(_rb->front, _rb); }
