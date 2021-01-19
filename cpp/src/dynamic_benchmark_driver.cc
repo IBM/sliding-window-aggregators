@@ -30,8 +30,11 @@ int main(int argc, char** argv) {
 
     if (!(query_call_dynamic_benchmark<daba::MakeAggregate, false>("daba", aggregator, function, exp) || // daba: no caching
           query_call_dynamic_benchmark<dabalite::MakeAggregate>("daba_lite", aggregator, function, exp) ||
+          query_call_dynamic_benchmark<rb_dabalite::MakeAggregate, 5*1024*1024, 0x42>("rb_daba_lite", aggregator, function, exp) ||
           query_call_dynamic_benchmark<twostacks::MakeAggregate>("two_stacks", aggregator, function, exp) ||
           query_call_dynamic_benchmark<twostackslite::MakeAggregate>("two_stacks_lite", aggregator, function, exp) ||
+          query_call_dynamic_benchmark<rb_twostackslite::MakeAggregate>("rb_two_stacks_lite", aggregator, function, exp) ||
+          query_call_dynamic_benchmark<chunked_twostackslite::MakeAggregate>("chunked_two_stacks_lite", aggregator, function, exp) ||
           query_call_dynamic_benchmark<flatfit::MakeAggregate>("flatfit", aggregator, function, exp) ||
           query_call_dynamic_benchmark<dynamic_flatfit::MakeAggregate>("dynamic_flatfit", aggregator, function, exp) ||
 
