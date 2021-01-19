@@ -41,8 +41,8 @@ data_sets = {
 
 functions = [
              "sum",
-#             "geomean",
-#             "bloom",
+             "geomean",
+             "bloom",
              "relvar"
             ]
 
