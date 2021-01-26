@@ -1,8 +1,6 @@
 use rand::Rng;
 use swag::*;
-
-mod common;
-use common::*;
+use swag::ops::*;
 
 /// Macro for generating test cases for different algorithms.
 macro_rules! test_matrix {

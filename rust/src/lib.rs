@@ -59,3 +59,6 @@ pub mod reactive;
 
 /// Flat and Fast Index Traverser
 pub mod flatfit;
+
+/// All of the supported binary operators
+pub mod ops;

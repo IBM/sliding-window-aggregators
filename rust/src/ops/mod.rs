@@ -11,6 +11,7 @@ use alga::general::TwoSidedInverse;
 /// Abstract Algebra Lattice:
 /// Borrowed from https://docs.rs/alga/0.9.3/alga/general/index.html
 ///
+/// ```text
 ///                           AbstractMagma
 ///                                |
 ///                        _______/ \______
@@ -36,6 +37,7 @@ use alga::general::TwoSidedInverse;
 ///                               |
 ///                               V
 ///                     AbstractGroupAbelian
+/// ```
 
 /// An integer value
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -84,7 +86,7 @@ impl AbstractGroup<Sum> for Int {}
 /// * Associativity
 /// * Commutativity
 #[derive(Copy, Clone)]
-pub(crate) struct Max;
+pub struct Max;
 
 impl Operator for Max {
     fn operator_token() -> Max {

@@ -1,7 +1,6 @@
-mod common;
-use common::*;
 use swag::FifoWindow;
 use swag::soe::*;
+use swag::ops::*;
 
 /// Should compile since Sum is invertible
 fn main() {

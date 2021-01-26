@@ -1,7 +1,3 @@
-#[path = "../../tests/common.rs"]
-mod common;
-use common::*;
-
 use alga::general::Operator;
 use criterion::*;
 use criterion_cpu_time::PosixTime;
@@ -10,6 +6,9 @@ use swag::recalc::ReCalc;
 use swag::soe::SoE;
 use swag::two_stacks::TwoStacks;
 use swag::FifoWindow;
+use swag::ops::Int;
+use swag::ops::Sum;
+use swag::ops::Max;
 
 criterion_group! {
     name = experiments;
