@@ -1,14 +1,14 @@
-error[E0599]: no function or associated item named `new` found for struct `swag::soe::SoE<swag::ops::Int, swag::ops::Max>` in the current scope
+error[E0599]: no function or associated item named `new` found for struct `swag::soe::SoE<i32, swag::ops::Max>` in the current scope
  --> $DIR/trybuild_soe_max.fail:6:22
   |
-6 |     SoE::<Int, Max>::new();
-  |                      ^^^ function or associated item not found in `swag::soe::SoE<swag::ops::Int, swag::ops::Max>`
+6 |     SoE::<i32, Max>::new();
+  |                      ^^^ function or associated item not found in `swag::soe::SoE<i32, swag::ops::Max>`
 
-error[E0277]: the trait bound `swag::ops::Int: alga::general::one_operator::AbstractGroup<swag::ops::Max>` is not satisfied
+error[E0277]: the trait bound `i32: alga::general::one_operator::AbstractGroup<swag::ops::Max>` is not satisfied
   --> $DIR/trybuild_soe_max.fail:6:5
    |
-6  |     SoE::<Int, Max>::new();
-   |     ^^^^^^^^^^^^^^^^^^^^ the trait `alga::general::one_operator::AbstractGroup<swag::ops::Max>` is not implemented for `swag::ops::Int`
+6  |     SoE::<i32, Max>::new();
+   |     ^^^^^^^^^^^^^^^^^^^^ the trait `alga::general::one_operator::AbstractGroup<swag::ops::Max>` is not implemented for `i32`
    |
   ::: $WORKSPACE/src/soe/mod.rs
    |
@@ -16,4 +16,5 @@ error[E0277]: the trait bound `swag::ops::Int: alga::general::one_operator::Abst
    |            -------------------- required by this bound in `swag::soe::SoE`
    |
    = help: the following implementations were found:
-             <swag::ops::Int as alga::general::one_operator::AbstractGroup<swag::ops::Sum>>
+             <i32 as alga::general::one_operator::AbstractGroup<alga::general::operator::Additive>>
+             <i32 as alga::general::one_operator::AbstractGroup<swag::ops::Sum>>

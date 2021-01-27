@@ -39,10 +39,6 @@ use alga::general::TwoSidedInverse;
 ///                     AbstractGroupAbelian
 /// ```
 
-/// An integer value
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub struct Int(pub i32);
-
 /// Binary operator for calculating the arithmetic sum.
 /// Has the following properties:
 /// * Invertibility
@@ -57,29 +53,29 @@ impl Operator for Sum {
     }
 }
 
-impl Identity<Sum> for Int {
-    fn identity() -> Int {
-        Int(0)
+impl Identity<Sum> for i32 {
+    fn identity() -> i32 {
+        0
     }
 }
 
-impl AbstractMagma<Sum> for Int {
+impl AbstractMagma<Sum> for i32 {
     fn operate(&self, other: &Self) -> Self {
-        Int(self.0 + other.0)
+        self + other
     }
 }
 
-impl TwoSidedInverse<Sum> for Int {
-    fn two_sided_inverse(&self) -> Int {
-        Int(-self.0)
+impl TwoSidedInverse<Sum> for i32 {
+    fn two_sided_inverse(&self) -> i32 {
+        -self
     }
 }
 
-impl AbstractSemigroup<Sum> for Int {}
-impl AbstractMonoid<Sum> for Int {}
-impl AbstractQuasigroup<Sum> for Int {}
-impl AbstractLoop<Sum> for Int {}
-impl AbstractGroup<Sum> for Int {}
+impl AbstractSemigroup<Sum> for i32 {}
+impl AbstractMonoid<Sum> for i32 {}
+impl AbstractQuasigroup<Sum> for i32 {}
+impl AbstractLoop<Sum> for i32 {}
+impl AbstractGroup<Sum> for i32 {}
 
 /// Binary operator for calculating the maximum Int.
 /// Has the following properties:
@@ -94,15 +90,15 @@ impl Operator for Max {
     }
 }
 
-impl Identity<Max> for Int {
-    fn identity() -> Int {
-        Int(std::i32::MIN)
+impl Identity<Max> for i32 {
+    fn identity() -> i32 {
+        std::i32::MIN
     }
 }
 
-impl AbstractMagma<Max> for Int {
+impl AbstractMagma<Max> for i32 {
     fn operate(&self, other: &Self) -> Self {
-        if self.0 > other.0 {
+        if self > other {
             *self
         } else {
             *other
@@ -110,5 +106,5 @@ impl AbstractMagma<Max> for Int {
     }
 }
 
-impl AbstractSemigroup<Max> for Int {}
-impl AbstractMonoid<Max> for Int {}
+impl AbstractSemigroup<Max> for i32 {}
+impl AbstractMonoid<Max> for i32 {}

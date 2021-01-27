@@ -3,5 +3,5 @@ use swag::ops::*;
 
 /// Should not compile since Max is not invertible
 fn main() {
-    SoE::<Int, Max>::new();
+    SoE::<i32, Max>::new();
 }

@@ -25,99 +25,98 @@ macro_rules! test_matrix {
 /// Basic test for integer sums.
 fn test1<Window>()
 where
-    Window: FifoWindow<Int, Sum>,
+    Window: FifoWindow<i32, Sum>,
 {
     let mut window = Window::new();
 
-    assert_eq!(window.query(), Int(0));
+    assert_eq!(window.query(), 0);
 
-    window.push(Int(1));
+    window.push(1);
 
-    assert_eq!(window.query(), Int(1));
+    assert_eq!(window.query(), 1);
 
-    window.push(Int(2));
+    window.push(2);
 
-    assert_eq!(window.query(), Int(3));
+    assert_eq!(window.query(), 3);
 
-    window.push(Int(3));
+    window.push(3);
 
-    assert_eq!(window.query(), Int(6));
+    assert_eq!(window.query(), 6);
 
     window.pop();
 
-    assert_eq!(window.query(), Int(5));
+    assert_eq!(window.query(), 5);
 }
 
-fn synthesize(size: usize) -> Vec<Int> {
+fn synthesize(size: usize) -> Vec<i32> {
     let mut rng = rand::thread_rng();
     (0..size)
         .map(|_| rng.gen_range(1, 5))
-        .map(Int)
         .collect::<Vec<_>>()
 }
 
 /// Tries to aggregate the sum of 1K randomly generated integers.
 fn test2<Window>()
 where
-    Window: FifoWindow<Int, Sum>,
+    Window: FifoWindow<i32, Sum>,
 {
     let values = synthesize(1_000);
-    let sum = values.iter().fold(0, |acc, Int(x)| acc + x);
+    let sum = values.iter().fold(0, |acc, x| acc + x);
     let mut window = Window::new();
     for v in values.clone() {
         window.push(v);
     }
-    assert_eq!(window.query(), Int(sum));
+    assert_eq!(window.query(), sum);
     for _ in values {
         window.pop();
     }
-    assert_eq!(window.query(), Int(0));
+    assert_eq!(window.query(), 0);
 }
 
 /// Tries to find the maximum value out 1K randomly generated integers.
 fn test3<Window>()
 where
-    Window: FifoWindow<Int, Max>,
+    Window: FifoWindow<i32, Max>,
 {
     let mut window = Window::new();
     let values = synthesize(1_000);
-    let max = values.iter().map(|Int(x)| *x).max().unwrap();
+    let max = values.iter().map(|x| *x).max().unwrap();
     for v in values.clone() {
         window.push(v);
     }
-    assert_eq!(window.query(), Int(max));
+    assert_eq!(window.query(), max);
     for _ in values {
         window.pop();
     }
-    assert_eq!(window.query(), Int(std::i64::MIN));
+    assert_eq!(window.query(), std::i32::MIN);
 }
 
 /// Fills a window with 1K elements and pushes/pops/queries 1K times.
 fn test4<Window>()
 where
-    Window: FifoWindow<Int, Sum>,
+    Window: FifoWindow<i32, Sum>,
 {
     let mut window = Window::new();
     let values = synthesize(1_000);
-    let sum = values.iter().fold(0, |acc, Int(x)| acc + x);
+    let sum = values.iter().fold(0, |acc, x| acc + x);
     for v in values.clone() {
         window.push(v);
     }
     for v in values {
         window.push(v);
         window.pop();
-        assert_eq!(window.query(), Int(sum));
+        assert_eq!(window.query(), sum);
     }
 }
 
 /// Pops more elements from a window than what it contains.
 fn test5<Window>()
 where
-    Window: FifoWindow<Int, Sum>,
+    Window: FifoWindow<i32, Sum>,
 {
     let mut window = Window::new();
-    window.push(Int(0));
-    window.push(Int(0));
+    window.push(0);
+    window.push(0);
     window.pop();
     window.pop();
     window.pop();
@@ -126,51 +125,51 @@ where
 /// Pops more elements from a window than what it contains.
 fn test6<Window>()
 where
-    Window: FifoWindow<Int, Sum>,
+    Window: FifoWindow<i32, Sum>,
 {
     let mut window = Window::new();
-    window.push(Int(1));
-    window.push(Int(2));
-    window.push(Int(3));
+    window.push(1);
+    window.push(2);
+    window.push(3);
     window.pop();
-    window.push(Int(4));
-    window.push(Int(5));
+    window.push(4);
+    window.push(5);
 }
 
 /// Push => Query
 fn test7<Window>()
 where
-    Window: FifoWindow<Int, Sum>,
+    Window: FifoWindow<i32, Sum>,
 {
     let mut window = Window::new();
-    window.push(Int(1));
-    assert_eq!(window.query(), Int(1));
+    window.push(1);
+    assert_eq!(window.query(), 1);
 }
 
 /// Push => Push => Push => Pop => Pop => Query
 fn test8<Window>()
 where
-    Window: FifoWindow<Int, Sum>,
+    Window: FifoWindow<i32, Sum>,
 {
     let mut window = Window::new();
-    window.push(Int(1));
-    window.push(Int(2));
-    window.push(Int(3));
+    window.push(1);
+    window.push(2);
+    window.push(3);
     window.pop();
     window.pop();
-    assert_eq!(window.query(), Int(3));
+    assert_eq!(window.query(), 3);
 }
 
 /// Push => Pop => Push => Query
 fn test9<Window>()
 where
-    Window: FifoWindow<Int, Sum>,
+    Window: FifoWindow<i32, Sum>,
 {
     let mut window = Window::new();
-    window.push(Int(1));
+    window.push(1);
     window.pop();
-    window.push(Int(2));
-    assert_eq!(window.query(), Int(2));
+    window.push(2);
+    assert_eq!(window.query(), 2);
 }
 
 test_matrix! {

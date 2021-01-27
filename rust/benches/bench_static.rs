@@ -6,7 +6,6 @@ use alga::general::Operator;
 //use swag::soe::SoE;
 use swag::two_stacks::TwoStacks;
 use swag::FifoWindow;
-use swag::ops::Int;
 use swag::ops::Sum;
 //use swag::ops::Max;
 
@@ -30,14 +29,14 @@ struct Opts {
 
 fn static_core<BinOp, Window>(opts: &Opts)
 where
-    Window: FifoWindow<Int, BinOp>,
+    Window: FifoWindow<i32, BinOp>,
     BinOp: Operator
 {
     let mut window = Window::new();
-    let mut force_side_effect = Int(0);
+    let mut force_side_effect = 0;
 
     for i in 0..opts.window_size {
-        window.push(Int((1 + (i % 101)) as i32));
+        window.push((1 + (i % 101)) as i32);
     }
 
     assert_eq!(window.len(), opts.window_size);
@@ -46,13 +45,13 @@ where
 
     for i in opts.window_size..opts.iterations {
         window.pop();
-        window.push(Int((1 + (i % 101)) as i32));
-        force_side_effect.0 += window.query().0;
+        window.push((1 + (i % 101)) as i32);
+        force_side_effect += window.query();
     }
 
     let duration = start.elapsed();
     println!("core runtime: {:?}", duration);
-    println!("{}", force_side_effect.0);
+    println!("{}", force_side_effect);
 }
 
 fn main() {
@@ -63,5 +62,5 @@ fn main() {
                                                       opts.window_size, 
                                                       opts.iterations, 
                                                       opts.latency);
-    static_core::<Sum, TwoStacks<Int, Sum>>(&opts);
+    static_core::<Sum, TwoStacks<i32, Sum>>(&opts);
 }
