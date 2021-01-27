@@ -41,7 +41,7 @@ use alga::general::TwoSidedInverse;
 
 /// An integer value
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub struct Int(pub i64);
+pub struct Int(pub i32);
 
 /// Binary operator for calculating the arithmetic sum.
 /// Has the following properties:
@@ -96,7 +96,7 @@ impl Operator for Max {
 
 impl Identity<Max> for Int {
     fn identity() -> Int {
-        Int(std::i64::MIN)
+        Int(std::i32::MIN)
     }
 }
 
