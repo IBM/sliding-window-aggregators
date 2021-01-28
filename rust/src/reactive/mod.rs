@@ -4,6 +4,7 @@ use crate::reactive::flat_fat::{FlatFAT, FAT};
 use crate::FifoWindow;
 use alga::general::AbstractMonoid;
 use alga::general::Operator;
+use std::fmt;
 
 #[derive(Clone)]
 pub struct Reactive<Value, BinOp>
@@ -17,6 +18,15 @@ where
     back: usize,
 }
 
+impl<Value, BinOp> fmt::Display for Reactive<Value, BinOp> 
+where
+    Value: AbstractMonoid<BinOp> + Clone,
+    BinOp: Operator,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", Reactive::<Value, BinOp>::name())
+    }
+}
 impl<Value, BinOp> Reactive<Value, BinOp>
 where
     Value: AbstractMonoid<BinOp> + Clone,
@@ -65,6 +75,9 @@ where
             front: 0,
             back: 0,
         }
+    }
+    fn name() -> &'static str {
+        "reactive"
     }
     fn push(&mut self, v: Value) {
         self.fat.update([(self.back, v)].iter().cloned());

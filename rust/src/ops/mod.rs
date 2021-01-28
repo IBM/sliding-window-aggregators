@@ -7,6 +7,7 @@ use alga::general::AbstractSemigroup;
 use alga::general::Identity;
 use alga::general::Operator;
 use alga::general::TwoSidedInverse;
+use std::fmt;
 
 /// Abstract Algebra Lattice:
 /// Borrowed from https://docs.rs/alga/0.9.3/alga/general/index.html
@@ -47,6 +48,18 @@ use alga::general::TwoSidedInverse;
 #[derive(Copy, Clone)]
 pub struct Sum;
 
+impl Sum {
+    pub fn name() -> &'static str {
+        "sum"
+    }
+}
+
+impl fmt::Display for Sum {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", Sum::name())
+    }
+}
+
 impl Operator for Sum {
     fn operator_token() -> Sum {
         Sum
@@ -83,6 +96,18 @@ impl AbstractGroup<Sum> for i32 {}
 /// * Commutativity
 #[derive(Copy, Clone)]
 pub struct Max;
+
+impl Max {
+    pub fn name() -> &'static str {
+        "max"
+    }
+}
+
+impl fmt::Display for Max {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", Max::name())
+    }
+}
 
 impl Operator for Max {
     fn operator_token() -> Max {

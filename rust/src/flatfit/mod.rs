@@ -3,6 +3,7 @@ use alga::general::AbstractMonoid;
 use alga::general::Operator;
 use std::cell::RefCell;
 use std::marker::PhantomData;
+use std::fmt;
 
 const LOW_CAP: usize = 2;
 
@@ -32,6 +33,16 @@ impl<Value> Item<Value> {
     }
 }
 
+impl<Value, BinOp> fmt::Display for FlatFIT<Value, BinOp> 
+where
+    Value: AbstractMonoid<BinOp> + Clone,
+    BinOp: Operator,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", FlatFIT::<Value, BinOp>::name())
+    }
+}
+
 impl<Value, BinOp> FifoWindow<Value, BinOp> for FlatFIT<Value, BinOp>
 where
     Value: AbstractMonoid<BinOp> + Clone,
@@ -46,6 +57,9 @@ where
             tracing_indices: RefCell::new(Vec::new()),
             binop: PhantomData,
         }
+    }
+    fn name() -> &'static str {
+        "flatfit"
     }
     fn push(&mut self, val: Value) {
         let capacity = self.buffer.borrow().capacity();

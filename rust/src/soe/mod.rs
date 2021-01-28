@@ -3,6 +3,7 @@ use alga::general::AbstractGroup;
 use alga::general::Operator;
 use std::collections::VecDeque;
 use std::marker::PhantomData;
+use std::fmt;
 
 #[derive(Clone)]
 pub struct SoE<Value, BinOp>
@@ -13,6 +14,16 @@ where
     stack: VecDeque<Value>,
     agg: Value,
     op: PhantomData<BinOp>,
+}
+
+impl<Value, BinOp> fmt::Display for SoE<Value, BinOp> 
+where
+    Value: AbstractGroup<BinOp> + Clone,
+    BinOp: Operator,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", SoE::<Value, BinOp>::name())
+    }
 }
 
 impl<Value, BinOp> FifoWindow<Value, BinOp> for SoE<Value, BinOp>
@@ -26,6 +37,9 @@ where
             agg: Value::identity(),
             op: PhantomData,
         }
+    }
+    fn name() -> &'static str {
+        "soe"
     }
     fn push(&mut self, v: Value) {
         self.agg = self.agg.operate(&v);

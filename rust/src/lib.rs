@@ -24,6 +24,8 @@ where
 {
     /// Returns an empty window.
     fn new() -> Self;
+    /// Return the experimental name for the algorithm.
+    fn name() -> &'static str;
     /// Inserts a value at the back of the window.
     fn push(&mut self, v: Value);
     /// Removes a value at the front of the window (if any).

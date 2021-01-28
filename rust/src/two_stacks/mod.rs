@@ -2,6 +2,7 @@ use crate::FifoWindow;
 use alga::general::AbstractMonoid;
 use alga::general::Operator;
 use std::marker::PhantomData;
+use std::fmt;
 
 #[derive(Clone)]
 struct Item<Value>
@@ -23,6 +24,16 @@ where
     op: PhantomData<BinOp>,
 }
 
+impl<Value, BinOp> fmt::Display for TwoStacks<Value, BinOp> 
+where
+    Value: AbstractMonoid<BinOp> + Clone,
+    BinOp: Operator,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", TwoStacks::<Value, BinOp>::name())
+    }
+}
+
 impl<Value, BinOp> FifoWindow<Value, BinOp> for TwoStacks<Value, BinOp>
 where
     Value: AbstractMonoid<BinOp> + Clone,
@@ -34,6 +45,9 @@ where
             back: Vec::new(),
             op: PhantomData,
         }
+    }
+    fn name() -> &'static str {
+        "two_stacks"
     }
     fn push(&mut self, v: Value) {
         self.back.push(Item {

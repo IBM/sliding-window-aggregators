@@ -183,3 +183,21 @@ test_matrix! {
     test8 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
     test9 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ]
 }
+
+#[test]
+fn assert_names() {
+    let recalc = recalc::ReCalc::<i32, Sum>::new();
+    assert_eq!(recalc.to_string(), "recalc");
+
+    let soe = soe::SoE::<i32, Sum>::new();
+    assert_eq!(soe.to_string(), "soe");
+
+    let reactive = reactive::Reactive::<i32, Sum>::new();
+    assert_eq!(reactive.to_string(), "reactive");
+
+    let two_stacks = two_stacks::TwoStacks::<i32, Sum>::new();
+    assert_eq!(two_stacks.to_string(), "two_stacks");
+
+    let flatfit = flatfit::FlatFIT::<i32, Sum>::new();
+    assert_eq!(flatfit.to_string(), "flatfit");
+}

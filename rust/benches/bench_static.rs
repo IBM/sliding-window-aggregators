@@ -1,13 +1,13 @@
 use clap::Clap;
 use std::time::Instant;
 use alga::general::Operator;
-//use swag::reactive::Reactive;
-//use swag::recalc::ReCalc;
-//use swag::soe::SoE;
+use swag::reactive::Reactive;
+use swag::recalc::ReCalc;
+use swag::soe::SoE;
 use swag::two_stacks::TwoStacks;
 use swag::FifoWindow;
 use swag::ops::Sum;
-//use swag::ops::Max;
+use swag::ops::Max;
 
 #[derive(Clap)]
 struct Opts {
@@ -18,7 +18,7 @@ struct Opts {
     // cargo passes our own name, so we just need to consume it
     _name: String,
 
-    aggregator: String,
+    swag: String,
     function: String,
     window_size: usize,
     iterations: usize,
@@ -54,13 +54,37 @@ where
     println!("{}", force_side_effect);
 }
 
+macro_rules! query_run {
+    {
+        $opts:ident => [$( [$swag:ident, $($function:ident),+] ),*]
+    } => {
+            {
+                $(
+                    $(
+                        if $opts.swag == $swag::<i32, $function>::name() {
+                            if $opts.function == $function::name() {
+                                static_core::<$function, $swag<i32, $function>>(&$opts);
+                            }
+                        }
+                    )*
+                )*
+            }
+    };
+}
+
 fn main() {
     let opts: Opts = Opts::parse();
 
-    println!("agg {}, fun {}, win {}, it {}, lat {}", opts.aggregator, 
+    println!("agg {}, fun {}, win {}, it {}, lat {}", opts.swag, 
                                                       opts.function, 
                                                       opts.window_size, 
                                                       opts.iterations, 
                                                       opts.latency);
-    static_core::<Sum, TwoStacks<i32, Sum>>(&opts);
+    query_run! {
+        opts =>
+            [[ReCalc, Sum, Max],
+             [TwoStacks, Sum, Max],
+             [Reactive, Sum, Max],
+             [SoE, Sum]]
+    }
 }
