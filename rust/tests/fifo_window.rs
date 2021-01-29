@@ -172,16 +172,55 @@ where
     assert_eq!(window.query(), 2);
 }
 
+fn test_max<Window>()
+where
+    Window: FifoWindow<i32, Max>
+{
+    let mut window = Window::new();
+    let top = 1000;
+    for i in 0..=top {
+        window.push(i);
+        assert_eq!(window.query(), i);
+    }
+
+    for _i in 0..=top {
+        assert_eq!(window.query(), top);
+        window.pop();
+    }
+}
+
+fn test_sum<Window>()
+where
+    Window: FifoWindow<i32, Sum>
+{
+    let mut window = Window::new();
+    let top = 1000;
+    let mut running_sum = 0;
+    for i in 0..=top {
+        window.push(i);
+        running_sum += i;
+        assert_eq!(window.query(), running_sum);
+    }
+
+    for i in 0..=top {
+        window.pop();
+        running_sum -= i;
+        assert_eq!(window.query(), running_sum);
+    }
+}
+
 test_matrix! {
-    test1 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test2 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test3 => [ recalc::ReCalc,           reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test4 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test5 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test6 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test7 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test8 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test9 => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ]
+    test1 =>    [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test2 =>    [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test3 =>    [ recalc::ReCalc,           reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test4 =>    [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test5 =>    [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test6 =>    [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test7 =>    [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test8 =>    [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test9 =>    [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test_max => [ recalc::ReCalc,           reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test_sum => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ]
 }
 
 #[test]
@@ -201,3 +240,4 @@ fn assert_names() {
     let flatfit = flatfit::FlatFIT::<i32, Sum>::new();
     assert_eq!(flatfit.to_string(), "flatfit");
 }
+

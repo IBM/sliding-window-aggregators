@@ -40,7 +40,7 @@ use std::fmt;
 ///                     AbstractGroupAbelian
 /// ```
 
-/// Binary operator for calculating the arithmetic sum.
+/// Binary operator for arithmetic sum.
 /// Has the following properties:
 /// * Invertibility
 /// * Associativity
@@ -90,7 +90,7 @@ impl AbstractQuasigroup<Sum> for i32 {}
 impl AbstractLoop<Sum> for i32 {}
 impl AbstractGroup<Sum> for i32 {}
 
-/// Binary operator for calculating the maximum Int.
+/// Binary operator for maximum.
 /// Has the following properties:
 /// * Associativity
 /// * Commutativity
@@ -133,3 +133,51 @@ impl AbstractMagma<Max> for i32 {
 
 impl AbstractSemigroup<Max> for i32 {}
 impl AbstractMonoid<Max> for i32 {}
+
+/// Binary operator for mean.
+/// Has the following properties:
+/// * Associativity
+/// * Commutativity
+
+#[derive(Copy, Clone)]
+pub struct Mean;
+
+#[derive(Copy, Clone, Eq, PartialEq)]
+struct MeanPartial<T> {
+    sum: T,
+    n: usize,
+}
+
+impl Mean {
+    pub fn name() -> &'static str {
+        "mean"
+    }
+}
+
+impl fmt::Display for Mean {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", Mean::name())
+    }
+}
+
+impl Operator for Mean {
+    fn operator_token() -> Mean {
+        Mean
+    }
+}
+
+impl Identity<Mean> for MeanPartial<i32> {
+    fn identity() -> MeanPartial<i32> {
+        MeanPartial::<i32>{sum: 0, n: 0}
+    }
+}
+
+impl AbstractMagma<Mean> for MeanPartial<i32> {
+    fn operate(&self, other: &Self) -> Self {
+        MeanPartial::<i32>{sum: self.sum + other.sum,
+                           n: self.n + other.n}
+    }
+}
+
+impl AbstractSemigroup<Mean> for MeanPartial<i32> {}
+impl AbstractMonoid<Mean> for MeanPartial<i32> {}

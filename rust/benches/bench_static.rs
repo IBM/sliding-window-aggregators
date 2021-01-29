@@ -64,12 +64,13 @@ macro_rules! query_run {
                         if $opts.swag == $swag::<i32, $function>::name() {
                             if $opts.function == $function::name() {
                                 static_core::<$function, $swag<i32, $function>>(&$opts);
+                                std::process::exit(0);
                             }
                         }
                     )*
                 )*
             }
-    };
+    }
 }
 
 fn main() {
@@ -87,4 +88,8 @@ fn main() {
              [Reactive, Sum, Max],
              [SoE, Sum]]
     }
+
+    // Should not reach here
+    eprintln!("error: unrecognized swag ({}) or function ({})", opts.swag, opts.function);
+    std::process::exit(1);
 }
