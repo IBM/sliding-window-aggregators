@@ -1,6 +1,3 @@
-use clap::Clap;
-use std::time::Instant;
-use alga::general::Operator;
 use swag::reactive::Reactive;
 use swag::recalc::ReCalc;
 use swag::soe::SoE;
@@ -8,6 +5,11 @@ use swag::two_stacks::TwoStacks;
 use swag::FifoWindow;
 use swag::ops::Sum;
 use swag::ops::Max;
+use clap::Clap;
+use alga::general::Operator;
+use std::sync::atomic::Ordering;
+use std::sync::atomic::fence;
+use std::time::Instant;
 
 #[derive(Clap)]
 struct Opts {
@@ -44,6 +46,8 @@ where
     let start = Instant::now();
 
     for i in opts.window_size..opts.iterations {
+        fence(Ordering::SeqCst);
+
         window.pop();
         window.push((1 + (i % 101)) as i32);
         force_side_effect += window.query();

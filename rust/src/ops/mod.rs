@@ -7,6 +7,9 @@ use alga::general::AbstractSemigroup;
 use alga::general::Identity;
 use alga::general::Operator;
 use alga::general::TwoSidedInverse;
+use num_traits::{Num, Zero};
+use num_traits::cast::{ToPrimitive, NumCast};
+use std::marker::PhantomData;
 use std::fmt;
 
 /// Abstract Algebra Lattice:
@@ -39,6 +42,13 @@ use std::fmt;
 ///                               V
 ///                     AbstractGroupAbelian
 /// ```
+
+pub trait MonoidAdapter<In, Out> {
+    type Partial;
+
+    fn lift(&self, val: In) -> Self::Partial;
+    fn lower(&self, part: &Self::Partial) -> Out;
+}
 
 /// Binary operator for arithmetic sum.
 /// Has the following properties:
@@ -140,44 +150,96 @@ impl AbstractMonoid<Max> for i32 {}
 /// * Commutativity
 
 #[derive(Copy, Clone)]
-pub struct Mean;
+pub struct Mean<In, Out>
+where
+    In: Num + ToPrimitive + Copy,
+    Out: Num + NumCast + Copy,
+{
+    in_type: PhantomData<In>,
+    out_type: PhantomData<Out>,
+}
 
 #[derive(Copy, Clone, Eq, PartialEq)]
-struct MeanPartial<T> {
+pub struct MeanPartial<T> {
     sum: T,
     n: usize,
 }
 
-impl Mean {
+impl<In, Out> MonoidAdapter<In, Out> for Mean<In, Out>
+where
+    In: Num + ToPrimitive + Copy,
+    Out: Num + NumCast + Copy,
+{
+    type Partial = MeanPartial<In>;
+
+    fn lift(&self, val: In) -> MeanPartial<In> {
+        MeanPartial::<In>{sum: val, n: 1}
+    }
+    fn lower(&self, part: &Self::Partial) -> Out {
+        NumCast::from(part.sum.to_usize().unwrap() / part.n).unwrap()
+    }
+}
+
+impl<In, Out> Mean<In, Out> 
+where
+    In: Num + ToPrimitive + Copy,
+    Out: Num + NumCast + Copy,
+{
     pub fn name() -> &'static str {
         "mean"
     }
 }
 
-impl fmt::Display for Mean {
+impl<In, Out> fmt::Display for Mean<In, Out> 
+where
+    In: Num + ToPrimitive + Copy,
+    Out: Num + NumCast + Copy,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", Mean::name())
+        write!(f, "{}", Mean::<In, Out>::name())
     }
 }
 
-impl Operator for Mean {
-    fn operator_token() -> Mean {
-        Mean
+impl<In, Out> Operator for Mean<In, Out> 
+where
+    In: Num + ToPrimitive + Copy,
+    Out: Num + NumCast + Copy,
+{
+    fn operator_token() -> Self {
+        Mean::<In, Out>{in_type: PhantomData, out_type: PhantomData}
     }
 }
 
-impl Identity<Mean> for MeanPartial<i32> {
-    fn identity() -> MeanPartial<i32> {
-        MeanPartial::<i32>{sum: 0, n: 0}
+impl<In, Out> Identity<Mean::<In, Out>> for MeanPartial<In>
+where
+    In: Num + ToPrimitive + Copy,
+    Out: Num + NumCast + Copy,
+{
+    fn identity() -> MeanPartial<In> {
+        MeanPartial::<In>{sum: Zero::zero(), n: 0}
     }
 }
 
-impl AbstractMagma<Mean> for MeanPartial<i32> {
+impl<In, Out> AbstractMagma<Mean::<In, Out>> for MeanPartial<In>
+where
+    In: Num + ToPrimitive + Copy,
+    Out: Num + NumCast + Copy,
+{
     fn operate(&self, other: &Self) -> Self {
-        MeanPartial::<i32>{sum: self.sum + other.sum,
-                           n: self.n + other.n}
+        MeanPartial::<In>{sum: self.sum + other.sum,
+                          n: self.n + other.n}
     }
 }
 
-impl AbstractSemigroup<Mean> for MeanPartial<i32> {}
-impl AbstractMonoid<Mean> for MeanPartial<i32> {}
+impl<In, Out> AbstractSemigroup<Mean::<In, Out>> for MeanPartial<In>
+where
+    In: Num + ToPrimitive + Copy,
+    Out: Num + NumCast + Copy,
+{}
+
+impl<In, Out> AbstractMonoid<Mean::<In, Out>> for MeanPartial<In>
+where
+    In: Num + ToPrimitive + Copy,
+    Out: Num + NumCast + Copy,
+{}
+
