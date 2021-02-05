@@ -1,5 +1,6 @@
-use alga::general::Operator;
 use std::ops::Range;
+use alga::general::Operator;
+use crate::ops::AggregateOperator;
 
 /// An abstract data type which maintains a time-ordered sliding window.
 pub trait TimeWindow<Time, Value, BinOp>: Clone
@@ -18,20 +19,20 @@ where
 }
 
 /// An abstract data type which maintains a fifo-ordered sliding window.
-pub trait FifoWindow<Value, BinOp>: Clone
+pub trait FifoWindow<BinOp>: Clone
 where
-    BinOp: Operator,
+    BinOp: AggregateOperator,
 {
     /// Returns an empty window.
     fn new() -> Self;
     /// Return the experimental name for the algorithm.
     fn name() -> &'static str;
     /// Inserts a value at the back of the window.
-    fn push(&mut self, v: Value);
+    fn push(&mut self, v: BinOp::In);
     /// Removes a value at the front of the window (if any).
-    fn pop(&mut self) -> Option<Value>;
+    fn pop(&mut self) -> Option<BinOp::Out>;
     /// Combines the values in fifo order and returns the result, e.g., `1+v1+v2+...+vn`.
-    fn query(&self) -> Value;
+    fn query(&self) -> BinOp::Out;
     /// Returns the number of elements inside the window.
     fn len(&self) -> usize;
     /// Returns true if the window contains no elements.

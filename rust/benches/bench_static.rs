@@ -1,15 +1,17 @@
+use std::sync::atomic::Ordering;
+use std::sync::atomic::fence;
+use std::time::Instant;
+
+use clap::Clap;
+
 use swag::reactive::Reactive;
 use swag::recalc::ReCalc;
 use swag::soe::SoE;
 use swag::two_stacks::TwoStacks;
 use swag::FifoWindow;
+use swag::ops::AggregateOperator;
 use swag::ops::Sum;
 use swag::ops::Max;
-use clap::Clap;
-use alga::general::Operator;
-use std::sync::atomic::Ordering;
-use std::sync::atomic::fence;
-use std::time::Instant;
 
 #[derive(Clap)]
 struct Opts {
@@ -31,8 +33,8 @@ struct Opts {
 
 fn static_core<BinOp, Window>(opts: &Opts)
 where
-    Window: FifoWindow<i32, BinOp>,
-    BinOp: Operator
+    Window: FifoWindow<BinOp>,
+    BinOp: AggregateOperator<In=i32, Out=i32>
 {
     let mut window = Window::new();
     let mut force_side_effect = 0;
@@ -60,14 +62,14 @@ where
 
 macro_rules! query_run {
     {
-        $opts:ident => [$( [$swag:ident, $($function:ident),+] ),*]
+        $opts:ident, $num:ty => [$( [$swag:ident, $($function:ident),+] ),*]
     } => {
             {
                 $(
                     $(
-                        if $opts.swag == $swag::<i32, $function>::name() {
-                            if $opts.function == $function::name() {
-                                static_core::<$function, $swag<i32, $function>>(&$opts);
+                        if $opts.swag == $swag::<$function::<$num, $num>>::name() {
+                            if $opts.function == $function::<$num, $num>::name() {
+                                static_core::<$function::<$num, $num>, $swag::<$function::<$num, $num>>>(&$opts);
                                 std::process::exit(0);
                             }
                         }
@@ -86,7 +88,7 @@ fn main() {
                                                       opts.iterations, 
                                                       opts.latency);
     query_run! {
-        opts =>
+        opts, i32 =>
             [[ReCalc, Sum, Max],
              [TwoStacks, Sum, Max],
              [Reactive, Sum, Max],

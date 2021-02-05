@@ -14,7 +14,7 @@ macro_rules! test_matrix {
                 $(
                     #[test]
                     fn $module() {
-                        super::$name::<swag::$module::$algorithm<_,_>>();
+                        super::$name::<swag::$module::$algorithm<_,>>();
                     }
                 )*
             }
@@ -25,7 +25,7 @@ macro_rules! test_matrix {
 /// Basic test for integer sums.
 fn test1<Window>()
 where
-    Window: FifoWindow<i32, Sum>,
+    Window: FifoWindow<Sum<i32, i32>>,
 {
     let mut window = Window::new();
 
@@ -58,7 +58,7 @@ fn synthesize(size: usize) -> Vec<i32> {
 /// Tries to aggregate the sum of 1K randomly generated integers.
 fn test2<Window>()
 where
-    Window: FifoWindow<i32, Sum>,
+    Window: FifoWindow<Sum<i32, i32>>,
 {
     let values = synthesize(1_000);
     let sum = values.iter().fold(0, |acc, x| acc + x);
@@ -76,7 +76,7 @@ where
 /// Tries to find the maximum value out 1K randomly generated integers.
 fn test3<Window>()
 where
-    Window: FifoWindow<i32, Max>,
+    Window: FifoWindow<Max<i32, i32>>,
 {
     let mut window = Window::new();
     let values = synthesize(1_000);
@@ -94,7 +94,7 @@ where
 /// Fills a window with 1K elements and pushes/pops/queries 1K times.
 fn test4<Window>()
 where
-    Window: FifoWindow<i32, Sum>,
+    Window: FifoWindow<Sum<i32, i32>>,
 {
     let mut window = Window::new();
     let values = synthesize(1_000);
@@ -112,7 +112,7 @@ where
 /// Pops more elements from a window than what it contains.
 fn test5<Window>()
 where
-    Window: FifoWindow<i32, Sum>,
+    Window: FifoWindow<Sum<i32, i32>>,
 {
     let mut window = Window::new();
     window.push(0);
@@ -125,7 +125,7 @@ where
 /// Pops more elements from a window than what it contains.
 fn test6<Window>()
 where
-    Window: FifoWindow<i32, Sum>,
+    Window: FifoWindow<Sum<i32, i32>>,
 {
     let mut window = Window::new();
     window.push(1);
@@ -139,7 +139,7 @@ where
 /// Push => Query
 fn test7<Window>()
 where
-    Window: FifoWindow<i32, Sum>,
+    Window: FifoWindow<Sum<i32, i32>>,
 {
     let mut window = Window::new();
     window.push(1);
@@ -149,7 +149,7 @@ where
 /// Push => Push => Push => Pop => Pop => Query
 fn test8<Window>()
 where
-    Window: FifoWindow<i32, Sum>,
+    Window: FifoWindow<Sum<i32, i32>>,
 {
     let mut window = Window::new();
     window.push(1);
@@ -163,7 +163,7 @@ where
 /// Push => Pop => Push => Query
 fn test9<Window>()
 where
-    Window: FifoWindow<i32, Sum>,
+    Window: FifoWindow<Sum<i32, i32>>,
 {
     let mut window = Window::new();
     window.push(1);
@@ -174,7 +174,7 @@ where
 
 fn test_max<Window>()
 where
-    Window: FifoWindow<i32, Max>
+    Window: FifoWindow<Max<i32, i32>>
 {
     let mut window = Window::new();
     let top = 1000;
@@ -191,7 +191,7 @@ where
 
 fn test_sum<Window>()
 where
-    Window: FifoWindow<i32, Sum>
+    Window: FifoWindow<Sum<i32, i32>>
 {
     let mut window = Window::new();
     let top = 1000;
@@ -225,19 +225,10 @@ test_matrix! {
 
 #[test]
 fn assert_names() {
-    let recalc = recalc::ReCalc::<i32, Sum>::new();
-    assert_eq!(recalc.to_string(), "recalc");
-
-    let soe = soe::SoE::<i32, Sum>::new();
-    assert_eq!(soe.to_string(), "soe");
-
-    let reactive = reactive::Reactive::<i32, Sum>::new();
-    assert_eq!(reactive.to_string(), "reactive");
-
-    let two_stacks = two_stacks::TwoStacks::<i32, Sum>::new();
-    assert_eq!(two_stacks.to_string(), "two_stacks");
-
-    let flatfit = flatfit::FlatFIT::<i32, Sum>::new();
-    assert_eq!(flatfit.to_string(), "flatfit");
+    assert_eq!(recalc::ReCalc::<Sum::<i32, i32>>::name(), "recalc");
+    assert_eq!(flatfit::FlatFIT::<Sum::<i32, i32>>::name(), "flatfit");
+    assert_eq!(reactive::Reactive::<Sum::<i32, i32>>::name(), "reactive");
+    assert_eq!(two_stacks::TwoStacks::<Sum::<i32, i32>>::name(), "two_stacks");
+    assert_eq!(soe::SoE::<Sum::<i32, i32>>::name(), "soe");
 }
 

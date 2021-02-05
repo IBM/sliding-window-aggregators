@@ -4,5 +4,5 @@ use swag::ops::*;
 
 /// Should compile since Sum is invertible
 fn main() {
-    SoE::<i32, Sum>::new();
+    SoE::<Sum::<i32, i32>>::new();
 }

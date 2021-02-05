@@ -1,60 +1,50 @@
-use crate::FifoWindow;
-use alga::general::AbstractGroup;
-use alga::general::Operator;
 use std::collections::VecDeque;
-use std::marker::PhantomData;
-use std::fmt;
+
+use alga::general::AbstractMagma;
+use alga::general::Identity;
+use alga::general::TwoSidedInverse;
+
+use crate::FifoWindow;
+use crate::ops::AggregateOperator;
+use crate::ops::AggregateGroup;
 
 #[derive(Clone)]
-pub struct SoE<Value, BinOp>
+pub struct SoE<BinOp>
 where
-    Value: AbstractGroup<BinOp> + Clone,
-    BinOp: Operator,
+    BinOp: AggregateGroup<BinOp> + AggregateOperator + Clone
 {
-    stack: VecDeque<Value>,
-    agg: Value,
-    op: PhantomData<BinOp>,
+    stack: VecDeque<BinOp::Partial>,
+    agg: BinOp::Partial,
 }
 
-impl<Value, BinOp> fmt::Display for SoE<Value, BinOp> 
+impl<BinOp> FifoWindow<BinOp> for SoE<BinOp>
 where
-    Value: AbstractGroup<BinOp> + Clone,
-    BinOp: Operator,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", SoE::<Value, BinOp>::name())
-    }
-}
-
-impl<Value, BinOp> FifoWindow<Value, BinOp> for SoE<Value, BinOp>
-where
-    Value: AbstractGroup<BinOp> + Clone,
-    BinOp: Operator,
+    BinOp: AggregateGroup<BinOp> + AggregateOperator + Clone
 {
     fn new() -> Self {
         Self {
             stack: VecDeque::new(),
-            agg: Value::identity(),
-            op: PhantomData,
+            agg: BinOp::Partial::identity(),
         }
     }
     fn name() -> &'static str {
         "soe"
     }
-    fn push(&mut self, v: Value) {
-        self.agg = self.agg.operate(&v);
-        self.stack.push_back(v);
+    fn push(&mut self, val: BinOp::In) {
+        let lifted = BinOp::lift(val);
+        self.agg = self.agg.operate(&lifted);
+        self.stack.push_back(lifted);
     }
-    fn pop(&mut self) -> Option<Value> {
+    fn pop(&mut self) -> Option<BinOp::Out> {
         if let Some(top) = self.stack.pop_front() {
             self.agg = self.agg.operate(&top.two_sided_inverse());
-            Some(top)
+            Some(BinOp::lower(&top))
         } else {
             None
         }
     }
-    fn query(&self) -> Value {
-        self.agg.clone()
+    fn query(&self) -> BinOp::Out {
+        BinOp::lower(&self.agg.clone())
     }
     fn len(&self) -> usize {
         self.stack.len()

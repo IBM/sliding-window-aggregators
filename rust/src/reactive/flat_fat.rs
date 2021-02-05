@@ -1,47 +1,48 @@
-use alga::general::AbstractMonoid;
-use alga::general::Operator;
-use fxhash::FxHashSet as HashSet;
-use std::marker::PhantomData;
+use alga::general::AbstractMagma;
+use alga::general::Identity;
 
-pub(crate) trait FAT<Value, BinOp>: Clone
+use fxhash::FxHashSet as HashSet;
+
+use crate::ops::AggregateOperator;
+use crate::ops::AggregateMonoid;
+
+pub(crate) trait FAT<BinOp>: Clone
 where
-    Value: AbstractMonoid<BinOp> + Clone,
-    BinOp: Operator,
+    BinOp: AggregateMonoid<BinOp> + AggregateOperator + Clone
 {
     /// Creates a new FAT from a batch of values
-    fn new(batch: &[Value]) -> Self;
+    fn new(batch: &[BinOp::Partial]) -> Self;
 
     /// Creates a new FAT with uninitialized values
     fn with_capacity(capacity: usize) -> Self;
 
     /// Returns the value of the leaf at `idx`
-    fn get(&self, idx: usize) -> Option<&Value>;
+    fn get(&self, idx: usize) -> Option<&BinOp::Partial>;
 
     /// Updates a non-contiguous batch of leaves
     fn update<I>(&mut self, batch: I)
     where
-        I: IntoIterator<Item = (usize, Value)>;
+        I: IntoIterator<Item = (usize, BinOp::Partial)>;
 
     /// Updates a contiguous batch of leaves
     fn update_ordered<I>(&mut self, values: I)
     where
-        I: IntoIterator<Item = Value>;
+        I: IntoIterator<Item = BinOp::Partial>;
 
     /// Aggregates all nodes in the FAT and returns the result
-    fn aggregate(&self) -> Value;
+    fn aggregate(&self) -> BinOp::Partial;
 
     /// Aggregates a prefix of nodes in the FAT and returns the result
-    fn prefix(&self, i: usize) -> Value;
+    fn prefix(&self, i: usize) -> BinOp::Partial;
 
     /// Aggregates a suffix of nodes in the FAT and returns the result
-    fn suffix(&self, i: usize) -> Value;
+    fn suffix(&self, i: usize) -> BinOp::Partial;
 }
 
 #[derive(Clone)]
-pub(crate) struct FlatFAT<Value, BinOp>
+pub(crate) struct FlatFAT<BinOp>
 where
-    Value: AbstractMonoid<BinOp> + Clone,
-    BinOp: Operator,
+    BinOp: AggregateMonoid<BinOp> + AggregateOperator + Clone
 {
     /// A flat binary tree, indexed as:
     ///       0
@@ -50,20 +51,18 @@ where
     ///    1     2
     ///   / \   / \
     ///  3   4 5   6
-    pub(crate) tree: Vec<Value>,
+    pub(crate) tree: Vec<BinOp::Partial>,
     /// Number of leaves which can be stored in the tree
     pub(crate) capacity: usize,
-    binop: PhantomData<BinOp>,
 }
 
-impl<Value, BinOp> FlatFAT<Value, BinOp>
+impl<BinOp> FlatFAT<BinOp>
 where
-    Value: AbstractMonoid<BinOp> + Clone,
-    BinOp: Operator,
+    BinOp: AggregateMonoid<BinOp> + AggregateOperator + Clone
 {
     /// Returns all leaf nodes of the tree
     #[inline(always)]
-    pub(crate) fn leaves(&self) -> &[Value] {
+    pub(crate) fn leaves(&self) -> &[BinOp::Partial] {
         &self.tree[self.leaf(0)..]
     }
     /// Returns the index of the root node
@@ -93,12 +92,11 @@ where
     }
 }
 
-impl<Value, BinOp> FAT<Value, BinOp> for FlatFAT<Value, BinOp>
+impl<BinOp> FAT<BinOp> for FlatFAT<BinOp>
 where
-    Value: AbstractMonoid<BinOp> + Clone,
-    BinOp: Operator,
+    BinOp: AggregateMonoid<BinOp> + AggregateOperator + Clone
 {
-    fn new(values: &[Value]) -> Self {
+    fn new(values: &[BinOp::Partial]) -> Self {
         let capacity = values.len();
         let mut new = Self::with_capacity(capacity);
         new.update_ordered(values.iter().cloned());
@@ -108,19 +106,18 @@ where
     fn with_capacity(capacity: usize) -> Self {
         assert!(capacity > 1, "Capacity of window must be greater than 1");
         Self {
-            tree: vec![Value::identity(); 2 * capacity - 1],
-            binop: PhantomData,
+            tree: vec![BinOp::Partial::identity(); 2 * capacity - 1],
             capacity,
         }
     }
 
-    fn get(&self, idx: usize) -> Option<&Value> {
+    fn get(&self, idx: usize) -> Option<&BinOp::Partial> {
         self.tree.get(self.leaf(idx))
     }
 
     fn update<I>(&mut self, batch: I)
     where
-        I: IntoIterator<Item = (usize, Value)>,
+        I: IntoIterator<Item = (usize, BinOp::Partial)>,
     {
         let mut parents: HashSet<usize> = batch
             .into_iter()
@@ -150,7 +147,7 @@ where
 
     fn update_ordered<I>(&mut self, values: I)
     where
-        I: IntoIterator<Item = Value>,
+        I: IntoIterator<Item = BinOp::Partial>,
     {
         values.into_iter().enumerate().for_each(|(idx, val)| {
             let leaf = self.leaf(idx);
@@ -163,11 +160,11 @@ where
         });
     }
 
-    fn aggregate(&self) -> Value {
+    fn aggregate(&self) -> BinOp::Partial {
         self.tree[self.root()].clone()
     }
 
-    fn prefix(&self, idx: usize) -> Value {
+    fn prefix(&self, idx: usize) -> BinOp::Partial {
         let mut node = self.leaf(idx);
         let mut agg = self.tree[node].clone();
         while node != self.root() {
@@ -181,7 +178,7 @@ where
         agg
     }
 
-    fn suffix(&self, i: usize) -> Value {
+    fn suffix(&self, i: usize) -> BinOp::Partial {
         let mut node = self.leaf(i);
         let mut agg = self.tree[node].clone();
         while node != self.root() {
