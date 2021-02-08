@@ -12,6 +12,7 @@ use swag::FifoWindow;
 use swag::ops::AggregateOperator;
 use swag::ops::Sum;
 use swag::ops::Max;
+use swag::ops::Mean;
 
 #[derive(Clap)]
 struct Opts {
@@ -89,13 +90,13 @@ fn main() {
                                                       opts.latency);
     query_run! {
         opts, i32 =>
-            [[ReCalc, Sum, Max],
-             [TwoStacks, Sum, Max],
-             [Reactive, Sum, Max],
-             [SoE, Sum]]
+            [[ReCalc,    Max, Mean, Sum],
+             [TwoStacks, Max, Mean, Sum],
+             [Reactive,  Max, Mean, Sum],
+             [SoE,            Mean, Sum]]
     }
 
     // Should not reach here
-    eprintln!("error: unrecognized swag ({}) or function ({})", opts.swag, opts.function);
+    eprintln!("error: unrecognized combination of swag ({}) and function ({})", opts.swag, opts.function);
     std::process::exit(1);
 }
