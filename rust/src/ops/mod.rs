@@ -2,7 +2,7 @@ use std::cmp::{Ord, PartialEq};
 use std::ops::{Add, Neg};
 use std::marker::PhantomData;
 
-use num_traits::{Num, Zero};
+use num_traits::{Num, One, Zero};
 use num_traits::cast::{ToPrimitive, NumCast};
 
 use alga::general::AbstractGroup;
@@ -347,8 +347,8 @@ where
 #[derive(Copy, Clone)]
 pub struct Mean<In, Out>
 where
-    In: Num + ToPrimitive + Copy,
-    Out: Num + NumCast + Copy,
+    In: Num + Neg<Output=In> + ToPrimitive + Copy,
+    Out: Num + Neg<Output=Out> + NumCast + Copy,
 {
     in_type: PhantomData<In>,
     out_type: PhantomData<Out>,
@@ -357,28 +357,49 @@ where
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub struct MeanPartial<T> {
     sum: T,
-    n: usize,
+    n: T,
 }
 
 impl<In, Out> AggregateMonoid<Mean<In, Out>> for Mean<In, Out>
 where
-    In: Num + ToPrimitive + Copy,
-    Out: Num + NumCast + Copy,
+    In: Num + Neg<Output=In> + ToPrimitive + Copy,
+    Out: Num + Neg<Output=Out> + NumCast + Copy,
 {
-    type Partial = MeanPartial<In>;
+    type Partial = MeanPartial<Out>;
 
-    fn lift(val: In) -> MeanPartial<In> {
-        MeanPartial::<In>{sum: val, n: 1}
+    fn lift(val: In) -> MeanPartial<Out> {
+        MeanPartial::<Out> {
+            sum: NumCast::from(val).unwrap(), 
+            n: One::one()
+        }
     }
     fn lower(part: &Self::Partial) -> Out {
-        NumCast::from(part.sum.to_usize().unwrap() / part.n).unwrap()
+        part.sum / part.n
+    }
+}
+
+impl<In, Out> AggregateGroup<Mean<In, Out>> for Mean<In, Out>
+where
+    In: Num + Neg<Output=In> + ToPrimitive + Copy,
+    Out: Num + Neg<Output=Out> + NumCast + Copy,
+{
+    type Partial = MeanPartial<Out>;
+
+    fn lift(val: In) -> MeanPartial<Out> {
+        MeanPartial::<Out> {
+            sum: NumCast::from(val).unwrap(), 
+            n: One::one()
+        }
+    }
+    fn lower(part: &Self::Partial) -> Out {
+        part.sum / part.n
     }
 }
 
 impl<In_, Out_> AggregateOperator for Mean<In_, Out_>
 where
-    In_: Num + ToPrimitive + Copy,
-    Out_: Num + NumCast + Copy,
+    In_: Num + Neg<Output=In_> + ToPrimitive + Copy,
+    Out_: Num + Neg<Output=Out_> + NumCast + Copy,
 {
     type In = In_;
     type Out = Out_;
@@ -386,8 +407,8 @@ where
 
 impl<In, Out> Mean<In, Out> 
 where
-    In: Num + ToPrimitive + Copy,
-    Out: Num + NumCast + Copy,
+    In: Num + Neg<Output=In> + ToPrimitive + Copy,
+    Out: Num + Neg<Output=Out> + NumCast + Copy,
 {
     pub fn name() -> &'static str {
         "mean"
@@ -396,8 +417,8 @@ where
 
 impl<In, Out> Operator for Mean<In, Out> 
 where
-    In: Num + ToPrimitive + Copy,
-    Out: Num + NumCast + Copy,
+    In: Num + Neg<Output=In> + ToPrimitive + Copy,
+    Out: Num + Neg<Output=Out> + NumCast + Copy,
 {
     fn operator_token() -> Self {
         Self {
@@ -407,41 +428,72 @@ where
     }
 }
 
-impl<In, Out> Identity<Mean<In, Out>> for MeanPartial<In>
+impl<In, Out> Identity<Mean<In, Out>> for MeanPartial<Out>
 where
-    In: Num + ToPrimitive + Copy,
-    Out: Num + NumCast + Copy,
+    In: Num + Neg<Output=In> + ToPrimitive + Copy,
+    Out: Num + Neg<Output=Out> + NumCast + Copy,
 {
     fn identity() -> Self {
         Self {
             sum: Zero::zero(), 
-            n: 0
+            n: Zero::zero() 
         }
     }
 }
 
-impl<In, Out> AbstractMagma<Mean<In, Out>> for MeanPartial<In>
+impl<In, Out> AbstractMagma<Mean<In, Out>> for MeanPartial<Out>
 where
-    In: Num + ToPrimitive + Copy,
-    Out: Num + NumCast + Copy,
+    In: Num + Neg<Output=In> + ToPrimitive + Copy,
+    Out: Num + Neg<Output=Out> + NumCast + Copy,
 {
     fn operate(&self, other: &Self) -> Self {
-        MeanPartial::<In> {
+        Self {
             sum: self.sum + other.sum,
             n: self.n + other.n
         }
     }
 }
 
-impl<In, Out> AbstractSemigroup<Mean<In, Out>> for MeanPartial<In>
+impl<In, Out> TwoSidedInverse<Mean<In, Out>> for MeanPartial<Out>
 where
-    In: Num + ToPrimitive + Copy,
-    Out: Num + NumCast + Copy,
+    In: Num + Neg<Output=In> + ToPrimitive + Copy,
+    Out: Num + Neg<Output=Out> + NumCast + Copy,
+{
+    fn two_sided_inverse(&self) -> Self {
+        Self {
+            sum: -self.sum,
+            n: -self.n
+        }
+    }
+}
+
+impl<In, Out> AbstractSemigroup<Mean<In, Out>> for MeanPartial<Out>
+where
+    In: Num + Neg<Output=In> + ToPrimitive + Copy,
+    Out: Num + Neg<Output=Out> + NumCast + Copy,
 {}
 
-impl<In, Out> AbstractMonoid<Mean<In, Out>> for MeanPartial<In>
+impl<In, Out> AbstractMonoid<Mean<In, Out>> for MeanPartial<Out>
 where
-    In: Num + ToPrimitive + Copy,
-    Out: Num + NumCast + Copy,
+    In: Num + Neg<Output=In> + ToPrimitive + Copy,
+    Out: Num + Neg<Output=Out> + NumCast + Copy,
+{}
+
+impl<In, Out> AbstractQuasigroup<Mean<In, Out>> for MeanPartial<Out>
+where
+    In: Num + Neg<Output=In> + ToPrimitive + Copy,
+    Out: Num + Neg<Output=Out> + NumCast + Copy,
+{}
+
+impl<In, Out> AbstractLoop<Mean<In, Out>> for MeanPartial<Out>
+where
+    In: Num + Neg<Output=In> + ToPrimitive + Copy,
+    Out: Num + Neg<Output=Out> + NumCast + Copy,
+{}
+
+impl<In, Out> AbstractGroup<Mean<In, Out>> for MeanPartial<Out>
+where
+    In: Num + Neg<Output=In> + ToPrimitive + Copy,
+    Out: Num + Neg<Output=Out> + NumCast + Copy,
 {}
 

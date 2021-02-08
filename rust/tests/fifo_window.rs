@@ -209,18 +209,44 @@ where
     }
 }
 
+fn test_mean<Window>()
+where
+    Window: FifoWindow<Mean<i32, i32>>
+{
+    let mut window = Window::new();
+    let top = 1000;
+    let mut sum = 0;
+    let mut count = 0;
+    for i in 0..=top {
+        window.push(i);
+        sum += i;
+        count += 1;
+        assert_eq!(window.query(), sum / count);
+    }
+
+    for i in 0..=top {
+        window.pop();
+        sum -= i;
+        count -= 1;
+        if count != 0 {
+            assert_eq!(window.query(), sum / count);
+        }
+    }
+}
+
 test_matrix! {
-    test1 =>    [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test2 =>    [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test3 =>    [ recalc::ReCalc,           reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test4 =>    [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test5 =>    [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test6 =>    [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test7 =>    [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test8 =>    [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test9 =>    [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test_max => [ recalc::ReCalc,           reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test_sum => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ]
+    test1 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test2 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test3 =>     [ recalc::ReCalc,           reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test4 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test5 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test6 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test7 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test8 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test9 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test_max =>  [ recalc::ReCalc,           reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test_sum =>  [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
+    test_mean => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ]
 }
 
 #[test]
