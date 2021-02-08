@@ -1,6 +1,14 @@
 use rand::Rng;
-use swag::*;
-use swag::ops::*;
+
+use swag::recalc;
+use swag::soe;
+use swag::reactive;
+use swag::two_stacks;
+use swag::flatfit;
+use swag::FifoWindow;
+use swag::ops::max::Max;
+use swag::ops::mean::Mean;
+use swag::ops::sum::Sum;
 
 /// Macro for generating test cases for different algorithms.
 macro_rules! test_matrix {
@@ -28,23 +36,14 @@ where
     Window: FifoWindow<Sum<i32, i32>>,
 {
     let mut window = Window::new();
-
     assert_eq!(window.query(), 0);
-
     window.push(1);
-
     assert_eq!(window.query(), 1);
-
     window.push(2);
-
     assert_eq!(window.query(), 3);
-
     window.push(3);
-
     assert_eq!(window.query(), 6);
-
     window.pop();
-
     assert_eq!(window.query(), 5);
 }
 

@@ -1,6 +1,6 @@
 use swag::FifoWindow;
 use swag::soe::*;
-use swag::ops::*;
+use swag::ops::sum::Sum;
 
 /// Should compile since Sum is invertible
 fn main() {

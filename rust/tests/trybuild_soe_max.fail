@@ -1,5 +1,5 @@
 use swag::soe::*;
-use swag::ops::*;
+use swag::ops::max::Max;
 
 /// Should not compile since Max is not invertible
 fn main() {

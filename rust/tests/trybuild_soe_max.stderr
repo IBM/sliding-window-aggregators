@@ -1,14 +1,14 @@
-error[E0599]: no function or associated item named `new` found for struct `swag::soe::SoE<swag::ops::Max<i32, i32>>` in the current scope
+error[E0599]: no function or associated item named `new` found for struct `swag::soe::SoE<Max<i32, i32>>` in the current scope
  --> $DIR/trybuild_soe_max.fail:6:27
   |
 6 |     SoE::<Max<i32, i32>>::new();
-  |                           ^^^ function or associated item not found in `swag::soe::SoE<swag::ops::Max<i32, i32>>`
+  |                           ^^^ function or associated item not found in `swag::soe::SoE<Max<i32, i32>>`
 
-error[E0277]: the trait bound `swag::ops::Max<i32, i32>: AggregateGroup<swag::ops::Max<i32, i32>>` is not satisfied
+error[E0277]: the trait bound `Max<i32, i32>: AggregateGroup<Max<i32, i32>>` is not satisfied
   --> $DIR/trybuild_soe_max.fail:6:5
    |
 6  |     SoE::<Max<i32, i32>>::new();
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `AggregateGroup<swag::ops::Max<i32, i32>>` is not implemented for `swag::ops::Max<i32, i32>`
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `AggregateGroup<Max<i32, i32>>` is not implemented for `Max<i32, i32>`
    |
   ::: $WORKSPACE/src/soe/mod.rs
    |

@@ -4,15 +4,15 @@ use std::time::Instant;
 
 use clap::Clap;
 
+use swag::FifoWindow;
 use swag::reactive::Reactive;
 use swag::recalc::ReCalc;
 use swag::soe::SoE;
 use swag::two_stacks::TwoStacks;
-use swag::FifoWindow;
 use swag::ops::AggregateOperator;
-use swag::ops::Sum;
-use swag::ops::Max;
-use swag::ops::Mean;
+use swag::ops::max::Max;
+use swag::ops::mean::Mean;
+use swag::ops::sum::Sum;
 
 #[derive(Clap)]
 struct Opts {
