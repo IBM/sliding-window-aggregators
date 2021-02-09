@@ -2,6 +2,7 @@ use std::cmp::{Ord, PartialEq};
 use std::marker::PhantomData;
 
 use num_traits::cast::{ToPrimitive, NumCast};
+use num_traits::bounds::Bounded;
 
 use alga::general::AbstractMagma;
 use alga::general::AbstractMonoid;
@@ -11,20 +12,6 @@ use alga::general::Operator;
 
 use super::AggregateOperator;
 use super::AggregateMonoid;
-
-// We need a generic way to talk about a type's minimum 
-// value. Unfortunately, we'll need a new implementation 
-// for every type we want to support. I don't know of a 
-// way around this yet.
-pub trait Min {
-    fn min() -> Self;
-}
-
-impl Min for i32 {
-    fn min() -> i32 {
-        i32::MIN
-    }
-}
 
 /// Binary operator for maximum.
 /// Has the following properties:
@@ -45,11 +32,11 @@ pub struct MaxPartial<T> {
 
 // Replace the below with proper trait aliases when that feature 
 // stabilizes.
-pub trait MaxIn: Ord + Min + ToPrimitive + Copy {}
-impl<T> MaxIn for T where T: Ord + Min + ToPrimitive + Copy {}
+pub trait MaxIn: Ord + Bounded + ToPrimitive + Copy {}
+impl<T> MaxIn for T where T: Ord + Bounded + ToPrimitive + Copy {}
 
-pub trait MaxOut: Ord + Min + NumCast + Copy {}
-impl<T> MaxOut for T where T: Ord + Min + NumCast + Copy {}
+pub trait MaxOut: Ord + Bounded + NumCast + Copy {}
+impl<T> MaxOut for T where T: Ord + Bounded + NumCast + Copy {}
 
 impl<In: MaxIn, Out: MaxOut> AggregateMonoid<Max<In, Out>> for Max<In, Out> {
     type Partial = MaxPartial<Out>;
@@ -87,7 +74,7 @@ impl<In: MaxIn, Out: MaxOut> Operator for Max<In, Out> {
 impl<In: MaxIn, Out: MaxOut> Identity<Max<In, Out>> for MaxPartial<Out> {
     fn identity() -> Self {
         Self {
-            val: Min::min()
+            val: Bounded::min_value()
         }
     }
 }

@@ -6,7 +6,7 @@ use crate::ops::AggregateOperator;
 use crate::ops::AggregateMonoid;
 
 #[derive(Clone)]
-struct Item<Value>
+struct Item<Value: Clone>
 where
     Value: Clone,
 {
@@ -55,7 +55,9 @@ where
         self.front.pop().map(|item| BinOp::lower(&item.val))
     }
     fn query(&self) -> BinOp::Out {
-        BinOp::lower(&Self::agg(&self.front).operate(&Self::agg(&self.back)))
+        let f = Self::agg(&self.front);
+        let b = Self::agg(&self.back);
+        BinOp::lower(&f.operate(&b))
     }
     fn len(&self) -> usize {
         self.front.len() + self.back.len()

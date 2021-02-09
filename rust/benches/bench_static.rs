@@ -2,6 +2,9 @@ use std::sync::atomic::Ordering;
 use std::sync::atomic::fence;
 use std::time::Instant;
 
+use num_traits::{NumAssign, Zero};
+use num_traits::cast::NumCast;
+
 use clap::Clap;
 
 use swag::FifoWindow;
@@ -32,16 +35,17 @@ struct Opts {
     latency: bool
 }
 
-fn static_core<BinOp, Window>(opts: &Opts)
+fn static_core<T, BinOp, Window>(opts: &Opts)
 where
+    T: NumAssign + NumCast + std::fmt::Display,
     Window: FifoWindow<BinOp>,
-    BinOp: AggregateOperator<In=i32, Out=i32>
+    BinOp: AggregateOperator<In=T, Out=T>
 {
     let mut window = Window::new();
-    let mut force_side_effect = 0;
+    let mut force_side_effect: T = Zero::zero();
 
     for i in 0..opts.window_size {
-        window.push((1 + (i % 101)) as i32);
+        window.push(NumCast::from(1 + (i % 101)).unwrap());
     }
 
     assert_eq!(window.len(), opts.window_size);
@@ -52,7 +56,7 @@ where
         fence(Ordering::SeqCst);
 
         window.pop();
-        window.push((1 + (i % 101)) as i32);
+        window.push(NumCast::from(1 + (i % 101)).unwrap());
         force_side_effect += window.query();
     }
 
@@ -70,7 +74,7 @@ macro_rules! query_run {
                     $(
                         if $opts.swag == $swag::<$function::<$num, $num>>::name() {
                             if $opts.function == $function::<$num, $num>::name() {
-                                static_core::<$function::<$num, $num>, $swag::<$function::<$num, $num>>>(&$opts);
+                                static_core::<$num, $function::<$num, $num>, $swag::<$function::<$num, $num>>>(&$opts);
                                 std::process::exit(0);
                             }
                         }
@@ -97,6 +101,5 @@ fn main() {
     }
 
     // Should not reach here
-    eprintln!("error: unrecognized combination of swag ({}) and function ({})", opts.swag, opts.function);
-    std::process::exit(1);
+    panic!("error: unrecognized combination of swag ({}) and function ({})", opts.swag, opts.function);
 }
