@@ -57,6 +57,7 @@ pub trait AggregateMonoid<BinOp: AggregateOperator>  {
     fn lift(val: BinOp::In) -> Self::Partial;
     fn lower(part: &Self::Partial) -> BinOp::Out;
 }
+
 /// A group that can be used in an aggregation. The monoid is over a `Partial` 
 /// type, which must also have an identity. The `lift` and `lower` helper 
 /// functions convert the binary operator's `In` and `Out` types to and from 
@@ -70,8 +71,11 @@ pub trait AggregateGroup<BinOp: AggregateOperator> {
     fn lower(part: &Self::Partial) -> BinOp::Out;
 }
 
+/// Max of a window
 pub mod max;
 
+/// Arithmetic mean of a window
 pub mod mean;
 
+/// Sum of a window
 pub mod sum;

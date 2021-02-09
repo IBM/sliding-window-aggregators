@@ -25,30 +25,26 @@ use super::AggregateGroup;
 /// * Associativity
 /// * Commutativity
 #[derive(Copy, Clone)]
-pub struct Sum<In, Out> 
-where
-    In: Add + Neg<Output=In> + ToPrimitive + Zero + Copy,
-    Out: Add + Neg<Output=Out> + NumCast + Zero + Copy,
-{
+pub struct Sum<In, Out> {
     in_type: PhantomData<In>,
     out_type: PhantomData<Out>
 }
 
-impl<In, Out> Sum<In, Out>
-where
-    In: Add + PartialEq + Neg<Output=In> + ToPrimitive + Zero + Copy,
-    Out: Add + PartialEq + Neg<Output=Out> + NumCast + Zero + Copy,
-{
+impl<In, Out> Sum<In, Out> {
     pub fn name() -> &'static str {
         "sum"
     }
 }
 
-impl<In_, Out_> AggregateOperator for Sum<In_, Out_>
-where
-    In_: Add + PartialEq + Neg<Output=In_> + ToPrimitive + Zero + Copy,
-    Out_: Add + PartialEq + Neg<Output=Out_> + NumCast + Zero + Copy,
-{
+// Replace the below with proper trait aliases when that feature 
+// stabilizes.
+pub trait SumIn: Add + PartialEq + ToPrimitive + Copy {}
+impl<T> SumIn for T where T: Add + PartialEq + ToPrimitive + Copy {}
+
+pub trait SumOut: Add + PartialEq + NumCast + Zero + Copy {}
+impl<T> SumOut for T where T: Add + PartialEq + NumCast + Zero + Copy {}
+
+impl<In_: SumIn, Out_: SumOut> AggregateOperator for Sum<In_, Out_> {
     type In = In_;
     type Out = Out_;
 }
@@ -60,11 +56,7 @@ pub struct SumPartial<T> {
     val: T
 }
 
-impl<In, Out> AggregateMonoid<Sum<In, Out>> for Sum<In, Out>
-where
-    In: Add + PartialEq + Neg<Output=In> + ToPrimitive + Zero + Copy,
-    Out: Add + PartialEq + Neg<Output=Out> + NumCast + Zero + Copy,
-{
+impl<In: SumIn, Out: SumOut> AggregateMonoid<Sum<In, Out>> for Sum<In, Out> {
     type Partial = SumPartial<Out>;
 
     fn lift(v: In) -> Self::Partial {
@@ -79,8 +71,8 @@ where
 
 impl<In, Out> AggregateGroup<Sum<In, Out>> for Sum<In, Out>
 where
-    In: Add + PartialEq + Neg<Output=In> + ToPrimitive + Zero + Copy,
-    Out: Add + PartialEq + Neg<Output=Out> + NumCast + Zero + Copy,
+    In: SumIn + Neg<Output=In>,
+    Out: SumOut + Neg<Output=Out>,
 {
     type Partial = SumPartial<Out>;
 
@@ -94,11 +86,7 @@ where
     }
 }
 
-impl<In, Out> Operator for Sum<In, Out>
-where
-    In: Add + PartialEq + Neg<Output=In> + ToPrimitive + Zero + Copy,
-    Out: Add + PartialEq + Neg<Output=Out> + NumCast + ToPrimitive + Zero + Copy
-{
+impl<In: SumIn, Out: SumOut> Operator for Sum<In, Out> {
     fn operator_token() -> Self {
         Self {
             in_type: PhantomData,
@@ -107,11 +95,7 @@ where
     }
 }
 
-impl<In, Out> Identity<Sum<In, Out>> for SumPartial<Out>
-where
-    In: Add + PartialEq + Neg<Output=In> + ToPrimitive + Zero + Copy,
-    Out: Add + PartialEq + Neg<Output=Out> + NumCast + ToPrimitive + Zero + Copy
-{
+impl<In: SumIn, Out: SumOut> Identity<Sum<In, Out>> for SumPartial<Out> {
     fn identity() -> Self {
         Self {
             val: Zero::zero()
@@ -119,11 +103,7 @@ where
     }
 }
 
-impl<In, Out> AbstractMagma<Sum<In, Out>> for SumPartial<Out>
-where
-    In: Add + PartialEq + Neg<Output=In> + ToPrimitive + Zero + Copy,
-    Out: Add + PartialEq + Neg<Output=Out> + NumCast + ToPrimitive + Zero + Copy
-{
+impl<In: SumIn, Out: SumOut> AbstractMagma<Sum<In, Out>> for SumPartial<Out> {
     fn operate(&self, other: &Self) -> Self {
         Self {
             val: self.val + other.val
@@ -133,44 +113,20 @@ where
 
 impl<In, Out> TwoSidedInverse<Sum<In, Out>> for SumPartial<Out>
 where
-    In: Add + PartialEq + Neg<Output=In> + ToPrimitive + Zero + Copy,
-    Out: Add + PartialEq + Neg<Output=Out> + NumCast + ToPrimitive + Zero + Copy
+    In: SumIn + Neg<Output=In>,
+    Out: SumOut + Neg<Output=Out>,
 {
     fn two_sided_inverse(&self) -> Self {
         Self {
-            val: -(self.val)
+            val: -self.val
         }
     }
 }
 
-impl<In, Out> AbstractSemigroup<Sum<In, Out>> for SumPartial<Out>
-where
-    In: Add + PartialEq + Neg<Output=In> + ToPrimitive + Zero + Copy,
-    Out: Add + PartialEq + Neg<Output=Out> + NumCast + ToPrimitive + Zero + Copy
-{}
+impl<In: SumIn, Out: SumOut> AbstractSemigroup<Sum<In, Out>> for SumPartial<Out> {}
+impl<In: SumIn, Out: SumOut> AbstractMonoid<Sum<In, Out>> for SumPartial<Out> {}
 
-impl<In, Out> AbstractMonoid<Sum<In, Out>> for SumPartial<Out>
-where
-    In: Add + PartialEq + Neg<Output=In> + ToPrimitive + Zero + Copy,
-    Out: Add + PartialEq + Neg<Output=Out> + NumCast + ToPrimitive + Zero + Copy
-{}
-
-impl<In, Out> AbstractQuasigroup<Sum<In, Out>> for SumPartial<Out>
-where
-    In: Add + PartialEq + Neg<Output=In> + ToPrimitive + Zero + Copy,
-    Out: Add + PartialEq + Neg<Output=Out> + NumCast + ToPrimitive + Zero + Copy
-{}
-
-impl<In, Out> AbstractLoop<Sum<In, Out>> for SumPartial<Out>
-where
-    In: Add + PartialEq + Neg<Output=In> + ToPrimitive + Zero + Copy,
-    Out: Add + PartialEq + Neg<Output=Out> + NumCast + ToPrimitive + Zero + Copy
-{}
-
-impl<In, Out> AbstractGroup<Sum<In, Out>> for SumPartial<Out>
-where
-    In: Add + PartialEq + Neg<Output=In> + ToPrimitive + Zero + Copy,
-    Out: Add + PartialEq + Neg<Output=Out> + NumCast + ToPrimitive + Zero + Copy
-{}
-
+impl<In: SumIn + Neg<Output=In>, Out: SumOut + Neg<Output=Out>> AbstractQuasigroup<Sum<In, Out>> for SumPartial<Out> {}
+impl<In: SumIn + Neg<Output=In>, Out: SumOut + Neg<Output=Out>> AbstractLoop<Sum<In, Out>> for SumPartial<Out> {}
+impl<In: SumIn + Neg<Output=In>, Out: SumOut + Neg<Output=Out>> AbstractGroup<Sum<In, Out>> for SumPartial<Out> {}
 

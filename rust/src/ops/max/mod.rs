@@ -13,7 +13,9 @@ use super::AggregateOperator;
 use super::AggregateMonoid;
 
 // We need a generic way to talk about a type's minimum 
-// value
+// value. Unfortunately, we'll need a new implementation 
+// for every type we want to support. I don't know of a 
+// way around this yet.
 pub trait Min {
     fn min() -> Self;
 }
@@ -29,11 +31,7 @@ impl Min for i32 {
 /// * Associativity
 /// * Commutativity
 #[derive(Copy, Clone)]
-pub struct Max<In, Out>
-where
-    In: Ord + Min + Copy,
-    Out: Ord + Min + Copy,
-{
+pub struct Max<In, Out> {
     in_type: PhantomData<In>,
     out_type: PhantomData<Out>
 }
@@ -45,11 +43,15 @@ pub struct MaxPartial<T> {
     val: T
 }
 
-impl<In, Out> AggregateMonoid<Max<In, Out>> for Max<In, Out>
-where
-    In: Ord + Min + ToPrimitive + Copy,
-    Out: Ord + Min + NumCast + Copy,
-{
+// Replace the below with proper trait aliases when that feature 
+// stabilizes.
+pub trait MaxIn: Ord + Min + ToPrimitive + Copy {}
+impl<T> MaxIn for T where T: Ord + Min + ToPrimitive + Copy {}
+
+pub trait MaxOut: Ord + Min + NumCast + Copy {}
+impl<T> MaxOut for T where T: Ord + Min + NumCast + Copy {}
+
+impl<In: MaxIn, Out: MaxOut> AggregateMonoid<Max<In, Out>> for Max<In, Out> {
     type Partial = MaxPartial<Out>;
 
     fn lift(v: In) -> Self::Partial {
@@ -62,26 +64,18 @@ where
     }
 }
 
-impl<In_, Out_> AggregateOperator for Max<In_, Out_>
-where
-    In_: Ord + Min + ToPrimitive + Copy,
-    Out_: Ord + Min + NumCast + Copy,
-{
+impl<In_: MaxIn, Out_: MaxOut> AggregateOperator for Max<In_, Out_> {
     type In = In_;
     type Out = Out_;
 }
 
-impl<T: Ord + Min + NumCast + ToPrimitive + Copy> Max<T, T> {
+impl<In: MaxIn, Out: MaxOut> Max<In, Out> {
     pub fn name() -> &'static str {
         "max"
     }
 }
 
-impl<In, Out> Operator for Max<In, Out> 
-where
-    In: Ord + Min + ToPrimitive + Copy,
-    Out: Ord + Min + NumCast + Copy,
-{
+impl<In: MaxIn, Out: MaxOut> Operator for Max<In, Out> {
     fn operator_token() -> Self {
         Self {
             in_type: PhantomData,
@@ -90,11 +84,7 @@ where
     }
 }
 
-impl<In, Out> Identity<Max<In, Out>> for MaxPartial<Out>
-where
-    In: Ord + Min + ToPrimitive + Copy,
-    Out: Ord + Min + NumCast + Copy,
-{
+impl<In: MaxIn, Out: MaxOut> Identity<Max<In, Out>> for MaxPartial<Out> {
     fn identity() -> Self {
         Self {
             val: Min::min()
@@ -102,11 +92,7 @@ where
     }
 }
 
-impl<In, Out> AbstractMagma<Max<In, Out>> for MaxPartial<Out>
-where
-    In: Ord + Min + ToPrimitive + Copy,
-    Out: Ord + Min + NumCast + Copy,
-{
+impl<In: MaxIn, Out: MaxOut> AbstractMagma<Max<In, Out>> for MaxPartial<Out> {
     fn operate(&self, other: &Self) -> Self {
         if self.val > other.val {
             Self {
@@ -120,16 +106,6 @@ where
     }
 }
 
-impl<In, Out> AbstractSemigroup<Max<In, Out>> for MaxPartial<Out>
-where
-    In: Ord + Min + ToPrimitive + Copy,
-    Out: Ord + Min + NumCast + Copy,
-{}
-
-impl<In, Out> AbstractMonoid<Max<In, Out>> for MaxPartial<Out>
-where
-    In: Ord + Min + ToPrimitive + Copy,
-    Out: Ord + Min + NumCast + Copy,
-{}
-
+impl<In: MaxIn, Out: MaxOut> AbstractSemigroup<Max<In, Out>> for MaxPartial<Out> {}
+impl<In: MaxIn, Out: MaxOut> AbstractMonoid<Max<In, Out>> for MaxPartial<Out> {}
 
