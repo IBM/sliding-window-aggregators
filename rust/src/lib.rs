@@ -57,6 +57,9 @@ pub mod soe;
 /// Two-Stacks
 pub mod two_stacks;
 
+/// Two-Stacks Lite
+pub mod two_stacks_lite;
+
 /// Reactive-Aggregator
 pub mod reactive;
 
