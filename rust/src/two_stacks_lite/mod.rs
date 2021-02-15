@@ -42,10 +42,10 @@ where
         } else {
             let end = self.queue.len() - 1;
             if self.front_len == 0 {
-                let mut i = end;
-                while i != 0 {
-                   i -= 1;
-                   self.queue[i] = self.queue[i].operate(&self.queue[i+1]);
+                let mut accum = BinOp::Partial::identity();
+                for partial in self.queue.iter_mut().rev() {
+                    accum = partial.operate(&accum);
+                    *partial = accum.clone();
                 }
                 self.front_len = end + 1;
                 self.agg_back = BinOp::Partial::identity();
