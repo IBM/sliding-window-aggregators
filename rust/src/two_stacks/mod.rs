@@ -1,10 +1,12 @@
+use alga::general::AbstractMagma;
+use alga::general::Identity;
+
 use crate::FifoWindow;
-use alga::general::AbstractMonoid;
-use alga::general::Operator;
-use std::marker::PhantomData;
+use crate::ops::AggregateOperator;
+use crate::ops::AggregateMonoid;
 
 #[derive(Clone)]
-struct Item<Value>
+struct Item<Value: Clone>
 where
     Value: Clone,
 {
@@ -13,35 +15,35 @@ where
 }
 
 #[derive(Clone)]
-pub struct TwoStacks<Value, BinOp>
+pub struct TwoStacks<BinOp>
 where
-    Value: AbstractMonoid<BinOp> + Clone,
-    BinOp: Operator,
+    BinOp: AggregateMonoid<BinOp> + AggregateOperator + Clone
 {
-    front: Vec<Item<Value>>,
-    back: Vec<Item<Value>>,
-    op: PhantomData<BinOp>,
+    front: Vec<Item<BinOp::Partial>>,
+    back: Vec<Item<BinOp::Partial>>,
 }
 
-impl<Value, BinOp> FifoWindow<Value, BinOp> for TwoStacks<Value, BinOp>
+impl<BinOp> FifoWindow<BinOp> for TwoStacks<BinOp>
 where
-    Value: AbstractMonoid<BinOp> + Clone,
-    BinOp: Operator,
+    BinOp: AggregateMonoid<BinOp> + AggregateOperator + Clone
 {
     fn new() -> Self {
         Self {
             front: Vec::new(),
             back: Vec::new(),
-            op: PhantomData,
         }
     }
-    fn push(&mut self, v: Value) {
+    fn name() -> &'static str {
+        "two_stacks"
+    }
+    fn push(&mut self, v: BinOp::In) {
+        let lifted = BinOp::lift(v);
         self.back.push(Item {
-            agg: Self::agg(&self.back).operate(&v),
-            val: v,
+            agg: Self::agg(&self.back).operate(&lifted),
+            val: lifted,
         });
     }
-    fn pop(&mut self) -> Option<Value> {
+    fn pop(&mut self) -> Option<BinOp::Out> {
         if self.front.is_empty() {
             while let Some(top) = self.back.pop() {
                 self.front.push(Item {
@@ -50,10 +52,12 @@ where
                 })
             }
         }
-        self.front.pop().map(|item| item.val)
+        self.front.pop().map(|item| BinOp::lower(&item.val))
     }
-    fn query(&self) -> Value {
-        Self::agg(&self.front).operate(&Self::agg(&self.back))
+    fn query(&self) -> BinOp::Out {
+        let f = Self::agg(&self.front);
+        let b = Self::agg(&self.back);
+        BinOp::lower(&f.operate(&b))
     }
     fn len(&self) -> usize {
         self.front.len() + self.back.len()
@@ -63,17 +67,16 @@ where
     }
 }
 
-impl<Value, BinOp> TwoStacks<Value, BinOp>
+impl<BinOp> TwoStacks<BinOp>
 where
-    Value: AbstractMonoid<BinOp> + Clone,
-    BinOp: Operator,
+    BinOp: AggregateMonoid<BinOp> + AggregateOperator + Clone
 {
     #[inline(always)]
-    fn agg(stack: &[Item<Value>]) -> Value {
+    fn agg(stack: &[Item<BinOp::Partial>]) -> BinOp::Partial {
         if let Some(top) = stack.last() {
             top.agg.clone()
         } else {
-            Value::identity()
+            BinOp::Partial::identity()
         }
     }
 }

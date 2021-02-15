@@ -1,23 +1,24 @@
-use crate::FifoWindow;
-use alga::general::AbstractMonoid;
-use alga::general::Operator;
 use std::cell::RefCell;
-use std::marker::PhantomData;
+
+use alga::general::AbstractMagma;
+use alga::general::Identity;
+
+use crate::FifoWindow;
+use crate::ops::AggregateOperator;
+use crate::ops::AggregateMonoid;
 
 const LOW_CAP: usize = 2;
 
 #[derive(Clone)]
-pub struct FlatFIT<Value, BinOp>
+pub struct FlatFIT<BinOp>
 where
-    Value: AbstractMonoid<BinOp> + Clone,
-    BinOp: Operator,
+    BinOp: AggregateMonoid<BinOp> + AggregateOperator + Clone,
 {
     front: usize,
     back: usize,
     size: usize,
-    buffer: RefCell<Vec<Item<Value>>>,
+    buffer: RefCell<Vec<Item<BinOp::Partial>>>,
     tracing_indices: RefCell<Vec<usize>>,
-    binop: PhantomData<BinOp>,
 }
 
 #[derive(Clone)]
@@ -32,10 +33,9 @@ impl<Value> Item<Value> {
     }
 }
 
-impl<Value, BinOp> FifoWindow<Value, BinOp> for FlatFIT<Value, BinOp>
+impl<BinOp> FifoWindow<BinOp> for FlatFIT<BinOp>
 where
-    Value: AbstractMonoid<BinOp> + Clone,
-    BinOp: Operator,
+    BinOp: AggregateMonoid<BinOp> + AggregateOperator + Clone,
 {
     fn new() -> Self {
         Self {
@@ -44,10 +44,12 @@ where
             size: 0,
             buffer: RefCell::new(Vec::new()),
             tracing_indices: RefCell::new(Vec::new()),
-            binop: PhantomData,
         }
     }
-    fn push(&mut self, val: Value) {
+    fn name() -> &'static str {
+        "flatfit"
+    }
+    fn push(&mut self, val: BinOp::In) {
         let capacity = self.buffer.borrow().capacity();
         if self.size + 1 > capacity {
             self.rescale(capacity * 2)
@@ -56,25 +58,27 @@ where
         self.size += 1;
         let prev = self.back;
         self.back = (self.back + 1) % self.size;
-        buffer[self.back].val = val;
+        buffer[self.back].val = BinOp::lift(val);
         buffer[prev].next = self.back;
     }
-    fn pop(&mut self) -> Option<Value> {
+    fn pop(&mut self) -> Option<BinOp::Out> {
         if self.size > 0 {
             let item = self.buffer.borrow().get(self.front).map(|item| item.val.clone());
+
             let capacity = self.buffer.borrow().capacity();
             self.front = (self.front + 1) % capacity;
             self.size -= 1;
             if self.size < capacity / 2 {
                 self.rescale(capacity / 2)
             }
-            item
+
+            item.as_ref().map(|i| BinOp::lower(i))
         } else {
             None
         }
     }
-    fn query(&self) -> Value {
-        let mut agg = Value::identity();
+    fn query(&self) -> BinOp::Out {
+        let mut agg = BinOp::Partial::identity();
         let mut buffer = self.buffer.borrow_mut();
         if self.size > 0 {
             let mut tracing_indices = self.tracing_indices.borrow_mut();
@@ -91,7 +95,7 @@ where
             }
             agg = agg.operate(&buffer[self.back].val);
         }
-        agg
+        BinOp::lower(&agg)
     }
     fn len(&self) -> usize {
         self.size
@@ -101,14 +105,13 @@ where
     }
 }
 
-impl<Value, BinOp> FlatFIT<Value, BinOp>
+impl<BinOp> FlatFIT<BinOp>
 where
-    Value: AbstractMonoid<BinOp> + Clone,
-    BinOp: Operator,
+    BinOp: AggregateMonoid<BinOp> + AggregateOperator + Clone,
 {
     fn rescale(&mut self, new_capacity: usize) {
         let new_capacity = std::cmp::max(new_capacity, LOW_CAP);
-        let mut new_buffer: Vec<Item<Value>> = Vec::with_capacity(new_capacity);
+        let mut new_buffer: Vec<Item<BinOp::Partial>> = Vec::with_capacity(new_capacity);
         unsafe {
             // Unsafe is used here so we don't need to initialize the buffer's contents
             new_buffer.set_len(new_capacity);

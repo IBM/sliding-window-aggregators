@@ -1,26 +1,27 @@
 pub(crate) mod flat_fat;
 
-use crate::reactive::flat_fat::{FlatFAT, FAT};
+use alga::general::AbstractMagma;
+use alga::general::Identity;
+
 use crate::FifoWindow;
-use alga::general::AbstractMonoid;
-use alga::general::Operator;
+use crate::ops::AggregateOperator;
+use crate::ops::AggregateMonoid;
+use crate::reactive::flat_fat::{FlatFAT, FAT};
 
 #[derive(Clone)]
-pub struct Reactive<Value, BinOp>
+pub struct Reactive<BinOp>
 where
-    Value: AbstractMonoid<BinOp> + Clone,
-    BinOp: Operator,
+    BinOp: AggregateMonoid<BinOp> + AggregateOperator + Clone
 {
-    fat: FlatFAT<Value, BinOp>,
+    fat: FlatFAT<BinOp>,
     size: usize,
     front: usize,
     back: usize,
 }
 
-impl<Value, BinOp> Reactive<Value, BinOp>
+impl<BinOp> Reactive<BinOp>
 where
-    Value: AbstractMonoid<BinOp> + Clone,
-    BinOp: Operator,
+    BinOp: AggregateMonoid<BinOp> + AggregateOperator + Clone
 {
     /// Returns a Reactive Aggregator with a pre-allocated `capacity`
     pub fn with_capacity(capacity: usize) -> Self {
@@ -53,10 +54,9 @@ where
     }
 }
 
-impl<Value, BinOp> FifoWindow<Value, BinOp> for Reactive<Value, BinOp>
+impl<BinOp> FifoWindow<BinOp> for Reactive<BinOp>
 where
-    Value: AbstractMonoid<BinOp> + Clone,
-    BinOp: Operator,
+    BinOp: AggregateMonoid<BinOp> + AggregateOperator + Clone
 {
     fn new() -> Self {
         Self {
@@ -66,36 +66,41 @@ where
             back: 0,
         }
     }
-    fn push(&mut self, v: Value) {
-        self.fat.update([(self.back, v)].iter().cloned());
+    fn name() -> &'static str {
+        "reactive"
+    }
+    fn push(&mut self, val: BinOp::In) {
+        self.fat.update([(self.back, BinOp::lift(val))].iter().cloned());
         self.size += 1;
         self.back = (self.back + 1) % self.fat.capacity;
         if self.size > (3 * self.fat.capacity) / 4 {
             self.resize(self.fat.capacity * 2);
         }
     }
-    fn pop(&mut self) -> Option<Value> {
+    fn pop(&mut self) -> Option<BinOp::Out> {
         if self.size > 0 {
             let val = self.fat.get(self.front).cloned();
+
             self.fat
-                .update([(self.front, Value::identity())].iter().cloned());
+                .update([(self.front, BinOp::Partial::identity())].iter().cloned());
             self.size -= 1;
             self.front = (self.front + 1) % self.fat.capacity;
             if self.size <= self.fat.capacity / 4 && self.size > 0 {
                 self.resize(self.fat.capacity / 2);
             }
-            val
+
+            val.as_ref().map(|v| BinOp::lower(v))
         } else {
             None
         }
     }
-    fn query(&self) -> Value {
+    fn query(&self) -> BinOp::Out {
         if self.front > self.back {
-            self.fat
-                .suffix(self.front)
-                .operate(&self.fat.prefix(self.back))
+            BinOp::lower(&self.fat
+                              .suffix(self.front)
+                              .operate(&self.fat.prefix(self.back)))
         } else {
-            self.fat.aggregate()
+            BinOp::lower(&self.fat.aggregate())
         }
     }
     fn len(&self) -> usize {

@@ -14,7 +14,7 @@ edition            = "2018"
 publish            = false
 
 [[bench]]
-name               = "bench_main"
+name               = "bench_static"
 harness            = false
 
 [lib]
@@ -29,10 +29,7 @@ rand               = "0.7.3"
 fxhash             = "0.2.1"
 
 [dev-dependencies]
-criterion          = "0.3.3"
-criterion-cpu-time = "0.1.0"
-criterion-cycles-per-byte = "0.1.1"
-criterion-perf-events = "0.1.1"
+clap               = "~3.0.0-beta.2"
 trybuild           = "1.0.30"
 
 # https://doc.rust-lang.org/cargo/reference/profiles.html

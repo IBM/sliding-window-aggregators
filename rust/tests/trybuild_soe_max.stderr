@@ -1,19 +1,16 @@
-error[E0599]: no function or associated item named `new` found for struct `swag::soe::SoE<common::Int, common::Max>` in the current scope
- --> $DIR/trybuild_soe_max.fail:7:22
+error[E0599]: no function or associated item named `new` found for struct `swag::soe::SoE<Max<i32, i32>>` in the current scope
+ --> $DIR/trybuild_soe_max.fail:6:27
   |
-7 |     SoE::<Int, Max>::new();
-  |                      ^^^ function or associated item not found in `swag::soe::SoE<common::Int, common::Max>`
+6 |     SoE::<Max<i32, i32>>::new();
+  |                           ^^^ function or associated item not found in `swag::soe::SoE<Max<i32, i32>>`
 
-error[E0277]: the trait bound `common::Int: alga::general::one_operator::AbstractGroup<common::Max>` is not satisfied
-  --> $DIR/trybuild_soe_max.fail:7:5
+error[E0277]: the trait bound `Max<i32, i32>: AggregateGroup<Max<i32, i32>>` is not satisfied
+  --> $DIR/trybuild_soe_max.fail:6:5
    |
-7  |     SoE::<Int, Max>::new();
-   |     ^^^^^^^^^^^^^^^^^^^^ the trait `alga::general::one_operator::AbstractGroup<common::Max>` is not implemented for `common::Int`
+6  |     SoE::<Max<i32, i32>>::new();
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `AggregateGroup<Max<i32, i32>>` is not implemented for `Max<i32, i32>`
    |
-  ::: $WORKSPACE/src/soe/mod.rs:10:12
+  ::: $WORKSPACE/src/soe/mod.rs
    |
-10 |     Value: AbstractGroup<BinOp> + Clone,
-   |            -------------------- required by this bound in `swag::soe::SoE`
-   |
-   = help: the following implementations were found:
-             <common::Int as alga::general::one_operator::AbstractGroup<common::Sum>>
+   |     BinOp: AggregateGroup<BinOp> + AggregateOperator + Clone
+   |            --------------------- required by this bound in `swag::soe::SoE`

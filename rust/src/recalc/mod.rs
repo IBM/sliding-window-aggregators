@@ -1,40 +1,43 @@
-use crate::FifoWindow;
-use alga::general::AbstractMonoid;
-use alga::general::Operator;
 use std::collections::VecDeque;
-use std::marker::PhantomData;
+
+use alga::general::AbstractMagma;
+use alga::general::Identity;
+
+use crate::FifoWindow;
+use crate::ops::AggregateOperator;
+use crate::ops::AggregateMonoid;
 
 #[derive(Clone)]
-pub struct ReCalc<Value, BinOp>
+pub struct ReCalc<BinOp>
 where
-    Value: AbstractMonoid<BinOp> + Clone,
-    BinOp: Operator,
+    BinOp: AggregateMonoid<BinOp> + AggregateOperator + Clone
 {
-    stack: VecDeque<Value>,
-    op: PhantomData<BinOp>,
+    stack: VecDeque<BinOp::Partial>,
 }
 
-impl<Value, BinOp> FifoWindow<Value, BinOp> for ReCalc<Value, BinOp>
+impl<BinOp> FifoWindow<BinOp> for ReCalc<BinOp>
 where
-    Value: AbstractMonoid<BinOp> + Clone,
-    BinOp: Operator,
+    BinOp: AggregateMonoid<BinOp> + AggregateOperator + Clone
 {
     fn new() -> Self {
         Self {
             stack: VecDeque::new(),
-            op: PhantomData,
         }
     }
-    fn push(&mut self, v: Value) {
-        self.stack.push_back(v);
+    fn name() -> &'static str {
+        "recalc"
     }
-    fn pop(&mut self) -> Option<Value> {
-        self.stack.pop_front()
+    fn push(&mut self, val: BinOp::In) {
+        self.stack.push_back(BinOp::lift(val));
     }
-    fn query(&self) -> Value {
-        self.stack
-            .iter()
-            .fold(Value::identity(), |acc, elem| acc.operate(&elem))
+    fn pop(&mut self) -> Option<BinOp::Out> {
+        self.stack.pop_front().as_ref().map(|f| BinOp::lower(f))
+    }
+    fn query(&self) -> BinOp::Out {
+        let agg = self.stack
+                      .iter()
+                      .fold(BinOp::Partial::identity(), |acc, elem| acc.operate(&elem));
+        BinOp::lower(&agg)
     }
     fn len(&self) -> usize {
         self.stack.len()
@@ -43,3 +46,4 @@ where
         self.stack.is_empty()
     }
 }
+
