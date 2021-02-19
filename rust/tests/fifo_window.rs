@@ -4,6 +4,7 @@ use swag::recalc;
 use swag::soe;
 use swag::reactive;
 use swag::two_stacks;
+use swag::two_stacks_lite;
 use swag::flatfit;
 use swag::FifoWindow;
 use swag::ops::max::Max;
@@ -234,18 +235,18 @@ where
 }
 
 test_matrix! {
-    test1 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test2 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test3 =>     [ recalc::ReCalc,           reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test4 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test5 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test6 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test7 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test8 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test9 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test_max =>  [ recalc::ReCalc,           reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test_sum =>  [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ],
-    test_mean => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, flatfit::FlatFIT ]
+    test1 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, two_stacks_lite::TwoStacksLite, flatfit::FlatFIT ],
+    test2 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, two_stacks_lite::TwoStacksLite, flatfit::FlatFIT ],
+    test3 =>     [ recalc::ReCalc,           reactive::Reactive, two_stacks::TwoStacks, two_stacks_lite::TwoStacksLite, flatfit::FlatFIT ],
+    test4 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, two_stacks_lite::TwoStacksLite, flatfit::FlatFIT ],
+    test5 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, two_stacks_lite::TwoStacksLite, flatfit::FlatFIT ],
+    test6 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, two_stacks_lite::TwoStacksLite, flatfit::FlatFIT ],
+    test7 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, two_stacks_lite::TwoStacksLite, flatfit::FlatFIT ],
+    test8 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, two_stacks_lite::TwoStacksLite, flatfit::FlatFIT ],
+    test9 =>     [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, two_stacks_lite::TwoStacksLite, flatfit::FlatFIT ],
+    test_max =>  [ recalc::ReCalc,           reactive::Reactive, two_stacks::TwoStacks, two_stacks_lite::TwoStacksLite, flatfit::FlatFIT ],
+    test_sum =>  [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, two_stacks_lite::TwoStacksLite, flatfit::FlatFIT ],
+    test_mean => [ recalc::ReCalc, soe::SoE, reactive::Reactive, two_stacks::TwoStacks, two_stacks_lite::TwoStacksLite, flatfit::FlatFIT ]
 }
 
 #[test]
@@ -254,6 +255,7 @@ fn assert_names() {
     assert_eq!(flatfit::FlatFIT::<Sum::<i32, i32>>::name(), "flatfit");
     assert_eq!(reactive::Reactive::<Sum::<i32, i32>>::name(), "reactive");
     assert_eq!(two_stacks::TwoStacks::<Sum::<i32, i32>>::name(), "two_stacks");
+    assert_eq!(two_stacks_lite::TwoStacksLite::<Sum::<i32, i32>>::name(), "two_stacks_lite");
     assert_eq!(soe::SoE::<Sum::<i32, i32>>::name(), "soe");
 }
 

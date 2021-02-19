@@ -12,6 +12,7 @@ use swag::reactive::Reactive;
 use swag::recalc::ReCalc;
 use swag::soe::SoE;
 use swag::two_stacks::TwoStacks;
+use swag::two_stacks_lite::TwoStacksLite;
 use swag::ops::AggregateOperator;
 use swag::ops::max::Max;
 use swag::ops::mean::Mean;
@@ -94,10 +95,11 @@ fn main() {
                                                       opts.latency);
     query_run! {
         opts, i32 =>
-            [[ReCalc,    Max, Mean, Sum],
-             [TwoStacks, Max, Mean, Sum],
-             [Reactive,  Max, Mean, Sum],
-             [SoE,            Mean, Sum]]
+            [[ReCalc,        Max, Mean, Sum],
+             [TwoStacks,     Max, Mean, Sum],
+             [TwoStacksLite, Max, Mean, Sum],
+             [Reactive,      Max, Mean, Sum],
+             [SoE,           Mean, Sum]]
     }
 
     // Should not reach here
