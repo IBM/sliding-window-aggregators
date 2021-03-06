@@ -43,7 +43,7 @@ where
             val: lifted,
         });
     }
-    fn pop(&mut self) -> Option<BinOp::Out> {
+    fn pop(&mut self) {
         if self.front.is_empty() {
             while let Some(top) = self.back.pop() {
                 self.front.push(Item {
@@ -52,7 +52,7 @@ where
                 })
             }
         }
-        self.front.pop().map(|item| BinOp::lower(&item.val))
+        self.front.pop();
     }
     fn query(&self) -> BinOp::Out {
         let f = Self::agg(&self.front);

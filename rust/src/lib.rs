@@ -30,7 +30,7 @@ where
     /// Inserts a value at the back of the window.
     fn push(&mut self, v: BinOp::In);
     /// Removes a value at the front of the window (if any).
-    fn pop(&mut self) -> Option<BinOp::Out>;
+    fn pop(&mut self);
     /// Combines the values in fifo order and returns the result, e.g., `1+v1+v2+...+vn`.
     fn query(&self) -> BinOp::Out;
     /// Returns the number of elements inside the window.

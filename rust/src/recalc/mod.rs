@@ -30,8 +30,8 @@ where
     fn push(&mut self, val: BinOp::In) {
         self.stack.push_back(BinOp::lift(val));
     }
-    fn pop(&mut self) -> Option<BinOp::Out> {
-        self.stack.pop_front().as_ref().map(|f| BinOp::lower(f))
+    fn pop(&mut self) {
+        self.stack.pop_front();
     }
     fn query(&self) -> BinOp::Out {
         let agg = self.stack

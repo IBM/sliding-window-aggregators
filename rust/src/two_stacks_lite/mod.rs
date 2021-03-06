@@ -36,10 +36,8 @@ where
         self.queue.push_back(lifted.clone());
         self.agg_back = self.agg_back.operate(&lifted);
     }
-    fn pop(&mut self) -> Option<BinOp::Out> {
-        if self.queue.is_empty() {
-            None
-        } else {
+    fn pop(&mut self) {
+        if !self.queue.is_empty() {
             let end = self.queue.len() - 1;
             if self.front_len == 0 {
                 let mut accum = BinOp::Partial::identity();
@@ -51,7 +49,7 @@ where
                 self.agg_back = BinOp::Partial::identity();
             }
             self.front_len -= 1;
-            self.queue.pop_front().map(|item| BinOp::lower(&item))
+            self.queue.pop_front();
         }
     }
     fn query(&self) -> BinOp::Out {

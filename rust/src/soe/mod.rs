@@ -35,12 +35,9 @@ where
         self.agg = self.agg.operate(&lifted);
         self.stack.push_back(lifted);
     }
-    fn pop(&mut self) -> Option<BinOp::Out> {
+    fn pop(&mut self) {
         if let Some(top) = self.stack.pop_front() {
             self.agg = self.agg.operate(&top.two_sided_inverse());
-            Some(BinOp::lower(&top))
-        } else {
-            None
         }
     }
     fn query(&self) -> BinOp::Out {

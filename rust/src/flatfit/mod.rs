@@ -61,20 +61,14 @@ where
         buffer[self.back].val = BinOp::lift(val);
         buffer[prev].next = self.back;
     }
-    fn pop(&mut self) -> Option<BinOp::Out> {
+    fn pop(&mut self) {
         if self.size > 0 {
-            let item = self.buffer.borrow().get(self.front).map(|item| item.val.clone());
-
             let capacity = self.buffer.borrow().capacity();
             self.front = (self.front + 1) % capacity;
             self.size -= 1;
             if self.size < capacity / 2 {
                 self.rescale(capacity / 2)
             }
-
-            item.as_ref().map(|i| BinOp::lower(i))
-        } else {
-            None
         }
     }
     fn query(&self) -> BinOp::Out {

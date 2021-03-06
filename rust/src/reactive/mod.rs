@@ -77,10 +77,8 @@ where
             self.resize(self.fat.capacity * 2);
         }
     }
-    fn pop(&mut self) -> Option<BinOp::Out> {
+    fn pop(&mut self) {
         if self.size > 0 {
-            let val = self.fat.get(self.front).cloned();
-
             self.fat
                 .update([(self.front, BinOp::Partial::identity())].iter().cloned());
             self.size -= 1;
@@ -88,10 +86,6 @@ where
             if self.size <= self.fat.capacity / 4 && self.size > 0 {
                 self.resize(self.fat.capacity / 2);
             }
-
-            val.as_ref().map(|v| BinOp::lower(v))
-        } else {
-            None
         }
     }
     fn query(&self) -> BinOp::Out {
