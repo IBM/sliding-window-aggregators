@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cmath>
 #include <limits>
+#include <vector>
 
 #include "utils.h"
 
@@ -284,6 +285,15 @@ private:
       localRepairAggIfUp(op);
     }
 
+    bool localEvictUpTo(binOpFunc const &op, timeT time) {
+      int index;
+      bool found = localSearch(time, index);
+      int toPop = index + (found ? 1 : 0);
+      if (toPop > 0)
+	popFront(op, toPop);
+      return toPop > 0;
+    }
+
     void localEvictEntry(binOpFunc const &op, timeT time) {
       int index;
       bool found = localSearch(time, index);
@@ -487,6 +497,8 @@ private:
       _values[i] = value;
     }
 
+    void setLeftSpine() { _leftSpine = true; }
+
     void setOnlyChild(NodeP child) {
       assert(!isLeaf() && _arity==1);
       _arity = 1;
@@ -570,6 +582,26 @@ private:
     return left;
   }
 
+  void mergeNotSibling(Node* node, Node* neighbor, Node* ancestor) {
+    int a = -1;
+    for (int i=0, n=ancestor->arity()-1; i<n; i++)
+      if (ancestor->getTime(i) < neighbor->getTime(0))
+	a = i;
+    if (node->isLeaf()) {
+      neighbor->pushFrontEntry(_binOp, ancestor->getTime(a),
+			       ancestor->getValue(a));
+      for (int i=node->arity()-2; i>=0; i--)
+	neighbor->pushFrontEntry(_binOp, node->getTime(i), node->getValue(i));
+    } else {
+      neighbor->pushFront(_binOp, node->getChild(node->arity()-1),
+			  ancestor->getTime(a), ancestor->getValue(a));
+      for (int i=node->arity()-2; i>=0; i--)
+	neighbor->pushFront(_binOp, node->getChild(i),
+			    node->getTime(i), node->getValue(i));
+    }
+    ancestor->popFront(a + 1);
+  }
+
   void move(Node* parent, int recipientIdx, int giverIdx) {
     if (false) cout << "-- move" << endl;
     Node* recipient = parent->getChild(recipientIdx);
@@ -602,6 +634,29 @@ private:
     }
     parent->localRepairAggIfUp(_binOp);
     assert(checkInvariant(__FILE__, __LINE__, recipient, giver));
+  }
+
+  void moveBatch(Node* node, Node* neighbor, Node* ancestor, int batchSize) {
+    assert(0 < batchSize && batchSize < node->arity());
+    int a = -1;
+    for (int i=0, n=ancestor->arity()-1; i<n; i++)
+      if (ancestor->getTime(i) < neighbor->getTime(0))
+	a = i;
+    if (node->isLeaf()) {
+      node->pushBackEntry(_binOp, ancestor->getTime(a), ancestor->getValue(a));
+      for (int i=0, n=batchSize-1; i<n; i++)
+	node->pushBackEntry(_binOp, neighbor->getTime(i),
+			    neighbor->getValue(i));
+    } else {
+      node->pushBack(_binOp, ancestor->getTime(a), ancestor->getValue(a),
+		     neighbor->getChild(0));
+      for (int i=0, n=batchSize-1; i<n; i++)
+	node->pushBack(_binOp, neighbor->getTime(i), neighbor->getValue(i),
+		       neighbor->getChild(i + 1));
+    }
+    ancestor->setEntry(a, neighbor->getTime(batchSize - 1),
+		       neighbor->getValue(batchSize - 1));
+    neighbor->popFront(_binOp, batchSize);
   }
 
   Node* pickEvictionSibling(Node* node, int& nodeIdx, int& siblingIdx) const {
@@ -741,6 +796,74 @@ private:
         if (!top->localRepairAgg(_binOp) && early_stopping) return;
         top = top->parent();
       }
+    }
+  }
+
+  void repairLeftSpineInfo(Node* node, bool recurse) {
+    if (!node->isRoot())
+      node->setLeftSpine();
+    if (recurse) {
+      while (!node->isLeaf()) {
+	node = node->getChild(0);
+	node->setLeftSpine();
+      }
+      assert(node->isLeaf());
+      _leftFinger = node;
+    }
+  }
+
+  struct BoundaryLevel {
+    Node* _node;
+    Node* _neighbor;
+    Node* _ancestor;
+    BoundaryLevel(Node* node, Node* neighbor, Node* ancestor)
+      : _node(node), _neighbor(neighbor), _ancestor(ancestor)
+    { }
+  };
+
+  typedef vector<BoundaryLevel> BoundaryT;
+
+  void searchBoundary(timeT time, BoundaryT& result) const {
+    Node* node = _root;
+    if (kind!=classic && !_root->isLeaf()) {
+      if (time < _root->getTime(0)) {
+        node = _leftFinger;
+        while (!node->isRoot() && node->getTime(node->arity() - 2) < time)
+          node = node->parent();
+      } else if (_root->getTime(_root->arity() - 2) < time) {
+        node = _rightFinger;
+        while (!node->isRoot() && time < node->getTime(0))
+          node = node->parent();
+      }
+    }
+    Node* ancestor;
+    Node* neighbor;
+    if (node->isRoot()) {
+      ancestor = NULL;
+      neighbor = NULL;
+    } else {
+      ancestor = node->parent();
+      int nodeIdx = node->childIndex();
+      if (nodeIdx < ancestor->arity() - 1)
+	neighbor = ancestor->getChild(nodeIdx + 1);
+      else
+	neighbor = NULL;
+    }
+    result.emplace_back(node, neighbor, ancestor);
+    while (!node->isLeaf()) {
+      int index;
+      bool found = node->localSearch(time, index);
+      if (found)
+	break;
+      if (index == node->arity() - 1) {
+	if (neighbor != NULL)
+	  neighbor = neighbor->getChild(0);
+      } else {
+	ancestor = node;
+	neighbor = node->getChild(index + 1);
+      }
+      node = node->getChild(index);
+      result.emplace_back(node, neighbor, ancestor);
     }
   }
 
@@ -929,6 +1052,74 @@ public:
     if (false) cout << *_root;
     assert(checkInvariant(__FILE__, __LINE__));
     return true;
+  }
+
+  bool evictUpTo(timeT const& time) {
+    BoundaryT boundary;
+    searchBoundary(time, boundary);
+    Node* skipUpTo = NULL;
+    Node* top = NULL;
+    for (int i=0, n=boundary.size(); i<n; i++) {
+      BoundaryLevel const& level = boundary[i];
+      if (level.neighbor != NULL)
+	level.neighbor->localRepairAggIfUp(_binOp);
+      if (skipUpTo == NULL || skipUpTo == level.node) {
+	skipUpTo = NULL;
+	bool repaired = level.node->localEvictUpTo(_binOp, time);
+	if (!repaired)
+	  level.node->localRepairAggIfUp(_binOp);
+	if (level.neighbor == NULL) {
+	  if (level.node->arity() == 1 && !level.node->isLeaf())
+	    _root = level.node->getChild(0);
+	  else if (level.node != _root)
+	    _root = level.node;
+	  _root->becomeRoot(_binOp);
+	  repairLeftSpineInfo(_root, i == 0);
+	  top = _root;
+	  break;
+	}
+	if (level.node->isRoot() || level.node->arity() >= minArity) {
+	  top = level.node;
+	} else {
+	  int nodeDeficit = minArity - level.node->arity();
+	  int neighborSurplus = level.neighbor->arity() - minArity;
+	  if (nodeDeficit <= neighborSurplus) {
+	    moveBatch(level.node, level.neighbor, level.ancestor, nodeDeficit);
+	  } else if (level.node->parent() == level.ancestor()) {
+	    int nodeIndex = level.node->childIndex();
+	    assert(level.neighbor == level.ancestor.getChild(nodeIndex + 1));
+	    merge(level.ancestor, nodeIndex, nodeIndex + 1);
+	  } else {
+	    mergeNotSibling(level.node, level.neighbor, level.ancestor);
+	    skipUpTo = level.ancestor;
+	  }
+	  top = level.ancestor;
+	}
+      }
+      if (kind != classic) {
+	left = skipUpTo == NULL ? level.node : level.neighbor;
+	repairLeftSpineInfo(left, i == 0);
+      }
+    }
+    assert(top != NULL);
+    Node* topChanged;
+    bool hitLeft, hitRight;
+    if (top->isRoot()) {
+      topChanged = top;
+      hitLeft = true;
+      hitRight = true;
+    } else {
+      Node* parent = top->parent();
+      if (parent->isRoot() || parent->arity() >= minArity) {
+	topChanged = top;
+	hitLeft = top->leftSpine();
+	hitRight = top->rightSpine();
+      } else {
+	topChanged = rebalanceAfterEvict(parent, &hitLeft, &hitRight);
+      }
+    }
+    repairAggs(topChanged, hitLeft, hitRight);
+    assert(checkInvariant(__FILE__, __LINE__));
   }
 
   void insert(timeT const& time, inT const& value) {
