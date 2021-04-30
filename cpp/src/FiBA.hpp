@@ -1242,6 +1242,10 @@ public:
     if (top->isRoot()) {
       hitLeft = true;
       hitRight = true;
+      if (top->arity() == 1 && !top->isLeaf()) {
+	top = top->getChild(0);
+	heightDecrease();
+      }
     } else if (top->arity() >= minArity) {
       hitLeft = top->leftSpine();
       hitRight = top->rightSpine();
