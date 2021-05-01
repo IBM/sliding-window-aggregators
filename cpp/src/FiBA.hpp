@@ -157,6 +157,13 @@ private:
 
     ~Node() { delete[] _children; }
 
+    static void destroy(Node* node) {
+      if (!node->isLeaf())
+        for (int i=0, n=node->arity(); i<n; i++)
+          destroy(node->getChild(i));
+      delete node;
+    }
+
     int arity() const { return _arity; }
 
     void becomeRoot(binOpFunc const &op) {
@@ -291,8 +298,12 @@ private:
       int index;
       bool found = localSearch(time, index);
       int toPop = index + (found ? 1 : 0);
-      if (toPop > 0)
-	popFront(op, toPop);
+      if (toPop > 0) {
+        if (!isLeaf())
+          for (int i=0; i<toPop; i++)
+            Node::destroy(getChild(i));
+        popFront(op, toPop);
+      }
       return toPop > 0;
     }
 
@@ -376,9 +387,9 @@ private:
     NodeP parent() const { return _parent; }
 
     void popBack(binOpFunc const &op, int howMany) {
-      assert(howMany < _arity);
+      assert(howMany <= _arity);
       _arity -= howMany;
-      if (!isLeaf() && (isRoot() || _rightSpine))
+      if (!isLeaf() && (isRoot() || _rightSpine) && _arity>0)
         getChild(_arity - 1)->_rightSpine = true;
       localRepairAggIfUp(op);
     }
@@ -427,9 +438,9 @@ private:
     ostream& printLocal(ostream& os) const {
       os << "(";
       for (int i=0, n=_arity-1; i<n; i++) {
-	if (i > 0)
-	  os << ' ';
-	os << getTime(i);
+        if (i > 0)
+          os << ' ';
+        os << getTime(i);
       }
       os << ")";
       return os;
@@ -445,14 +456,14 @@ private:
       os << "]";
       if (!isLeaf()) {
         os << "," << endl;
-	for (int c=0; c<indent; c++) os << "  ";
-	os << "  'children': [" << endl;
+        for (int c=0; c<indent; c++) os << "  ";
+        os << "  'children': [" << endl;
         for (int i=0, n=_arity-1; i<n; i++) {
           getChild(i)->printPython(os, indent+1);
-	  os << "," << endl;
-	}
-	getChild(_arity-1)->printPython(os, indent+1);
-	os << "]";
+          os << "," << endl;
+        }
+        getChild(_arity-1)->printPython(os, indent+1);
+        os << "]";
       }
       os << "}";
       if (indent == 0) os << endl;
@@ -624,19 +635,22 @@ private:
     int a = -1;
     for (int i=0, n=ancestor->arity()-1; i<n; i++)
       if (ancestor->getTime(i) < neighbor->getTime(0))
-	a = i;
+        a = i;
     if (node->isLeaf()) {
       neighbor->pushFrontEntry(_binOp, ancestor->getTime(a),
-			       ancestor->getValue(a));
+                               ancestor->getValue(a));
       for (int i=node->arity()-2; i>=0; i--)
-	neighbor->pushFrontEntry(_binOp, node->getTime(i), node->getValue(i));
+        neighbor->pushFrontEntry(_binOp, node->getTime(i), node->getValue(i));
     } else {
       neighbor->pushFront(_binOp, node->getChild(node->arity()-1),
-			  ancestor->getTime(a), ancestor->getValue(a));
+                          ancestor->getTime(a), ancestor->getValue(a));
       for (int i=node->arity()-2; i>=0; i--)
-	neighbor->pushFront(_binOp, node->getChild(i),
-			    node->getTime(i), node->getValue(i));
+        neighbor->pushFront(_binOp, node->getChild(i),
+                            node->getTime(i), node->getValue(i));
     }
+    delete node;
+    for (int i=0; i<a; i++)
+      Node::destroy(ancestor->getChild(i));
     ancestor->popFront(_binOp, a + 1);
   }
 
@@ -679,21 +693,21 @@ private:
     int a = -1;
     for (int i=0, n=ancestor->arity()-1; i<n; i++)
       if (ancestor->getTime(i) < neighbor->getTime(0))
-	a = i;
+        a = i;
     if (node->isLeaf()) {
       node->pushBackEntry(_binOp, ancestor->getTime(a), ancestor->getValue(a));
       for (int i=0, n=batchSize-1; i<n; i++)
-	node->pushBackEntry(_binOp, neighbor->getTime(i),
-			    neighbor->getValue(i));
+        node->pushBackEntry(_binOp, neighbor->getTime(i),
+                            neighbor->getValue(i));
     } else {
       node->pushBack(_binOp, ancestor->getTime(a), ancestor->getValue(a),
-		     neighbor->getChild(0));
+                     neighbor->getChild(0));
       for (int i=0, n=batchSize-1; i<n; i++)
-	node->pushBack(_binOp, neighbor->getTime(i), neighbor->getValue(i),
-		       neighbor->getChild(i + 1));
+        node->pushBack(_binOp, neighbor->getTime(i), neighbor->getValue(i),
+                       neighbor->getChild(i + 1));
     }
     ancestor->setEntry(a, neighbor->getTime(batchSize - 1),
-		       neighbor->getValue(batchSize - 1));
+                       neighbor->getValue(batchSize - 1));
     neighbor->popFront(_binOp, batchSize);
   }
 
@@ -773,7 +787,7 @@ private:
         node = parent;
       }
       if (node == toRepair)
-	node->localRepairAggIfUp(_binOp);
+        node->localRepairAggIfUp(_binOp);
       *hitLeft |= node->leftSpine();
       *hitRight |= node->rightSpine();
     }
@@ -842,8 +856,8 @@ private:
       node->setLeftSpine();
     if (recurse) {
       while (!node->isLeaf()) {
-	node = node->getChild(0);
-	node->setLeftSpine();
+        node = node->getChild(0);
+        node->setLeftSpine();
       }
       assert(node->isLeaf());
       _leftFinger = node;
@@ -883,22 +897,22 @@ private:
       ancestor = node->parent();
       int nodeIdx = node->childIndex();
       if (nodeIdx < ancestor->arity() - 1)
-	neighbor = ancestor->getChild(nodeIdx + 1);
+        neighbor = ancestor->getChild(nodeIdx + 1);
       else
-	neighbor = NULL;
+        neighbor = NULL;
     }
     result.emplace_back(node, neighbor, ancestor);
     while (!node->isLeaf()) {
       int index;
       bool found = node->localSearch(time, index);
       if (found)
-	break;
+        break;
       if (index == node->arity() - 1) {
-	if (neighbor != NULL)
-	  neighbor = neighbor->getChild(0);
+        if (neighbor != NULL)
+          neighbor = neighbor->getChild(0);
       } else {
-	ancestor = node;
-	neighbor = node->getChild(index + 1);
+        ancestor = node;
+        neighbor = node->getChild(index + 1);
       }
       node = node->getChild(index);
       result.emplace_back(node, neighbor, ancestor);
@@ -975,15 +989,6 @@ private:
     assert(checkInvariant(__FILE__, __LINE__, left, right));
   }
 
-  void destroy(Node* node) {
-    if (!node->isLeaf()) {
-        for (int i = 0; i < node->arity(); i++) {
-            destroy(node->getChild(i));
-        }
-    }
-    delete node;
-  }
-
   class MakeRandomTree {
     int _height;
     Aggregate* _result;
@@ -999,23 +1004,23 @@ private:
       bool isLeaf = subtreeHeight == 1;
       Node* node = new Node(isLeaf);
       if (isRoot)
-	node->becomeRoot(_result->_binOp);
+        node->becomeRoot(_result->_binOp);
       int arity = randint(isRoot ? 2 : minArity, maxArity);
       if (!isLeaf) {
-	Node* child = inner(subtreeHeight - 1, nextTime);
-	node->setOnlyChild(child);
+        Node* child = inner(subtreeHeight - 1, nextTime);
+        node->setOnlyChild(child);
       }
       for (int i=0; i<arity-1; i++) {
-	timeT time = nextTime;
-	nextTime++;
-	if (isLeaf) {
-	  node->pushBackEntry(_result->_binOp, time,
-			      _result->_binOp.lift(time));
-	} else {
-	  Node* child = inner(subtreeHeight - 1, nextTime);
-	  node->pushBack(_result->_binOp, time,
-			 _result->_binOp.lift(time), child);
-	}
+        timeT time = nextTime;
+        nextTime++;
+        if (isLeaf) {
+          node->pushBackEntry(_result->_binOp, time,
+                              _result->_binOp.lift(time));
+        } else {
+          Node* child = inner(subtreeHeight - 1, nextTime);
+          node->pushBack(_result->_binOp, time,
+                         _result->_binOp.lift(time), child);
+        }
       }
       return node;
     }
@@ -1024,31 +1029,31 @@ private:
       node->setLeftSpine(node->recalcLeftSpine());
       node->setRightSpine(node->recalcRightSpine());
       if (node->isLeaf()) {
-	if (node->leftSpine())
-	  _result->_leftFinger = node;
-	if (node->rightSpine())
-	  _result->_rightFinger = node;
+        if (node->leftSpine())
+          _result->_leftFinger = node;
+        if (node->rightSpine())
+          _result->_rightFinger = node;
       } else {
-	for (int i=0, n=node->arity(); i<n; i++)
-	  setSpineInfo(node->getChild(i));
+        for (int i=0, n=node->arity(); i<n; i++)
+          setSpineInfo(node->getChild(i));
       }
     }
     
     void setAllAggs(Node* node) {
       if (!node->isLeaf()) {
-	if (!(kind==finger && (node->isRoot() || node->leftSpine())))
-	  setAllAggs(node->getChild(0));
-	for (int i=0, n=node->arity()-1; i<n; i++)
-	  setAllAggs(node->getChild(i));
-	if (!(kind==finger && (node->isRoot() || node->rightSpine())))
-	  setAllAggs(node->getChild(node->arity() - 1));
+        if (!(kind==finger && (node->isRoot() || node->leftSpine())))
+          setAllAggs(node->getChild(0));
+        for (int i=0, n=node->arity()-1; i<n; i++)
+          setAllAggs(node->getChild(i));
+        if (!(kind==finger && (node->isRoot() || node->rightSpine())))
+          setAllAggs(node->getChild(node->arity() - 1));
       }
       node->localRepairAgg(_result->_binOp);
-      if (!node->isLeaf()) {	
-	if (kind==finger && (node->isRoot() || node->leftSpine()))
-	  setAllAggs(node->getChild(0));
-	if (kind==finger && (node->isRoot() || node->rightSpine()))
-	  setAllAggs(node->getChild(node->arity() - 1));
+      if (!node->isLeaf()) {    
+        if (kind==finger && (node->isRoot() || node->leftSpine()))
+          setAllAggs(node->getChild(0));
+        if (kind==finger && (node->isRoot() || node->rightSpine()))
+          setAllAggs(node->getChild(node->arity() - 1));
       }
     }
 
@@ -1058,7 +1063,7 @@ private:
     {
       assert(height >= 1);
       timeT nextTime = 0;
-      _result->destroy(_result->_root);
+      Node::destroy(_result->_root);
       _result->_root = inner(height, nextTime);
       setSpineInfo(_result->_root);
       setAllAggs(_result->_root);
@@ -1088,8 +1093,7 @@ public:
     IF_COLLECT_STATS(cout << "# of repair calls involving a spine: " << statsTotalSpineRepairCount << endl);
     IF_COLLECT_STATS(cout << "# of repair calls: " << statsTotalRepairAggCount << endl);
     IF_COLLECT_STATS(cout << "avg root degree when repairs were made: " <<  ((double) statsSumRootDegree) / statsTotalRepairAggCount << endl);
-
-    destroy(_root);
+    Node::destroy(_root);
   }
 
   aggT at(timeT const& time) {
@@ -1153,19 +1157,19 @@ public:
       timeT leafTime;
       aggT leafValue;
       if (right->arity() > minArity)
-	leaf = oldest(right, leafTime, leafValue);
+        leaf = oldest(right, leafTime, leafValue);
       else
-	leaf = youngest(left, leafTime, leafValue);
+        leaf = youngest(left, leafTime, leafValue);
       leaf->localEvictEntry(_binOp, leafTime);
       node->setEntry(index, leafTime, leafValue);
       topChanged = rebalanceAfterEvict(leaf, &hitLeft, &hitRight, node);
       if (topChanged->isDescendent(node)) {
-	while (topChanged != node) {
-	  topChanged = topChanged->parent();
-	  hitLeft |= topChanged->leftSpine();
-	  hitRight |= topChanged->rightSpine();
-	  topChanged->localRepairAggIfUp(_binOp);
-	}
+        while (topChanged != node) {
+          topChanged = topChanged->parent();
+          hitLeft |= topChanged->leftSpine();
+          hitRight |= topChanged->rightSpine();
+          topChanged->localRepairAggIfUp(_binOp);
+        }
         assert(topChanged == node);
       }
     }
@@ -1187,51 +1191,56 @@ public:
       if (false) cout << *_root << "level " << (i + 1);
       if (false) cout << ", node " << level.node << ", neighbor " << level.neighbor << ", ancestor " << level.ancestor;
       if (level.neighbor != NULL)
-	level.neighbor->localRepairAggIfUp(_binOp);
+        level.neighbor->localRepairAggIfUp(_binOp);
       if (skipUpTo == NULL || skipUpTo == level.node) {
-	skipUpTo = NULL;
-	bool repaired = level.node->localEvictUpTo(_binOp, time);
-	if (!repaired)
-	  level.node->localRepairAggIfUp(_binOp);
-	if (level.neighbor == NULL) {
-	  if (level.node->arity() == 1 && !level.node->isLeaf()) {
-	    if (false) cout << ", make child root";
-	    _root = level.node->getChild(0);
-	  } else if (level.node != _root) {
-	    if (false) cout << ", make node root";
-	    _root = level.node;
-	  }
-	  _root->becomeRoot(_binOp);
-	  repairLeftSpineInfo(_root, i == 0);
-	  top = _root;
-	  break;
-	}
-	if (level.node->isRoot() || level.node->arity() >= minArity) {
-	  top = level.node;
-	} else {
-	  int nodeDeficit = minArity - level.node->arity();
-	  int neighborSurplus = level.neighbor->arity() - minArity;
-	  if (nodeDeficit <= neighborSurplus) {
-	    if (false) cout << ", move " << nodeDeficit << " from neighbor to node";
-	    moveBatch(level.node, level.neighbor, level.ancestor, nodeDeficit);
-	  } else if (level.node->parent() == level.ancestor) {
-	    if (false) cout << ", merge where neighbor is sibling";
-	    int nodeIndex = level.node->childIndex();
-	    assert(level.neighbor == level.ancestor->getChild(nodeIndex + 1));
-	    merge(level.ancestor, nodeIndex, nodeIndex + 1);
-	  } else {
-	    if (false) cout << ", merge where neighbor is not sibling";
-	    mergeNotSibling(level.node, level.neighbor, level.ancestor);
-	    skipUpTo = level.ancestor;
-	  }
-	  top = level.ancestor;
-	}
+        skipUpTo = NULL;
+        bool repaired = level.node->localEvictUpTo(_binOp, time);
+        if (!repaired)
+          level.node->localRepairAggIfUp(_binOp);
+        if (level.neighbor == NULL) {
+          Node* oldRoot = _root;
+          if (level.node->arity() == 1 && !level.node->isLeaf()) {
+            if (false) cout << ", make child root";
+            _root = level.node->getChild(0);
+          } else if (level.node != _root) {
+            if (false) cout << ", make node root";
+            _root = level.node;
+          }
+          if (_root->parent() != NULL)
+            _root->parent()->popBack(_binOp, 1);
+          _root->becomeRoot(_binOp);
+          if (oldRoot != _root)
+            Node::destroy(oldRoot);
+          repairLeftSpineInfo(_root, i == 0);
+          top = _root;
+          break;
+        }
+        if (level.node->isRoot() || level.node->arity() >= minArity) {
+          top = level.node;
+        } else {
+          int nodeDeficit = minArity - level.node->arity();
+          int neighborSurplus = level.neighbor->arity() - minArity;
+          if (nodeDeficit <= neighborSurplus) {
+            if (false) cout << ", move " << nodeDeficit << " from neighbor to node";
+            moveBatch(level.node, level.neighbor, level.ancestor, nodeDeficit);
+          } else if (level.node->parent() == level.ancestor) {
+            if (false) cout << ", merge where neighbor is sibling";
+            int nodeIndex = level.node->childIndex();
+            assert(level.neighbor == level.ancestor->getChild(nodeIndex + 1));
+            merge(level.ancestor, nodeIndex, nodeIndex + 1);
+          } else {
+            if (false) cout << ", merge where neighbor is not sibling";
+            mergeNotSibling(level.node, level.neighbor, level.ancestor);
+            skipUpTo = level.ancestor;
+          }
+          top = level.ancestor;
+        }
       } else {
-	if (false) cout << ", skip node already evicted";
+        if (false) cout << ", skip node already evicted";
       }
       if (kind != classic) {
-	Node* left = (skipUpTo == NULL) ? level.node : level.neighbor;
-	repairLeftSpineInfo(left, i == 0);
+        Node* left = (skipUpTo == NULL) ? level.node : level.neighbor;
+        repairLeftSpineInfo(left, i == 0);
       }
       if (false) cout << endl;
     }
@@ -1243,8 +1252,8 @@ public:
       hitLeft = true;
       hitRight = true;
       if (top->arity() == 1 && !top->isLeaf()) {
-	top = top->getChild(0);
-	heightDecrease();
+        top = top->getChild(0);
+        heightDecrease();
       }
     } else if (top->arity() >= minArity) {
       hitLeft = top->leftSpine();
