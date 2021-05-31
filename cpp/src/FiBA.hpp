@@ -147,22 +147,28 @@ private:
     }
 
   public:
-    Node(bool isLeaf)
-      : _parent(NULL),
-        _agg(binOpFunc::identity),
-        _arity(1),
-        _leftSpine(false), _rightSpine(false),
-        _children(isLeaf ? NULL : new NodeP[maxArity + 1])
-    { }
+    void init(bool isLeaf) {
+      _parent = NULL;
+      _agg = binOpFunc::identity;
+      _arity = 1;
+      _leftSpine = false;
+      _rightSpine = false;
+      if (isLeaf) {
+        if (_children != NULL) {
+          delete[] _children;
+          _children = NULL;
+        }
+      } else if (_children == NULL) {
+        _children = new NodeP[maxArity + 1];
+      }
+    }
+
+    Node(bool isLeaf) {
+      _children = NULL;
+      init(isLeaf);
+    }
 
     ~Node() { delete[] _children; }
-
-    static void destroy(Node* node) {
-      if (!node->isLeaf())
-        for (int i=0, n=node->arity(); i<n; i++)
-          destroy(node->getChild(i));
-      delete node;
-    }
 
     int arity() const { return _arity; }
 
@@ -294,14 +300,14 @@ private:
       localRepairAggIfUp(op);
     }
 
-    bool localEvictUpTo(binOpFunc const &op, timeT time) {
+    bool localEvictUpTo(Aggregate* tree, binOpFunc const &op, timeT time) {
       int index;
       bool found = localSearch(time, index);
       int toPop = index + (found ? 1 : 0);
       if (toPop > 0) {
         if (!isLeaf())
           for (int i=0; i<toPop; i++)
-            Node::destroy(getChild(i));
+            tree->deleteNode(getChild(i), true);
         popFront(op, toPop);
       }
       return toPop > 0;
@@ -568,6 +574,26 @@ private:
   Node *_root;
   Node *_leftFinger, *_rightFinger;
   size_t _size;
+  vector<Node*> _freeList;
+
+  void deleteNode(Node* node, bool recursive) {
+    if (recursive && !node->isLeaf())
+      for (int i=0, n=node->arity(); i<n; i++)
+        _freeList.push_back(node->getChild(i));
+    delete node;
+  }
+
+  Node* newNode(bool isLeaf) {
+    if (_freeList.empty())
+      return new Node(isLeaf);
+    Node* node = _freeList.back();
+    _freeList.pop_back();
+    if (!node->isLeaf())
+      for (int i=0, n=node->arity(); i<n; i++)
+        _freeList.push_back(node->getChild(i));
+    node->init(isLeaf);
+    return node;
+  }
 
   void heightDecrease() {
     if (false) cout << "-- height-decrease" << endl;
@@ -575,14 +601,14 @@ private:
     Node* oldRoot = _root;
     _root = oldRoot->getChild(0);
     _root->becomeRoot(_binOp);
-    delete oldRoot;
+    deleteNode(oldRoot, false);
     assert(checkInvariant(__FILE__, __LINE__, _root));
   }
 
   void heightIncrease() {
     if (false) cout << "-- height-increase" << endl;
     Node* oldRoot = _root;
-    _root = new Node(false);
+    _root = newNode(false);
     _root->setOnlyChild(oldRoot);
     assert(checkInvariant(__FILE__, __LINE__, oldRoot));
   }
@@ -626,7 +652,7 @@ private:
     parent->localEvict(_binOp, betweenIndex);
     if (kind!=classic && _rightFinger == right)
       _rightFinger = left;
-    delete right;
+    deleteNode(right, false);
     // assert(checkInvariant(__FILE__, __LINE__, left));
     return left;
   }
@@ -648,9 +674,9 @@ private:
         neighbor->pushFront(_binOp, node->getChild(i),
                             node->getTime(i), node->getValue(i));
     }
-    delete node;
+    deleteNode(node, false);
     for (int i=0; i<a; i++)
-      Node::destroy(ancestor->getChild(i));
+      deleteNode(ancestor->getChild(i), true);
     ancestor->popFront(_binOp, a + 1);
   }
 
@@ -971,7 +997,7 @@ private:
     if (false) cout << "-- split" << endl;
     timeT betweenTime = left->getTime(minArity);
     aggT betweenValue = left->getValue(minArity);
-    Node* right = new Node(left->isLeaf());
+    Node* right = newNode(left->isLeaf());
     left->parent()->localInsert(_binOp, betweenTime, betweenValue, right);
     if (left->isLeaf()) {
       for (int i=minArity+1,n=maxArity; i<n; i++)
@@ -1002,7 +1028,7 @@ private:
     Node* inner(int subtreeHeight, timeT &nextTime) {
       bool isRoot = subtreeHeight == _height;
       bool isLeaf = subtreeHeight == 1;
-      Node* node = new Node(isLeaf);
+      Node* node = _result->newNode(isLeaf);
       if (isRoot)
         node->becomeRoot(_result->_binOp);
       int arity = randint(isRoot ? 2 : minArity, maxArity);
@@ -1038,7 +1064,7 @@ private:
           setSpineInfo(node->getChild(i));
       }
     }
-    
+
     void setAllAggs(Node* node) {
       if (!node->isLeaf()) {
         if (!(kind==finger && (node->isRoot() || node->leftSpine())))
@@ -1049,7 +1075,7 @@ private:
           setAllAggs(node->getChild(node->arity() - 1));
       }
       node->localRepairAgg(_result->_binOp);
-      if (!node->isLeaf()) {    
+      if (!node->isLeaf()) {
         if (kind==finger && (node->isRoot() || node->leftSpine()))
           setAllAggs(node->getChild(0));
         if (kind==finger && (node->isRoot() || node->rightSpine()))
@@ -1063,7 +1089,7 @@ private:
     {
       assert(height >= 1);
       timeT nextTime = 0;
-      Node::destroy(_result->_root);
+      _result->deleteNode(_result->_root, true);
       _result->_root = inner(height, nextTime);
       setSpineInfo(_result->_root);
       setAllAggs(_result->_root);
@@ -1076,9 +1102,10 @@ private:
 public:
   Aggregate(binOpFunc binOp)
     : _binOp(binOp),
-      _root(new Node(true)),
+      _root(newNode(true)),
       _leftFinger(NULL), _rightFinger(NULL),
-      _size(0)
+      _size(0),
+      _freeList()
   {
     IF_COLLECT_STATS(statsCombineCount = 0);
     if (kind!=classic) {
@@ -1093,7 +1120,11 @@ public:
     IF_COLLECT_STATS(cout << "# of repair calls involving a spine: " << statsTotalSpineRepairCount << endl);
     IF_COLLECT_STATS(cout << "# of repair calls: " << statsTotalRepairAggCount << endl);
     IF_COLLECT_STATS(cout << "avg root degree when repairs were made: " <<  ((double) statsSumRootDegree) / statsTotalRepairAggCount << endl);
-    Node::destroy(_root);
+    deleteNode(_root, true);
+    while (!_freeList.empty()) {
+      Node* node = newNode(true);
+      deleteNode(node, false);
+    }
   }
 
   aggT at(timeT const& time) {
@@ -1194,7 +1225,7 @@ public:
         level.neighbor->localRepairAggIfUp(_binOp);
       if (skipUpTo == NULL || skipUpTo == level.node) {
         skipUpTo = NULL;
-        bool repaired = level.node->localEvictUpTo(_binOp, time);
+        bool repaired = level.node->localEvictUpTo(this, _binOp, time);
         if (!repaired)
           level.node->localRepairAggIfUp(_binOp);
         if (level.neighbor == NULL) {
@@ -1210,7 +1241,7 @@ public:
             _root->parent()->popBack(_binOp, 1);
           _root->becomeRoot(_binOp);
           if (oldRoot != _root)
-            Node::destroy(oldRoot);
+            deleteNode(oldRoot, true);
           repairLeftSpineInfo(_root, i == 0);
           top = _root;
           break;
