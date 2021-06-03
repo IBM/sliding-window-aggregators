@@ -5,7 +5,7 @@
 #include <cassert>
 #include <cmath>
 #include <limits>
-#include <vector>
+#include <deque>
 
 #include "utils.h"
 
@@ -574,7 +574,7 @@ private:
   Node *_root;
   Node *_leftFinger, *_rightFinger;
   size_t _size;
-  vector<Node*> _freeList;
+  deque<Node*> _freeList;
 
   void deleteNode(Node* node, bool recursive) {
     if (recursive && !node->isLeaf())
@@ -899,7 +899,7 @@ private:
     { }
   };
 
-  typedef vector<BoundaryLevel> BoundaryT;
+  typedef deque<BoundaryLevel> BoundaryT;
 
   void searchBoundary(timeT time, BoundaryT& result) const {
     Node* node = _root;
