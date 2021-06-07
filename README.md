@@ -30,7 +30,7 @@ provide more background on sliding window aggregation algorithms.
 - **operator requirements**: associativity
 - **time complexity**: worst-case O(1)
 - **space requirements**: *n* + 2
-- **first appeared**: *In-Order Sliding-Window Aggregation in Worst-Case Constant Time*, under review
+- **first appeared**: [In-Order Sliding-Window Aggregation in Worst-Case Constant Time][vldbj2021]
 - **implementions**: [C++](cpp/src/DABALite.hpp)
 
 # FiBA
@@ -79,9 +79,10 @@ provide more background on sliding window aggregation algorithms.
 - **ordering**: in-order required
 - **operator requirements**: associativity
 - **time complexity**: worst-case O(*n*), amortized O(1)
-- **space requirements**: *n* + 1 
-- **first appeared**: *In-Order Sliding-Window Aggregation in Worst-Case Constant Time*, under review
-- **implementions**: [C++](cpp/src/TwoStacksLite.hpp)
+- **space requirements**: *n* + 1
+- **first appeared**: [In-Order Sliding-Window Aggregation in Worst-Case Constant Time][vldbj2021]
+- **implementions**: [C++](cpp/src/TwoStacksLite.hpp),
+                    [Rust](rust/src/two_stacks_lite/mod.rs)
 
 # Reactive
 - **full name**: Reactive Aggregator
@@ -120,3 +121,4 @@ provide more background on sliding window aggregation algorithms.
 [ssdbm2017]: https://dl.acm.org/doi/abs/10.1145/3085504.3085509
 [vldb2019]: http://www.vldb.org/pvldb/vol12/p1167-tangwongsan.pdf
 [vldb2015]: http://www.vldb.org/pvldb/vol8/p702-tangwongsan.pdf
+[vldbj2021]: https://doi.org/10.1007/s00778-021-00668-3
