@@ -158,8 +158,10 @@ private:
           delete[] _children;
           _children = NULL;
         }
-      } else if (_children == NULL) {
-        _children = new NodeP[maxArity + 1];
+      } else {
+	if (_children == NULL)
+	  _children = new NodeP[maxArity + 1];
+	_children[0] = NULL; // just to be safe, probably not needed
       }
     }
 
@@ -571,10 +573,10 @@ private:
   };
 
   binOpFunc _binOp;
+  deque<Node*> _freeList;
   Node *_root;
   Node *_leftFinger, *_rightFinger;
   size_t _size;
-  deque<Node*> _freeList;
 
   void deleteNode(Node* node, bool recursive) {
     if (recursive && !node->isLeaf())
@@ -674,8 +676,11 @@ private:
         neighbor->pushFront(_binOp, node->getChild(i),
                             node->getTime(i), node->getValue(i));
     }
+    assert(node->parent() != ancestor);
+    assert(node->childIndex() == node->parent()->arity()-1);
+    node->parent()->popBack(_binOp, 1); //avoid double-delete
     deleteNode(node, false);
-    for (int i=0; i<a; i++)
+    for (int i=0; i<=a; i++)
       deleteNode(ancestor->getChild(i), true);
     ancestor->popFront(_binOp, a + 1);
   }
@@ -1102,10 +1107,10 @@ private:
 public:
   Aggregate(binOpFunc binOp)
     : _binOp(binOp),
+      _freeList(),
       _root(newNode(true)),
       _leftFinger(NULL), _rightFinger(NULL),
-      _size(0),
-      _freeList()
+      _size(0)
   {
     IF_COLLECT_STATS(statsCombineCount = 0);
     if (kind!=classic) {
