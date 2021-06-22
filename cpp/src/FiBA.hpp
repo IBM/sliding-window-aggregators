@@ -1066,6 +1066,34 @@ public:
     }
   }
 
+  // TODO: Merge children as well
+  void mergeNodeTreelets(
+      Node *node,
+      vector<Treelet> treelets, // TODO: Will "gradute" to an iterator later
+      vector<timeT> & times
+  ) {
+    times.clear();
+    size_t n = node->arity() + treelets.size();
+    size_t ni = 0, ti = 0;
+    for (int i=0;i<n;i++) {
+      if (ni > node->arity()) { // done with the node
+        times.push_back(treelets[ti++].time);
+      }
+      else if (ti > treelets.size()) { // done treelets
+        times.push_back(node->getTime(ni++));
+      }
+      else { // proper merge
+        const timeT& tlTime = treelets[ti].time;
+        const timeT& nTime = node->getTime(ni);
+
+        if (tlTime < nTime)
+          times.push_back(treelets[ti++].time);
+        else
+          times.push_back(node->getTime(ni++));
+      }
+    }
+  }
+
   void bulkInsert(vector<pair<timeT const&, inT const&>> entries) {
     if (kind != finger) throw -1; // only support finger trees
     vector<Treelet> treelets;
