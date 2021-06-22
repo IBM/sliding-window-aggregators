@@ -5,6 +5,10 @@
 #include <cassert>
 #include <cmath>
 #include <limits>
+#include <vector>
+#include <utility>
+#include <tuple>
+#include <deque>
 
 #include "utils.h"
 
@@ -814,6 +818,112 @@ private:
     assert(checkInvariant(__FILE__, __LINE__, left, right));
   }
 
+
+  /* Internal node "breadcrumb" - (Node *, lowerBound, upperBound)
+   * the interval represented is an open-open interval (lowerBound, upperBound)
+   */
+  typedef tuple<Node *, timeT, timeT> ipathBreadcrumb;
+
+
+  struct Treelet {
+    timeT time;
+    aggT value;
+    Node *node;
+    Node *rightChild;
+    Treelet(Node* node_, Node* rightChild_)
+      : node(node_), rightChild(rightChild_) {};
+
+    Treelet(timeT const& time_, aggT const& value_, Node *node_, Node* rightChild_)
+      : time(time_), value(value_), node(node_), rightChild(rightChild_) {};
+  };
+
+  tuple<Node*, bool> scopedDescend(
+      std::deque<ipathBreadcrumb>& latestPath,
+      Node* node, timeT const& t, timeT lb, timeT ub
+  ) {
+    int index;
+    for (;;) {
+      bool found = node->localSearch(t, index);
+      if (index > 0) lb = node->getTime(index - 1);
+      if (index < node->arity()-1) ub = node->getTime(index);
+
+      if (found)
+        return std::make_tuple(node, true);
+
+      if (node->isLeaf())
+        break;
+
+      node = node->getChild(index);
+      latestPath.push_back(std::make_tuple(node, lb, ub));
+    }
+    return std::make_tuple(node, false);
+  }
+
+  tuple<Node*, bool> multiSearchFirst(
+      std::deque<ipathBreadcrumb>& latestPath,
+      timeT const& t) {
+
+    Node* node = this->_root;
+    timeT lb = std::numeric_limits<timeT>::min(),
+          ub = std::numeric_limits<timeT>::max();
+
+    if (!node->isLeaf()) { // proper finger search if root is not also a leaf
+      node = this->_rightFinger;
+      lb = node->getTime(0);
+
+      while (!node->isRoot() && lb > t) {
+        Node* p = node->parent();
+        if (p == NULL) throw 1; // Parent of non-root should not be NULL
+
+        node = p; lb = p->getTime(0);
+      }
+      if (node->isRoot()) lb = std::numeric_limits<timeT>::min();
+    }
+    latestPath.push_back(std::make_tuple(node, lb, ub));
+
+    return scopedDescend(latestPath, node, t, lb, ub);
+  }
+
+  tuple<Node*, bool> multiSearchNext(
+      std::deque<ipathBreadcrumb>& latestPath,
+      timeT const& t) {
+    Node *node;
+    timeT lb, ub;
+    std::tie(node, lb, ub) = latestPath.back();
+
+    while (!(lb < t && t < ub) && !node->isRoot()) {
+      latestPath.pop_back();
+      std::tie(node, lb, ub) = latestPath.back();
+    }
+
+    return scopedDescend(latestPath, node, t, lb, ub);
+  }
+
+  inline
+  tuple<Node*, bool> multiSearchFind(
+      std::deque<ipathBreadcrumb>& latestPath,
+      timeT const& t) {
+    if (latestPath.empty())
+      return multiSearchFirst(latestPath, t);
+    else
+      return multiSearchNext(latestPath, t);
+  }
+
+  void doInitialMultisearch(
+        vector<pair<timeT const&, inT const&>> entries,
+        vector<Treelet> &treelets) {
+    std::deque<ipathBreadcrumb> latestPath;
+
+    for (const auto [time, value]: entries) {
+      auto [node, found] = multiSearchFind(latestPath, time);
+      if (found) {
+        node->localInsertEntry(_binOp, time, _binOp.lift(value));
+        treelets.push_back(Treelet(node, NULL));
+      } else
+        treelets.push_back(Treelet(time, value, node, NULL));
+    }
+  }
+
   void destroy(Node* node) {
     if (!node->isLeaf()) {
         for (int i = 0; i < node->arity(); i++) {
@@ -954,6 +1064,16 @@ public:
       timeT const time = 1 + leaf->getTime(leaf->arity() - 2);
       insert(time, val);
     }
+  }
+
+  void bulkInsert(vector<pair<timeT const&, inT const&>> entries) {
+    if (kind != finger) throw -1; // only support finger trees
+    vector<Treelet> treelets;
+    doInitialMultisearch(entries, treelets);
+
+    // TODO: Level by level insertions
+
+    // TODO: Aggregation repairs
   }
 
   timeT oldest() const {
