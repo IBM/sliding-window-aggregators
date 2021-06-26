@@ -1,3 +1,4 @@
 bin/
 .ccls-cache/
+.cache/
 /compile_commands.json

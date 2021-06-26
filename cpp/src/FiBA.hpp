@@ -5,6 +5,8 @@
 #include <cassert>
 #include <cmath>
 #include <limits>
+#include <ostream>
+#include <sstream>
 #include <vector>
 #include <utility>
 #include <tuple>
@@ -421,6 +423,17 @@ private:
       return os;
     }
 
+    string repr() {
+      ostringstream stream;
+      stream << "<";
+      for (int i=0;i<this->arity()-1;++i) {
+        if (i>0) stream << ", ";
+        stream << this->getTime(i);
+      }
+      stream << ">";
+      return stream.str();
+    }
+
     void pushBack(binOpFunc const &op, timeT time, aggT value, NodeP node) {
       assert(!isLeaf() && 0 < _arity && _arity <= maxArity);
       _arity++;
@@ -835,13 +848,24 @@ private:
 
     Treelet(timeT const& time_, aggT const& value_, Node *node_, Node* rightChild_)
       : time(time_), value(value_), node(node_), rightChild(rightChild_) {};
+    friend ostream& operator<<(ostream& os, const Treelet& tl) {
+      return os << "{"
+                << "time=" << tl.time << ", "
+                << "value=" << tl.value << ", "
+                << "node=" << tl.node << ", "
+                << "node=" << tl.rightChild << ", "
+                << "}";
+    }
   };
+
 
   tuple<Node*, bool> scopedDescend(
       std::deque<ipathBreadcrumb>& latestPath,
       Node* node, timeT const& t, timeT lb, timeT ub
   ) {
     int index;
+    cout << "down-- " << node->repr() << ", lb=" << lb
+         << ", ub=" << ub << endl;
     for (;;) {
       bool found = node->localSearch(t, index);
       if (index > 0) lb = node->getTime(index - 1);
@@ -855,6 +879,8 @@ private:
 
       node = node->getChild(index);
       latestPath.push_back(std::make_tuple(node, lb, ub));
+      cout << "down-- " << node->repr() << ", lb=" << lb << ", ub=" << ub
+           << endl;
     }
     return std::make_tuple(node, false);
   }
@@ -867,18 +893,23 @@ private:
     timeT lb = std::numeric_limits<timeT>::min(),
           ub = std::numeric_limits<timeT>::max();
 
+    cout << "multiSearchFirst(t=" << t << ")" << endl;
+
     if (!node->isLeaf()) { // proper finger search if root is not also a leaf
       node = this->_rightFinger;
       lb = node->getTime(0);
 
+      cout << "up-- " << node->repr() << ", lb = " << lb << endl;
       while (!node->isRoot() && lb > t) {
         Node* p = node->parent();
         if (p == NULL) throw 1; // Parent of non-root should not be NULL
 
         node = p; lb = p->getTime(0);
+        cout << "up-- " << node->repr() << ", lb = " << lb << endl;
       }
       if (node->isRoot()) lb = std::numeric_limits<timeT>::min();
     }
+    cout << "apex-- " << node->repr() << endl;
     latestPath.push_back(std::make_tuple(node, lb, ub));
 
     return scopedDescend(latestPath, node, t, lb, ub);
@@ -889,12 +920,23 @@ private:
       timeT const& t) {
     Node *node;
     timeT lb, ub;
+    cout << "multiSearchNext(t=" << t << ")" << endl;
     std::tie(node, lb, ub) = latestPath.back();
 
+    cout << "next: up-- " << node->repr() << ", lb = " << lb
+         << ", ub = " << ub
+         << endl;
     while (!(lb < t && t < ub) && !node->isRoot()) {
       latestPath.pop_back();
       std::tie(node, lb, ub) = latestPath.back();
+      cout << "next: up-- " << node->repr() << ", lb = " << lb
+           << ", ub = " << ub
+           << endl;
     }
+
+    cout << "apex-- " << node->repr() << ", lb = " << lb
+         << ", ub = " << ub
+         << endl;
 
     return scopedDescend(latestPath, node, t, lb, ub);
   }
@@ -910,7 +952,7 @@ private:
   }
 
   void doInitialMultisearch(
-        vector<pair<timeT const&, inT const&>> entries,
+        vector<pair<timeT, inT>> entries,
         vector<Treelet> &treelets) {
     std::deque<ipathBreadcrumb> latestPath;
 
@@ -922,6 +964,9 @@ private:
       } else
         treelets.push_back(Treelet(time, value, node, NULL));
     }
+    cout << "Initial treelets = [";
+    for (auto tl: treelets) { cout << tl << " "; }
+    cout << "]" << endl;
   }
 
   void destroy(Node* node) {
@@ -1094,7 +1139,7 @@ public:
     }
   }
 
-  void bulkInsert(vector<pair<timeT const&, inT const&>> entries) {
+  void bulkInsert(vector<pair<timeT, inT>> entries) {
     if (kind != finger) throw -1; // only support finger trees
     vector<Treelet> treelets;
     doInitialMultisearch(entries, treelets);

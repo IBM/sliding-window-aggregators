@@ -24,8 +24,13 @@ builder-image:
 
 test: bin/test
 
+bulk_test: bin/bulk_test
+
 bin/test: log src/test.cc $(SWAG_ALGOS)
 	$(CXX) -std=gnu++17 -DHAS_UNCAUGHT_EXCEPTIONS=1 -ggdb src/test.cc -o bin/test
+
+bin/bulk_test: log src/bulk_test.cc $(SWAG_ALGOS)
+	$(CXX) -std=gnu++17 -DHAS_UNCAUGHT_EXCEPTIONS=1 -ggdb src/bulk_test.cc -o $@
 
 benchmark_driver: log src/benchmark_driver.cc src/benchmark_core.h $(SWAG_ALGOS)
 	$(CXX) $(CXXFLAGS) src/benchmark_driver.cc -o bin/benchmark_driver
