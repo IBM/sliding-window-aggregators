@@ -300,7 +300,7 @@ private:
       localRepairAggIfUp(op);
     }
 
-    void localInsert(binOpFunc const &op, timeT time, aggT value, NodeP node) {
+    void localInsert(binOpFunc const &op, timeT time, aggT value, NodeP node, bool repairs=true) {
       assert(!isLeaf() && _arity <= maxArity);
       int i = _arity - 1;
       if (i==0 || time>getTime(i-1)) {
@@ -315,17 +315,17 @@ private:
         setEntry(i, time, value);
         setChild(i + 1, node);
         node->_parent = this;
-        localRepairAggIfUp(op);
+        if (repairs) localRepairAggIfUp(op);
       }
     }
 
-    bool localInsertEntry(binOpFunc const &op, timeT time, aggT value) {
+    bool localInsertEntry(binOpFunc const &op, timeT time, aggT value,bool repairs=true) {
       int index;
       bool found = localSearch(time, index);
       assert((found || isLeaf()) && _arity <= maxArity);
       if (found) {
         setEntry(index, time, op.combine(getValue(index), value));
-        localRepairAggIfUp(op);
+        if (repairs) localRepairAggIfUp(op);
       } else {
         if (_arity == 0 || index == _arity - 1) {
           pushBackEntry(op, time, value);
@@ -334,7 +334,7 @@ private:
           for (int i=_arity-2; i>index; i--)
             setEntry(i, getTime(i - 1), getValue(i - 1));
           setEntry(index, time, value);
-          localRepairAggIfUp(op);
+          if (repairs) localRepairAggIfUp(op);
         }
       }
       return !found;
@@ -392,7 +392,7 @@ private:
 
     ostream& print(ostream& os, int const indent) const {
       /*
-       * Note: commented out so Scott can compile and test 
+       * Note: commented out so Scott can compile and test
        * locally.
        *
       for (int c=0; c<indent; c++) os << "  ";
@@ -1111,40 +1111,107 @@ public:
     }
   }
 
-  // TODO: Merge children as well
   void mergeNodeTreelets(
       Node *node,
-      vector<Treelet> treelets, // TODO: Will "gradute" to an iterator later
-      vector<timeT> & times
+      typename vector<Treelet>::iterator& start,
+      typename vector<Treelet>::iterator& end,
+      size_t treeletCount,
+      vector<timeT> & times,
+      vector<Node*> & children
   ) {
     times.clear();
-    size_t n = node->arity() + treelets.size();
-    size_t ni = 0, ti = 0;
-    for (int i=0;i<n;i++) {
-      if (ni > node->arity()) { // done with the node
-        times.push_back(treelets[ti++].time);
+    size_t n = node->arity() + treeletCount;
+    size_t nodeIndex = 0;
+    typename vector<Treelet>::iterator tlIt = start;
+    children.push_back(node->getChild(0));
+    for (int outIndex=0;outIndex<n;outIndex++) {
+      if (nodeIndex > node->arity()) { // done with the node
+        children.push_back(tlIt->rightChild);
+        times.push_back((tlIt++)->time); // treelets[ti++].time);
       }
-      else if (ti > treelets.size()) { // done treelets
-        times.push_back(node->getTime(ni++));
+      else if (tlIt != end) { // done with treelets
+        children.push_back(node->getChild(nodeIndex+1));
+        times.push_back(node->getTime(nodeIndex++));
       }
       else { // proper merge
-        const timeT& tlTime = treelets[ti].time;
-        const timeT& nTime = node->getTime(ni);
+        const timeT& tlTime = tlIt->time;
+        const timeT& nTime = node->getTime(nodeIndex);
 
-        if (tlTime < nTime)
-          times.push_back(treelets[ti++].time);
-        else
-          times.push_back(node->getTime(ni++));
+        if (tlTime < nTime) {
+          children.push_back(tlIt->rightChild);
+          times.push_back((tlIt++)->time);
+        }
+        else {
+          children.push_back(node->getChild(nodeIndex+1));
+          times.push_back(node->getTime(nodeIndex++));
+        }
       }
+    }
+  }
+
+  void doBulkLocalInsertNoOverflow(
+    typename vector<Treelet>::iterator& groupStart,
+    typename vector<Treelet>::iterator& groupEnd,
+    Node *thisTarget)
+  {
+    for (auto it=groupStart;it!=groupEnd;it++) {
+      if (thisTarget->isLeaf())
+        thisTarget->localInsertEntry(_binOp, it->time, it->value);
+      else
+        thisTarget->localInsert(_binOp, it->time, it->value, it->rightChild);
+    }
+    thisTarget->localRepairAggIfUp(_binOp); // Repair once at the end
+  }
+
+  void doBulkLocalInsertOverflow(
+    typename vector<Treelet>::iterator& groupStart,
+    typename vector<Treelet>::iterator& groupEnd,
+    size_t groupCount,
+    Node *thisTarget)
+  {
+    vector<timeT> times;
+    vector<Node*> children;
+    mergeNodeTreelets(
+      thisTarget,
+      groupStart, groupEnd, groupCount,
+      times, children
+    );
+    // TODO: segment
+    // TODO: output new treelets
+  }
+
+  void doBulkLocalInsert(vector<Treelet>& treelets, vector<Treelet>&  nextTreelets) {
+    auto groupStart=treelets.begin();
+    while (groupStart!=treelets.end()) {
+      auto groupEnd = groupStart+1;
+      Node *thisTarget = groupStart->node;
+      size_t groupCount = 0;
+      while (groupEnd != treelets.end() && groupEnd->node == thisTarget) {
+        groupEnd++; groupCount++;
+      }
+
+      // Case 1: This node won't overflow
+      if (thisTarget->arity() + groupCount <= maxArity)
+        doBulkLocalInsertNoOverflow(groupStart, groupEnd, thisTarget);
+      else
+        // Case 2: the node will overflow
+        doBulkLocalInsertOverflow(groupStart, groupEnd, groupCount, thisTarget);
+
+      groupStart=groupEnd;
     }
   }
 
   void bulkInsert(vector<pair<timeT, inT>> entries) {
     if (kind != finger) throw -1; // only support finger trees
-    vector<Treelet> treelets;
-    doInitialMultisearch(entries, treelets);
+    vector<Treelet> thisTreelets, nextTreelets;
+    doInitialMultisearch(entries, thisTreelets);
 
-    // TODO: Level by level insertions
+    // WIP: Level by level insertions
+    while (!thisTreelets.empty()) {
+      nextTreelets.clear();
+      doBulkLocalInsert(thisTreelets, nextTreelets);
+      thisTreelets.swap(nextTreelets);
+    }
 
     // TODO: Aggregation repairs
   }
