@@ -368,6 +368,7 @@ private:
     }
 
     NodeP parent() const { return _parent; }
+    void setParent(Node* p) { _parent = p; }
 
     void popBack(binOpFunc const &op, int howMany) {
       assert(howMany < _arity);
@@ -497,6 +498,9 @@ private:
     }
 
     bool rightSpine() const { return _rightSpine; }
+    void setRightSpine(bool flag) { _rightSpine = flag; }
+
+    void clear() { _arity = 1; }
 
     void setEntry(int i, timeT time, aggT value) {
       assert(0 <= i && i < _arity - 1);
@@ -535,12 +539,12 @@ private:
     assert(checkInvariant(__FILE__, __LINE__, _root));
   }
 
-  void heightIncrease() {
+  void heightIncrease(bool check=true) {
     if (false) cout << "-- height-increase" << endl;
     Node* oldRoot = _root;
     _root = new Node(false);
     _root->setOnlyChild(oldRoot);
-    assert(checkInvariant(__FILE__, __LINE__, oldRoot));
+    if (check) assert(checkInvariant(__FILE__, __LINE__, oldRoot));
   }
 
   Node* leastCommonAncestor(Node* node1, Node* node2) const {
@@ -1111,43 +1115,51 @@ public:
     }
   }
 
-  void mergeNodeTreelets(
-      Node *node,
-      typename vector<Treelet>::iterator& start,
-      typename vector<Treelet>::iterator& end,
-      size_t treeletCount,
-      vector<timeT> & times,
-      vector<Node*> & children
-  ) {
-    times.clear();
-    size_t n = node->arity() + treeletCount;
-    size_t nodeIndex = 0;
-    typename vector<Treelet>::iterator tlIt = start;
-    children.push_back(node->getChild(0));
-    for (int outIndex=0;outIndex<n;outIndex++) {
-      if (nodeIndex > node->arity()) { // done with the node
-        children.push_back(tlIt->rightChild);
-        times.push_back((tlIt++)->time); // treelets[ti++].time);
-      }
-      else if (tlIt != end) { // done with treelets
-        children.push_back(node->getChild(nodeIndex+1));
-        times.push_back(node->getTime(nodeIndex++));
-      }
-      else { // proper merge
-        const timeT& tlTime = tlIt->time;
-        const timeT& nTime = node->getTime(nodeIndex);
+  class TreeletMerger {
+    public:
+    TreeletMerger()
+      : times(), values(), children() {}
 
-        if (tlTime < nTime) {
+    void mergeIn(Node *node, typename vector<Treelet>::iterator &start,
+                 typename vector<Treelet>::iterator &end, size_t treeletCount) {
+      times.clear();
+      size_t n = node->arity() + treeletCount;
+      size_t nodeIndex = 0;
+      typename vector<Treelet>::iterator tlIt = start;
+      children.push_back(node->getChild(0));
+      for (int outIndex=0;outIndex<n;outIndex++) {
+        if (nodeIndex > node->arity()) { // done with the node
           children.push_back(tlIt->rightChild);
-          times.push_back((tlIt++)->time);
+          values.push_back(tlIt->value);
+          times.push_back((tlIt++)->time); // treelets[ti++].time);
         }
-        else {
+        else if (tlIt != end) { // done with treelets
           children.push_back(node->getChild(nodeIndex+1));
+          values.push_back(node->getValue(nodeIndex+1));
           times.push_back(node->getTime(nodeIndex++));
+        }
+        else { // proper merge
+          const timeT& tlTime = tlIt->time;
+          const timeT& nTime = node->getTime(nodeIndex);
+
+          if (tlTime < nTime) {
+            children.push_back(tlIt->rightChild);
+            values.push_back(tlIt->value);
+            times.push_back((tlIt++)->time);
+          }
+          else {
+            children.push_back(node->getChild(nodeIndex+1));
+            values.push_back(node->getValue(nodeIndex+1));
+            times.push_back(node->getTime(nodeIndex++));
+          }
         }
       }
     }
-  }
+
+    vector<timeT> times;
+    vector<aggT> values;
+    vector<Node *> children;
+  };
 
   void doBulkLocalInsertNoOverflow(
     typename vector<Treelet>::iterator& groupStart,
@@ -1163,20 +1175,53 @@ public:
     thisTarget->localRepairAggIfUp(_binOp); // Repair once at the end
   }
 
-  void doBulkLocalInsertOverflow(
-    typename vector<Treelet>::iterator& groupStart,
-    typename vector<Treelet>::iterator& groupEnd,
-    size_t groupCount,
-    Node *thisTarget)
-  {
-    vector<timeT> times;
-    vector<Node*> children;
-    mergeNodeTreelets(
-      thisTarget,
-      groupStart, groupEnd, groupCount,
-      times, children
-    );
-    // TODO: segment
+  Node* migrateInto(Node* old, Node *target, int pi, int ub, TreeletMerger& tm) {
+    if (target == NULL)
+      target = new Node(old->isLeaf());
+
+    Node* parent = old->parent();
+    if (parent == NULL) { cerr << "should never happen" << endl; throw 1; }
+    target->setParent(parent);
+    target->clear();
+    if (!target->isLeaf())
+      target->setOnlyChild(tm.children[pi+1]);
+
+    for (int ci=pi+1;ci<ub;ci++) {
+      if (target->isLeaf())
+        target->pushBackEntry(_binOp, tm.times[ci], tm.values[ci]);
+      else
+        target->pushBack(_binOp, tm.times[ci], tm.values[ci], tm.children[ci+1]);
+    }
+
+    return target;
+  }
+
+  void massSplit(Node *thisTarget, TreeletMerger& tm) {
+    int rangeStart=-1, totalArity=tm.children.size(), a=minArity;
+    Node* nn=thisTarget;
+    // assumption: current node is overflowing
+    if (thisTarget->isRoot()) heightIncrease(false);
+
+    while (totalArity - rangeStart - 1 > maxArity) {
+      nn = migrateInto(thisTarget, nn, rangeStart, rangeStart + a + 1, tm);
+      rangeStart += a + 1, nn = NULL;
+    }
+
+    nn = migrateInto(thisTarget, nn, rangeStart, totalArity-1, tm);
+    if (nn != thisTarget && thisTarget->rightSpine()) {
+      nn->setRightSpine(true), thisTarget->setRightSpine(false);
+      if (this->_rightFinger == thisTarget)
+        this->_rightFinger = nn;
+    }
+  }
+
+  void doBulkLocalInsertOverflow(typename vector<Treelet>::iterator &groupStart,
+                                 typename vector<Treelet>::iterator &groupEnd,
+                                 size_t groupCount, Node *thisTarget) {
+    TreeletMerger tm;
+
+    tm.mergeIn(thisTarget, groupStart, groupEnd, groupCount);
+    massSplit(thisTarget, tm);
     // TODO: output new treelets
   }
 
