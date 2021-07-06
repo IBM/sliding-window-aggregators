@@ -1122,38 +1122,46 @@ public:
 
     void mergeIn(Node *node, typename vector<Treelet>::iterator &start,
                  typename vector<Treelet>::iterator &end, size_t treeletCount) {
-      times.clear();
-      size_t n = node->arity() + treeletCount;
+      size_t n = node->arity() + treeletCount - 1;
       size_t nodeIndex = 0;
       typename vector<Treelet>::iterator tlIt = start;
-      children.push_back(node->getChild(0));
+      if (!node->isLeaf()) { children.push_back(node->getChild(0)); }
+      cout << "mergeIn: treeletCount=" << treeletCount << ", trail=";
       for (int outIndex=0;outIndex<n;outIndex++) {
-        if (nodeIndex > node->arity()) { // done with the node
-          children.push_back(tlIt->rightChild);
+        if (nodeIndex >= node->arity()-1) { // done with the node
+          cout << "R";
+          if (!node->isLeaf()) { children.push_back(tlIt->rightChild); }
           values.push_back(tlIt->value);
           times.push_back((tlIt++)->time); // treelets[ti++].time);
         }
-        else if (tlIt != end) { // done with treelets
-          children.push_back(node->getChild(nodeIndex+1));
-          values.push_back(node->getValue(nodeIndex+1));
+        else if (tlIt == end) { // done with treelets
+          cout << "L";
+          if (!node->isLeaf()) { children.push_back(node->getChild(nodeIndex+1)); }
+          values.push_back(node->getValue(nodeIndex)); // TODO: check me
           times.push_back(node->getTime(nodeIndex++));
         }
         else { // proper merge
           const timeT& tlTime = tlIt->time;
           const timeT& nTime = node->getTime(nodeIndex);
 
+          cout << "C";
           if (tlTime < nTime) {
-            children.push_back(tlIt->rightChild);
+            if (!node->isLeaf()) { children.push_back(tlIt->rightChild); }
             values.push_back(tlIt->value);
             times.push_back((tlIt++)->time);
           }
           else {
-            children.push_back(node->getChild(nodeIndex+1));
-            values.push_back(node->getValue(nodeIndex+1));
+            if (!node->isLeaf()) { children.push_back(node->getChild(nodeIndex+1)); }
+            values.push_back(node->getValue(nodeIndex)); // TODO: check me
             times.push_back(node->getTime(nodeIndex++));
           }
         }
       }
+      cout << "." << endl;
+      // DEBUG prints
+      cout << "tm: times = [";
+      for (auto t: times) cout << t << ", ";
+      cout << "]" << endl;
     }
 
     vector<timeT> times;
@@ -1175,7 +1183,9 @@ public:
     thisTarget->localRepairAggIfUp(_binOp); // Repair once at the end
   }
 
-  Node* migrateInto(Node* old, Node *target, int pi, int ub, TreeletMerger& tm) {
+  Node* migrateInto(Node* old, Node *target, int pi, int ub, TreeletMerger& tm,
+                      vector<Treelet> &nextTreelets) {
+    cout << "migrateInto: old=" << old << ", pi=" << pi << ", ub=" << ub << endl;
     if (target == NULL)
       target = new Node(old->isLeaf());
 
@@ -1193,21 +1203,29 @@ public:
         target->pushBack(_binOp, tm.times[ci], tm.values[ci], tm.children[ci+1]);
     }
 
+    if (pi >= 0) { // new treelet
+      cout << "made new treelet: t=" << tm.times[pi] << ", p=" << parent << endl;
+      nextTreelets.push_back(Treelet(tm.times[pi], tm.values[pi], parent, target));
+    }
+
     return target;
   }
 
-  void massSplit(Node *thisTarget, TreeletMerger& tm) {
-    int rangeStart=-1, totalArity=tm.children.size(), a=minArity;
+  void massSplit(Node *thisTarget, TreeletMerger& tm,
+                 vector<Treelet> &nextTreelets) {
+    int rangeStart=-1, totalArity=tm.times.size()+1, a=minArity;
     Node* nn=thisTarget;
     // assumption: current node is overflowing
     if (thisTarget->isRoot()) heightIncrease(false);
 
     while (totalArity - rangeStart - 1 > maxArity) {
-      nn = migrateInto(thisTarget, nn, rangeStart, rangeStart + a + 1, tm);
+      nn = migrateInto(thisTarget, nn, rangeStart, rangeStart + a + 1, tm,
+                       nextTreelets);
       rangeStart += a + 1, nn = NULL;
     }
 
-    nn = migrateInto(thisTarget, nn, rangeStart, totalArity-1, tm);
+    nn = migrateInto(thisTarget, nn, rangeStart, totalArity-1, tm,
+                     nextTreelets);
     if (nn != thisTarget && thisTarget->rightSpine()) {
       nn->setRightSpine(true), thisTarget->setRightSpine(false);
       if (this->_rightFinger == thisTarget)
@@ -1215,13 +1233,15 @@ public:
     }
   }
 
-  void doBulkLocalInsertOverflow(typename vector<Treelet>::iterator &groupStart,
-                                 typename vector<Treelet>::iterator &groupEnd,
-                                 size_t groupCount, Node *thisTarget) {
+  void doBulkLocalInsertOverflow(typename vector<Treelet>::iterator& groupStart,
+                                 typename vector<Treelet>::iterator& groupEnd,
+                                 size_t groupCount, Node* thisTarget,
+                                 vector<Treelet>& nextTreelets) {
+    cout << "doBulkLocalInsert: groupCount=" << groupCount << endl;
     TreeletMerger tm;
 
     tm.mergeIn(thisTarget, groupStart, groupEnd, groupCount);
-    massSplit(thisTarget, tm);
+    massSplit(thisTarget, tm, nextTreelets);
     // TODO: output new treelets
   }
 
@@ -1230,17 +1250,19 @@ public:
     while (groupStart!=treelets.end()) {
       auto groupEnd = groupStart+1;
       Node *thisTarget = groupStart->node;
-      size_t groupCount = 0;
+      size_t groupCount = 1;
       while (groupEnd != treelets.end() && groupEnd->node == thisTarget) {
         groupEnd++; groupCount++;
       }
 
       // Case 1: This node won't overflow
-      if (thisTarget->arity() + groupCount <= maxArity)
+      if (thisTarget->arity() + groupCount <= maxArity) {
         doBulkLocalInsertNoOverflow(groupStart, groupEnd, thisTarget);
-      else
+        // TODO: add propagation for aggregate
+      } else
         // Case 2: the node will overflow
-        doBulkLocalInsertOverflow(groupStart, groupEnd, groupCount, thisTarget);
+        doBulkLocalInsertOverflow(groupStart, groupEnd, groupCount, thisTarget,
+                                  nextTreelets);
 
       groupStart=groupEnd;
     }
@@ -1256,6 +1278,9 @@ public:
       nextTreelets.clear();
       doBulkLocalInsert(thisTreelets, nextTreelets);
       thisTreelets.swap(nextTreelets);
+      cout << "(next) treelets = [";
+      for (auto tl: thisTreelets) { cout << tl << " "; }
+      cout << "]" << endl;
     }
 
     // TODO: Aggregation repairs
