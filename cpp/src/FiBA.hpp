@@ -395,7 +395,7 @@ private:
       /*
        * Note: commented out so Scott can compile and test
        * locally.
-       *
+       */
       for (int c=0; c<indent; c++) os << "  ";
       if (isLeaf()) {
         os << "(";
@@ -420,7 +420,7 @@ private:
       if (kind==finger && _leftSpine) os << " left-spine";
       if (kind==finger && _rightSpine) os << " right-spine";
       os << endl;
-      */
+      /* */
       return os;
     }
 
@@ -432,10 +432,16 @@ private:
         stream << this->getTime(i);
       }
       stream << ">";
+      stream << "(";
+      if (isRoot()) stream << " root";
+      if (isLeaf()) stream << " leaf";
+      if (kind==finger && _leftSpine) stream << " left-spine";
+      if (kind==finger && _rightSpine) stream << " right-spine";
+      stream << ")";
       return stream.str();
     }
 
-    void pushBack(binOpFunc const &op, timeT time, aggT value, NodeP node) {
+    void pushBack(binOpFunc const &op, timeT time, aggT value, NodeP node, bool eagerAgg=true) {
       assert(!isLeaf() && 0 < _arity && _arity <= maxArity);
       _arity++;
       setEntry(_arity-2, time, value);
@@ -444,7 +450,7 @@ private:
         getChild(_arity-2)->_rightSpine = false;
         node->_rightSpine = true;
       }
-      if (hasAggUp()) {
+      if (eagerAgg && hasAggUp()) {
         _agg = op.combine(_agg, value);
         IF_COLLECT_STATS(++statsCombineCount);
         _agg = op.combine(_agg, node->getAgg());
@@ -453,11 +459,11 @@ private:
       node->_parent = this;
     }
 
-    void pushBackEntry(binOpFunc const &op, timeT time, aggT value) {
+    void pushBackEntry(binOpFunc const &op, timeT time, aggT value, bool eagerAgg=true) {
       assert(isLeaf() && _arity <= maxArity);
       _arity++;
       setEntry(_arity - 2, time, value);
-      if (hasAggUp()) {
+      if (eagerAgg && hasAggUp()) {
         _agg = op.combine(_agg, value);
         IF_COLLECT_STATS(++statsCombineCount);
       }
@@ -500,7 +506,7 @@ private:
     bool rightSpine() const { return _rightSpine; }
     void setRightSpine(bool flag) { _rightSpine = flag; }
 
-    void clear() { _arity = 1; }
+    void clear() { _arity = 1; _agg = binOpFunc::identity; }
 
     void setEntry(int i, timeT time, aggT value) {
       assert(0 <= i && i < _arity - 1);
@@ -524,6 +530,8 @@ private:
     }
   };
 
+  #define FAKE_NODE ((Node *)0x1L)
+   // (dynamic_cast<Node*>(0x1))
   binOpFunc _binOp;
   Node *_root;
   Node *_leftFinger, *_rightFinger;
@@ -540,7 +548,7 @@ private:
   }
 
   void heightIncrease(bool check=true) {
-    if (false) cout << "-- height-increase" << endl;
+    if (true) cout << "-- height-increase" << endl;
     Node* oldRoot = _root;
     _root = new Node(false);
     _root->setOnlyChild(oldRoot);
@@ -847,6 +855,10 @@ private:
     aggT value;
     Node *node;
     Node *rightChild;
+
+    Treelet(Node* node_)
+      : node(node_), rightChild(FAKE_NODE) {};
+
     Treelet(Node* node_, Node* rightChild_)
       : node(node_), rightChild(rightChild_) {};
 
@@ -860,6 +872,7 @@ private:
                 << "node=" << tl.rightChild << ", "
                 << "}";
     }
+    inline bool isReal() { return rightChild != FAKE_NODE; }
   };
 
 
@@ -964,7 +977,7 @@ private:
       auto [node, found] = multiSearchFind(latestPath, time);
       if (found) {
         node->localInsertEntry(_binOp, time, _binOp.lift(value));
-        treelets.push_back(Treelet(node, NULL));
+        treelets.push_back(Treelet(node)); // Trigger propagation
       } else
         treelets.push_back(Treelet(time, value, node, NULL));
     }
@@ -1067,19 +1080,19 @@ public:
       timeT leafTime;
       aggT leafValue;
       if (right->arity() > minArity)
-	leaf = oldest(right, leafTime, leafValue);
+        leaf = oldest(right, leafTime, leafValue);
       else
-	leaf = youngest(left, leafTime, leafValue);
+        leaf = youngest(left, leafTime, leafValue);
       leaf->localEvictEntry(_binOp, leafTime);
       node->setEntry(index, leafTime, leafValue);
       topChanged = rebalanceAfterEvict(leaf, &hitLeft, &hitRight, node);
       if (topChanged->isDescendent(node)) {
-	while (topChanged != node) {
-	  topChanged = topChanged->parent();
-	  hitLeft |= topChanged->leftSpine();
-	  hitRight |= topChanged->rightSpine();
-	  topChanged->localRepairAggIfUp(_binOp);
-	}
+        while (topChanged != node) {
+          topChanged = topChanged->parent();
+          hitLeft |= topChanged->leftSpine();
+          hitRight |= topChanged->rightSpine();
+          topChanged->localRepairAggIfUp(_binOp);
+        }
         assert(topChanged == node);
       }
     }
@@ -1117,8 +1130,8 @@ public:
 
   class TreeletMerger {
     public:
-    TreeletMerger()
-      : times(), values(), children() {}
+    TreeletMerger(bool activateRightSpine)
+      : times(), values(), children(), rightSpine(activateRightSpine) {}
 
     void mergeIn(Node *node, typename vector<Treelet>::iterator &start,
                  typename vector<Treelet>::iterator &end, size_t treeletCount) {
@@ -1127,35 +1140,42 @@ public:
       typename vector<Treelet>::iterator tlIt = start;
       if (!node->isLeaf()) { children.push_back(node->getChild(0)); }
       cout << "mergeIn: treeletCount=" << treeletCount << ", trail=";
-      for (int outIndex=0;outIndex<n;outIndex++) {
-        if (nodeIndex >= node->arity()-1) { // done with the node
-          cout << "R";
+
+      while (nodeIndex < node->arity()-1 && tlIt != end) {
+        if (!tlIt->isReal()) {tlIt++; continue;} // skip "fake" treelets
+        const timeT& tlTime = tlIt->time;
+        const timeT& nTime = node->getTime(nodeIndex);
+
+        cout << "C";
+        if (tlTime < nTime) {
           if (!node->isLeaf()) { children.push_back(tlIt->rightChild); }
           values.push_back(tlIt->value);
-          times.push_back((tlIt++)->time); // treelets[ti++].time);
+          times.push_back((tlIt++)->time);
         }
-        else if (tlIt == end) { // done with treelets
-          cout << "L";
+        else {
           if (!node->isLeaf()) { children.push_back(node->getChild(nodeIndex+1)); }
           values.push_back(node->getValue(nodeIndex)); // TODO: check me
           times.push_back(node->getTime(nodeIndex++));
         }
-        else { // proper merge
-          const timeT& tlTime = tlIt->time;
-          const timeT& nTime = node->getTime(nodeIndex);
-
-          cout << "C";
-          if (tlTime < nTime) {
-            if (!node->isLeaf()) { children.push_back(tlIt->rightChild); }
-            values.push_back(tlIt->value);
-            times.push_back((tlIt++)->time);
-          }
-          else {
-            if (!node->isLeaf()) { children.push_back(node->getChild(nodeIndex+1)); }
-            values.push_back(node->getValue(nodeIndex)); // TODO: check me
-            times.push_back(node->getTime(nodeIndex++));
-          }
+        flipRightSpineFlag(node->isLeaf());
+      }
+      while (nodeIndex < node->arity()-1) { // done with treelets
+        cout << "L";
+        if (!node->isLeaf()) { children.push_back(node->getChild(nodeIndex+1)); }
+        values.push_back(node->getValue(nodeIndex)); // TODO: check me
+        times.push_back(node->getTime(nodeIndex));
+        nodeIndex++;
+        flipRightSpineFlag(node->isLeaf());
+      }
+      while (tlIt != end) {
+        if (!tlIt->isReal()) {tlIt++; continue;} // skip "fake" treelets
+        if (!node->isLeaf()) {
+          children.push_back(tlIt->rightChild);
         }
+        values.push_back(tlIt->value);
+        times.push_back(tlIt->time);
+        tlIt++;
+        flipRightSpineFlag(node->isLeaf());
       }
       cout << "." << endl;
       // DEBUG prints
@@ -1167,6 +1187,30 @@ public:
     vector<timeT> times;
     vector<aggT> values;
     vector<Node *> children;
+    bool rightSpine;
+    private:
+    void flipRightSpineFlag(bool leaf) {
+      if (!leaf && rightSpine) {
+        children[children.size()-2]->setRightSpine(false);
+        children[children.size()-1]->setRightSpine(true);
+      }
+    }
+  };
+  struct TopsRecord {
+    Node* topLeftSpine = NULL;
+    Node* topRightSpine = NULL;
+    bool rootTouched = false;
+
+    void topOut(Node* target) {
+      if (target->rightSpine())
+        topRightSpine = target;
+      if (target->leftSpine())
+        topLeftSpine = target;
+      if (target->isRoot()) {
+        rootTouched = true;
+        topLeftSpine = target, topRightSpine = target;
+      }
+    }
   };
 
   void doBulkLocalInsertNoOverflow(
@@ -1175,6 +1219,7 @@ public:
     Node *thisTarget)
   {
     for (auto it=groupStart;it!=groupEnd;it++) {
+      if (!it->isReal()) continue;
       if (thisTarget->isLeaf())
         thisTarget->localInsertEntry(_binOp, it->time, it->value);
       else
@@ -1186,6 +1231,11 @@ public:
   Node* migrateInto(Node* old, Node *target, int pi, int ub, TreeletMerger& tm,
                       vector<Treelet> &nextTreelets) {
     cout << "migrateInto: old=" << old << ", pi=" << pi << ", ub=" << ub << endl;
+    cout << "migrateInto: moved_times=";
+    if (pi>=0) cout << "(" << tm.times[pi] << ")";
+    cout << "[";
+    for (int i=pi+1;i<ub;i++) cout << tm.times[i] << ", ";
+    cout << "]" << endl;
     if (target == NULL)
       target = new Node(old->isLeaf());
 
@@ -1203,10 +1253,14 @@ public:
         target->pushBack(_binOp, tm.times[ci], tm.values[ci], tm.children[ci+1]);
     }
 
+    cout << "node formation completed " << target->repr() << endl;;
     if (pi >= 0) { // new treelet
-      cout << "made new treelet: t=" << tm.times[pi] << ", p=" << parent << endl;
-      nextTreelets.push_back(Treelet(tm.times[pi], tm.values[pi], parent, target));
+      cout << "made new treelet " << target << ": t=" << tm.times[pi]
+           << ", p=" << parent << endl;
+      nextTreelets.push_back(
+          Treelet(tm.times[pi], tm.values[pi], parent, target));
     }
+    target->localRepairAggIfUp(_binOp);
 
     return target;
   }
@@ -1215,10 +1269,13 @@ public:
                  vector<Treelet> &nextTreelets) {
     int rangeStart=-1, totalArity=tm.times.size()+1, a=minArity;
     Node* nn=thisTarget;
+    bool fromRightSpine=thisTarget->rightSpine();
     // assumption: current node is overflowing
     if (thisTarget->isRoot()) heightIncrease(false);
 
     while (totalArity - rangeStart - 1 > maxArity) {
+      if (nn == thisTarget && thisTarget->rightSpine())
+        thisTarget->setRightSpine(false);
       nn = migrateInto(thisTarget, nn, rangeStart, rangeStart + a + 1, tm,
                        nextTreelets);
       rangeStart += a + 1, nn = NULL;
@@ -1226,8 +1283,10 @@ public:
 
     nn = migrateInto(thisTarget, nn, rangeStart, totalArity-1, tm,
                      nextTreelets);
-    if (nn != thisTarget && thisTarget->rightSpine()) {
-      nn->setRightSpine(true), thisTarget->setRightSpine(false);
+    if (nn != thisTarget && fromRightSpine) {
+      cout << "setting " << nn << " to right spine!" << endl;
+      cout << "removing " << thisTarget << " from right spine." << endl;
+      nn->setRightSpine(true);
       if (this->_rightFinger == thisTarget)
         this->_rightFinger = nn;
     }
@@ -1238,33 +1297,41 @@ public:
                                  size_t groupCount, Node* thisTarget,
                                  vector<Treelet>& nextTreelets) {
     cout << "doBulkLocalInsert: groupCount=" << groupCount << endl;
-    TreeletMerger tm;
+    TreeletMerger tm(thisTarget->isRoot() && thisTarget->rightSpine());
 
     tm.mergeIn(thisTarget, groupStart, groupEnd, groupCount);
     massSplit(thisTarget, tm, nextTreelets);
-    // TODO: output new treelets
   }
 
-  void doBulkLocalInsert(vector<Treelet>& treelets, vector<Treelet>&  nextTreelets) {
-    auto groupStart=treelets.begin();
-    while (groupStart!=treelets.end()) {
-      auto groupEnd = groupStart+1;
+  void doBulkLocalInsert(vector<Treelet> &treelets,
+                         vector<Treelet> &nextTreelets, TopsRecord &tops) {
+    auto groupStart = treelets.begin();
+    while (groupStart != treelets.end()) {
+      auto groupEnd = groupStart;
       Node *thisTarget = groupStart->node;
-      size_t groupCount = 1;
+      size_t groupCount = 0;
       while (groupEnd != treelets.end() && groupEnd->node == thisTarget) {
-        groupEnd++; groupCount++;
+        if (groupEnd->isReal())
+          groupCount++; // count real treelets
+        groupEnd++;
       }
 
+      cout << "thisTarget: rightSpine=" << thisTarget->rightSpine() << endl;
       // Case 1: This node won't overflow
       if (thisTarget->arity() + groupCount <= maxArity) {
         doBulkLocalInsertNoOverflow(groupStart, groupEnd, thisTarget);
-        // TODO: add propagation for aggregate
       } else
         // Case 2: the node will overflow
         doBulkLocalInsertOverflow(groupStart, groupEnd, groupCount, thisTarget,
                                   nextTreelets);
 
-      groupStart=groupEnd;
+      if (thisTarget->hasAggUp())
+        nextTreelets.push_back(Treelet(thisTarget->parent()));
+      else {
+        cout << "topping out at " << thisTarget << endl;
+        tops.topOut(thisTarget);
+      }
+      groupStart = groupEnd;
     }
   }
 
@@ -1273,17 +1340,41 @@ public:
     vector<Treelet> thisTreelets, nextTreelets;
     doInitialMultisearch(entries, thisTreelets);
 
-    // WIP: Level by level insertions
+    TopsRecord tops;
+    // Level by level insertions
     while (!thisTreelets.empty()) {
       nextTreelets.clear();
-      doBulkLocalInsert(thisTreelets, nextTreelets);
+      doBulkLocalInsert(thisTreelets, nextTreelets, tops);
       thisTreelets.swap(nextTreelets);
       cout << "(next) treelets = [";
       for (auto tl: thisTreelets) { cout << tl << " "; }
       cout << "]" << endl;
     }
 
-    // TODO: Aggregation repairs
+    cout << "top_rs=" << tops.topRightSpine << ", top_ls=" << tops.topLeftSpine
+         << ", rootTouched=" << tops.rootTouched << endl;
+    if (tops.rootTouched)
+      _root->localRepairAgg(_binOp);
+
+    if (tops.topLeftSpine != NULL) { // Repair the left spine
+      Node *left = tops.topLeftSpine;
+      left->localRepairAgg(_binOp);
+      while (!left->isLeaf()) {
+        left = left->getChild(0);
+        left->localRepairAgg(_binOp);
+      }
+    }
+
+    if (tops.topRightSpine != NULL) { // Repair the right spine
+      Node *right = tops.topLeftSpine;
+      right->localRepairAgg(_binOp);
+      while (!right->isLeaf()) {
+        right = right->getChild(right->arity()-1);
+        right->localRepairAgg(_binOp);
+      }
+    }
+    cout << "_dump: " << *_root << endl;
+    checkInvariant(__FILE__, __LINE__);
   }
 
   timeT oldest() const {

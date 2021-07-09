@@ -19,12 +19,17 @@ int main(int argc, char* argv[]) {
     bfinger_agg.insert(1000, 100+1000);
     bfinger_agg.insert(1500, 100+1500);
 
+    auto ans = bfinger_agg.query();
+    std::cout << "ans0 = " << ans << std::endl;
     vector<pair<timestamp, int>> bulkOne{
         make_pair(5, 105),
         make_pair(507, 100+507),
         make_pair(509, 100+509),
         make_pair(511, 100+511),
         make_pair(515, 100+515),
+        make_pair(516, 100+516),
+        make_pair(517, 100+517),
+        make_pair(518, 100+518),
         make_pair(1700, 100+1700),
         make_pair(1701, 100+1701),
         make_pair(1702, 100+1702),
@@ -48,8 +53,8 @@ int main(int argc, char* argv[]) {
     };
     bfinger_agg.bulkInsert(bulkTwo);
 
-    auto ans = bfinger_agg.query();
-    std::cout << "ans = " << ans << std::endl;
+    auto ans1 = bfinger_agg.query();
+    std::cout << "ans = " << ans1 << std::endl;
 
     return 0;
 }
