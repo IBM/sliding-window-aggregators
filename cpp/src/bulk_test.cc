@@ -10,17 +10,35 @@
 typedef long long int timestamp;
 
 using namespace std;
-int main(int argc, char* argv[]) {
+template <class AGG>
+void brute_bulkInsert(AGG& agg, vector<pair<timestamp, int>>& bulk) {
+    for (auto [time, val]: bulk) {
+        agg.insert(time, val);
+    }
+}
 
-    auto bfinger_agg = btree::make_aggregate<timestamp, 2, btree::finger>(Sum<int>(), 0);
+/*
+ * simple_fixed_bulk - inserts two bulks of items into various locations
+ * throughout the tree.
+ */
+void simple_fixed_bulk() {
+    auto identity = 0;
+    auto f = Sum<int>();
+    auto bfinger_agg = btree::make_aggregate<timestamp, 2, btree::finger>(f, identity);
+    auto ref_agg = btree::make_aggregate<timestamp, 2, btree::finger>(f, identity);
 
-    bfinger_agg.insert(1, 101);
-    bfinger_agg.insert(500, 100+500);
-    bfinger_agg.insert(1000, 100+1000);
-    bfinger_agg.insert(1500, 100+1500);
+    vector<pair<timestamp, int>> initial{
+        make_pair(1, 101),
+        make_pair(500, 100 + 500),
+        make_pair(1000, 100 + 1000),
+        make_pair(1500, 100 + 1500)
+    };
+    for (auto [time, val]: initial) {
+        bfinger_agg.insert(time, val);
+        ref_agg.insert(time, val);
+    }
+    assert(ref_agg.query() == bfinger_agg.query());
 
-    auto ans = bfinger_agg.query();
-    std::cout << "ans0 = " << ans << std::endl;
     vector<pair<timestamp, int>> bulkOne{
         make_pair(5, 105),
         make_pair(507, 100+507),
@@ -37,6 +55,9 @@ int main(int argc, char* argv[]) {
     };
 
     bfinger_agg.bulkInsert(bulkOne);
+    brute_bulkInsert(ref_agg, bulkOne);
+
+    assert(ref_agg.query() == bfinger_agg.query());
 
     vector<pair<timestamp, int>> bulkTwo {
         make_pair(6, 100+6),
@@ -52,9 +73,83 @@ int main(int argc, char* argv[]) {
         make_pair(1711, 100+1711)
     };
     bfinger_agg.bulkInsert(bulkTwo);
+    brute_bulkInsert(ref_agg, bulkTwo);
+
+    assert(ref_agg.query() == bfinger_agg.query());
 
     auto ans1 = bfinger_agg.query();
     std::cout << "ans = " << ans1 << std::endl;
+}
+
+/*
+ * simple_fixed_extreme - inserts bulks of items into either left or right ends
+ * to test inserting in the extreme cases.
+ */
+void simple_fixed_extreme() {
+    auto identity = 0;
+    auto f = Sum<int>();
+    auto bfinger_agg = btree::make_aggregate<timestamp, 2, btree::finger>(f, identity);
+    auto ref_agg = btree::make_aggregate<timestamp, 2, btree::finger>(f, identity);
+
+    vector<pair<timestamp, int>> initial{
+        make_pair(400, 101),
+        make_pair(500, 100 + 500),
+        make_pair(1000, 100 + 1000),
+        make_pair(1500, 100 + 1500)
+    };
+    for (auto [time, val]: initial) {
+        bfinger_agg.insert(time, val);
+        ref_agg.insert(time, val);
+    }
+    assert(ref_agg.query() == bfinger_agg.query());
+
+    // Bulk 1: Insert at front (touching left spine)
+    {
+      vector<pair<timestamp, int>> bulk;
+      for (int t = 0; t < 200; t += 3)
+        bulk.push_back(make_pair(t, 100 + t));
+      bfinger_agg.bulkInsert(bulk);
+      brute_bulkInsert(ref_agg, bulk);
+    }
+    assert(ref_agg.query() == bfinger_agg.query());
+
+    // Bulk 2: Front (but interleaved with earlier)
+    {
+      vector<pair<timestamp, int>> bulk;
+      for (int t = 1; t < 200; t += 3)
+        bulk.push_back(make_pair(t, 100 + t));
+      bfinger_agg.bulkInsert(bulk);
+      brute_bulkInsert(ref_agg, bulk);
+    }
+    assert(ref_agg.query() == bfinger_agg.query());
+
+    // Bulk 3: Far right
+    {
+      vector<pair<timestamp, int>> bulk;
+      for (int t = 2000; t < 5000; t += 2)
+        bulk.push_back(make_pair(t, 100 + t));
+      bfinger_agg.bulkInsert(bulk);
+      brute_bulkInsert(ref_agg, bulk);
+    }
+    assert(ref_agg.query() == bfinger_agg.query());
+
+    // Bulk 4: Interleaving
+    {
+      vector<pair<timestamp, int>> bulk;
+      for (int t = 501; t < 1000; t += 2)
+        bulk.push_back(make_pair(t, 100 + t));
+      for (int t = 1100; t < 1500; t += 2)
+        bulk.push_back(make_pair(t, 100 + t));
+      for (int t = 2001; t < 4000; t += 2)
+        bulk.push_back(make_pair(t, 100 + t));
+      bfinger_agg.bulkInsert(bulk);
+      brute_bulkInsert(ref_agg, bulk);
+    }
+    assert(ref_agg.query() == bfinger_agg.query());
+}
+
+int main(int argc, char* argv[]) {
+    simple_fixed_bulk();
 
     return 0;
 }
