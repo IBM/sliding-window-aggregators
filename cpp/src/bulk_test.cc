@@ -2,6 +2,8 @@
 #include <iostream>
 #include <vector>
 #include <utility>
+#include <map>
+#include <set>
 
 #include "ReCalc.hpp"
 #include "AggregationFunctions.hpp"
@@ -86,6 +88,7 @@ void simple_fixed_bulk() {
  * to test inserting in the extreme cases.
  */
 void simple_fixed_extreme() {
+    cout << "=== simple_fixed_extreme:" << endl;
     auto identity = 0;
     auto f = Sum<int>();
     auto bfinger_agg = btree::make_aggregate<timestamp, 2, btree::finger>(f, identity);
@@ -103,6 +106,7 @@ void simple_fixed_extreme() {
     }
     assert(ref_agg.query() == bfinger_agg.query());
 
+    cout << "---- Bulk #1" << endl;
     // Bulk 1: Insert at front (touching left spine)
     {
       vector<pair<timestamp, int>> bulk;
@@ -113,6 +117,7 @@ void simple_fixed_extreme() {
     }
     assert(ref_agg.query() == bfinger_agg.query());
 
+    cout << "---- Bulk #2" << endl;
     // Bulk 2: Front (but interleaved with earlier)
     {
       vector<pair<timestamp, int>> bulk;
@@ -123,6 +128,7 @@ void simple_fixed_extreme() {
     }
     assert(ref_agg.query() == bfinger_agg.query());
 
+    cout << "---- Bulk #3" << endl;
     // Bulk 3: Far right
     {
       vector<pair<timestamp, int>> bulk;
@@ -133,6 +139,7 @@ void simple_fixed_extreme() {
     }
     assert(ref_agg.query() == bfinger_agg.query());
 
+    cout << "---- Bulk #4" << endl;
     // Bulk 4: Interleaving
     {
       vector<pair<timestamp, int>> bulk;
@@ -148,8 +155,54 @@ void simple_fixed_extreme() {
     assert(ref_agg.query() == bfinger_agg.query());
 }
 
+
+void random_bulk_inserts() {
+    const timestamp tLow = -10, tHigh = 100000;
+    const int nLow = 1, nHigh = 1000;
+    const int numReps = 200;
+    set<timestamp> used;
+
+    auto identity = 0;
+    auto f = Sum<int>();
+    auto bfinger_agg = btree::make_aggregate<timestamp, 2, btree::finger>(f, identity);
+    auto ref_agg = btree::make_aggregate<timestamp, 2, btree::finger>(f, identity);
+    srand(0x212);
+    for (int repNo=0;repNo<numReps;repNo++) {
+        cout << "----- Round #" << repNo << endl;
+        auto available = set<timestamp>();
+        for (timestamp t=tLow; t<=tHigh; t++) {
+            if (used.find(t)==used.end()) available.insert(t);
+        }
+        int count = nLow + rand()%(nHigh - nLow);
+        int expectedCount = count;
+        vector<pair<timestamp, int>> bulk;
+        while (count > 0) {
+            int tgt = rand()%available.size();
+            auto it=available.begin();
+            for (;tgt>0;it++, tgt--) {}
+
+            bulk.push_back(make_pair(*it, *it%101));
+            available.erase(it);
+            count--;
+        }
+        sort(bulk.begin(), bulk.end());
+        assert(bulk.size() == expectedCount);
+        assert(bulk.size()>0);
+        cout << "About to insert: n = " << bulk.size() << endl;
+        bfinger_agg.bulkInsert(bulk);
+        brute_bulkInsert(ref_agg, bulk);
+        auto refAns = ref_agg.query();
+        auto aggAns = bfinger_agg.query();
+        cout << "refAns = " << refAns << ", aggAns = " << aggAns << endl;
+        assert(refAns == aggAns);
+        for (auto [t, _val]: bulk) { used.insert(t); }
+    }
+}
+
 int main(int argc, char* argv[]) {
-    simple_fixed_bulk();
+    // simple_fixed_bulk();
+    // simple_fixed_extreme();
+    random_bulk_inserts();
 
     return 0;
 }

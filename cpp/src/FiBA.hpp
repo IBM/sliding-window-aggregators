@@ -424,7 +424,7 @@ private:
       return os;
     }
 
-    string repr() {
+    string repr() const {
       ostringstream stream;
       stream << "<";
       for (int i=0;i<this->arity()-1;++i) {
@@ -439,6 +439,30 @@ private:
       if (kind==finger && _rightSpine) stream << " right-spine";
       stream << ")";
       return stream.str();
+    }
+
+    ostream& printPython(ostream& os, int const indent) const {
+      for (int c=0; c<indent; c++) os << "  ";
+      os << "{ 'times': [";
+      for (int i=0, n=_arity-1; i<n; i++) {
+        if (i > 0) os << ", ";
+        os << getTime(i);
+      }
+      os << "]";
+      if (!isLeaf()) {
+        os << "," << endl;
+        for (int c=0; c<indent; c++) os << "  ";
+        os << "  'children': [" << endl;
+        for (int i=0, n=_arity-1; i<n; i++) {
+          getChild(i)->printPython(os, indent+1);
+          os << "," << endl;
+        }
+        getChild(_arity-1)->printPython(os, indent+1);
+        os << "]";
+      }
+      os << "}";
+      if (indent == 0) os << endl;
+      return os;
     }
 
     void pushBack(binOpFunc const &op, timeT time, aggT value, NodeP node, bool eagerAgg=true) {
@@ -1131,7 +1155,9 @@ public:
   class TreeletMerger {
     public:
     TreeletMerger(bool activateRightSpine)
-      : times(), values(), children(), rightSpine(activateRightSpine) {}
+      : times(), values(), children(), rightSpine(activateRightSpine) {
+      cout << "TreeletMerger(activateRightSpine=" << activateRightSpine << ")" << endl;
+    }
 
     void mergeIn(Node *node, typename vector<Treelet>::iterator &start,
                  typename vector<Treelet>::iterator &end, size_t treeletCount) {
@@ -1190,8 +1216,11 @@ public:
     bool rightSpine;
     private:
     void flipRightSpineFlag(bool leaf) {
-      if (!leaf && rightSpine) {
-        children[children.size()-2]->setRightSpine(false);
+      if (!leaf && rightSpine && children.size()>=2) {
+        cout << "flipRightSpineFlag: off ["
+             << children[children.size() - 2]->repr() << "], "
+             << " on [" << children[children.size() - 1]->repr() << "]" << endl;
+        children[children.size() - 2]->setRightSpine(false);
         children[children.size()-1]->setRightSpine(true);
       }
     }
@@ -1218,13 +1247,16 @@ public:
     typename vector<Treelet>::iterator& groupEnd,
     Node *thisTarget)
   {
+    cout << "> doBulkLocalInsertNoOverflow:";
     for (auto it=groupStart;it!=groupEnd;it++) {
       if (!it->isReal()) continue;
+      cout << "R";
       if (thisTarget->isLeaf())
         thisTarget->localInsertEntry(_binOp, it->time, it->value);
       else
         thisTarget->localInsert(_binOp, it->time, it->value, it->rightChild);
     }
+    cout << endl;
     thisTarget->localRepairAggIfUp(_binOp); // Repair once at the end
   }
 
@@ -1269,7 +1301,7 @@ public:
                  vector<Treelet> &nextTreelets) {
     int rangeStart=-1, totalArity=tm.times.size()+1, a=minArity;
     Node* nn=thisTarget;
-    bool fromRightSpine=thisTarget->rightSpine();
+    bool fromRightSpine=thisTarget->rightSpine() || thisTarget->isRoot();
     // assumption: current node is overflowing
     if (thisTarget->isRoot()) heightIncrease(false);
 
@@ -1297,7 +1329,7 @@ public:
                                  size_t groupCount, Node* thisTarget,
                                  vector<Treelet>& nextTreelets) {
     cout << "doBulkLocalInsert: groupCount=" << groupCount << endl;
-    TreeletMerger tm(thisTarget->isRoot() && thisTarget->rightSpine());
+    TreeletMerger tm(thisTarget->isRoot() || thisTarget->rightSpine());
 
     tm.mergeIn(thisTarget, groupStart, groupEnd, groupCount);
     massSplit(thisTarget, tm, nextTreelets);
@@ -1316,7 +1348,8 @@ public:
         groupEnd++;
       }
 
-      cout << "thisTarget: rightSpine=" << thisTarget->rightSpine() << endl;
+      cout << "thisTarget: rightSpine=" << thisTarget->rightSpine()
+           << ", isRoot=" << thisTarget->isRoot() << endl;
       // Case 1: This node won't overflow
       if (thisTarget->arity() + groupCount <= maxArity) {
         doBulkLocalInsertNoOverflow(groupStart, groupEnd, thisTarget);
@@ -1366,7 +1399,7 @@ public:
     }
 
     if (tops.topRightSpine != NULL) { // Repair the right spine
-      Node *right = tops.topLeftSpine;
+      Node *right = tops.topRightSpine;
       right->localRepairAgg(_binOp);
       while (!right->isLeaf()) {
         right = right->getChild(right->arity()-1);
@@ -1375,6 +1408,7 @@ public:
     }
     cout << "_dump: " << *_root << endl;
     checkInvariant(__FILE__, __LINE__);
+    cout << "---------------- done bulkInsert ------------------" << endl;
   }
 
   timeT oldest() const {
