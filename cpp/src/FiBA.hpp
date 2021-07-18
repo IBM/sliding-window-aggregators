@@ -24,6 +24,7 @@ using namespace std;
 #define IF_COLLECT_STATS(x) ;
 #endif
 
+#define FAKE_NODE ((Node *)0x1L)
 IF_COLLECT_STATS(static long statsCombineCount = 0);
 IF_COLLECT_STATS(static long statsTotalRepairAggCount = 0);
 IF_COLLECT_STATS(static long statsTotalSpineRepairCount = 0);
@@ -392,10 +393,6 @@ private:
     }
 
     ostream& print(ostream& os, int const indent) const {
-      /*
-       * Note: commented out so Scott can compile and test
-       * locally.
-       */
       for (int c=0; c<indent; c++) os << "  ";
       if (isLeaf()) {
         os << "(";
@@ -420,25 +417,23 @@ private:
       if (kind==finger && _leftSpine) os << " left-spine";
       if (kind==finger && _rightSpine) os << " right-spine";
       os << endl;
-      /* */
       return os;
     }
 
-    string repr() const {
-      ostringstream stream;
-      stream << "<";
+    ostream& repr(ostream& os) const {
+      os << "<";
       for (int i=0;i<this->arity()-1;++i) {
-        if (i>0) stream << ", ";
-        stream << this->getTime(i);
+        if (i>0) os << ", ";
+        os << this->getTime(i);
       }
-      stream << ">";
-      stream << "(";
-      if (isRoot()) stream << " root";
-      if (isLeaf()) stream << " leaf";
-      if (kind==finger && _leftSpine) stream << " left-spine";
-      if (kind==finger && _rightSpine) stream << " right-spine";
-      stream << ")";
-      return stream.str();
+      os << ">";
+      os << "(";
+      if (isRoot()) os << " root";
+      if (isLeaf()) os << " leaf";
+      if (kind==finger && _leftSpine) os << " left-spine";
+      if (kind==finger && _rightSpine) os << " right-spine";
+      os << ")";
+      return os;
     }
 
     ostream& printPython(ostream& os, int const indent) const {
@@ -465,7 +460,7 @@ private:
       return os;
     }
 
-    void pushBack(binOpFunc const &op, timeT time, aggT value, NodeP node, bool eagerAgg=true) {
+    void pushBack(binOpFunc const &op, timeT time, aggT value, NodeP node) {
       assert(!isLeaf() && 0 < _arity && _arity <= maxArity);
       _arity++;
       setEntry(_arity-2, time, value);
@@ -474,7 +469,7 @@ private:
         getChild(_arity-2)->_rightSpine = false;
         node->_rightSpine = true;
       }
-      if (eagerAgg && hasAggUp()) {
+      if (hasAggUp()) {
         _agg = op.combine(_agg, value);
         IF_COLLECT_STATS(++statsCombineCount);
         _agg = op.combine(_agg, node->getAgg());
@@ -483,11 +478,11 @@ private:
       node->_parent = this;
     }
 
-    void pushBackEntry(binOpFunc const &op, timeT time, aggT value, bool eagerAgg=true) {
+    void pushBackEntry(binOpFunc const &op, timeT time, aggT value) {
       assert(isLeaf() && _arity <= maxArity);
       _arity++;
       setEntry(_arity - 2, time, value);
-      if (eagerAgg && hasAggUp()) {
+      if (hasAggUp()) {
         _agg = op.combine(_agg, value);
         IF_COLLECT_STATS(++statsCombineCount);
       }
@@ -552,10 +547,15 @@ private:
     friend inline std::ostream& operator<<(std::ostream& os, Node const& x) {
       return x.print(os, 0);
     }
+
+    friend inline std::ostream& operator<<(std::ostream& os, Node const* x) {
+      if (x == NULL) return os << "NULL";
+      else if (x == FAKE_NODE) return os << "FAKE_NODE";
+      else return x->repr(os);
+    }
   };
 
-  #define FAKE_NODE ((Node *)0x1L)
-   // (dynamic_cast<Node*>(0x1))
+
   binOpFunc _binOp;
   Node *_root;
   Node *_leftFinger, *_rightFinger;
@@ -572,7 +572,7 @@ private:
   }
 
   void heightIncrease(bool check=true) {
-    if (true) cout << "-- height-increase" << endl;
+    if (false) cout << "-- height-increase" << endl;
     Node* oldRoot = _root;
     _root = new Node(false);
     _root->setOnlyChild(oldRoot);
@@ -905,7 +905,7 @@ private:
       Node* node, timeT const& t, timeT lb, timeT ub
   ) {
     int index;
-    cout << "down-- " << node->repr() << ", lb=" << lb
+    cout << "down-- " << node << ", lb=" << lb
          << ", ub=" << ub << endl;
     for (;;) {
       bool found = node->localSearch(t, index);
@@ -920,7 +920,7 @@ private:
 
       node = node->getChild(index);
       latestPath.push_back(std::make_tuple(node, lb, ub));
-      cout << "down-- " << node->repr() << ", lb=" << lb << ", ub=" << ub
+      cout << "down-- " << node << ", lb=" << lb << ", ub=" << ub
            << endl;
     }
     return std::make_tuple(node, false);
@@ -940,17 +940,17 @@ private:
       node = this->_rightFinger;
       lb = node->getTime(0);
 
-      cout << "up-- " << node->repr() << ", lb = " << lb << endl;
+      cout << "up-- " << node << ", lb = " << lb << endl;
       while (!node->isRoot() && lb > t) {
         Node* p = node->parent();
         if (p == NULL) throw 1; // Parent of non-root should not be NULL
 
         node = p; lb = p->getTime(0);
-        cout << "up-- " << node->repr() << ", lb = " << lb << endl;
+        cout << "up-- " << node << ", lb = " << lb << endl;
       }
       if (node->isRoot()) lb = std::numeric_limits<timeT>::min();
     }
-    cout << "apex-- " << node->repr() << endl;
+    cout << "apex-- " << node << endl;
     latestPath.push_back(std::make_tuple(node, lb, ub));
 
     return scopedDescend(latestPath, node, t, lb, ub);
@@ -964,18 +964,18 @@ private:
     cout << "multiSearchNext(t=" << t << ")" << endl;
     std::tie(node, lb, ub) = latestPath.back();
 
-    cout << "next: up-- " << node->repr() << ", lb = " << lb
+    cout << "next: up-- " << node << ", lb = " << lb
          << ", ub = " << ub
          << endl;
     while (!(lb < t && t < ub) && !node->isRoot()) {
       latestPath.pop_back();
       std::tie(node, lb, ub) = latestPath.back();
-      cout << "next: up-- " << node->repr() << ", lb = " << lb
+      cout << "next: up-- " << node << ", lb = " << lb
            << ", ub = " << ub
            << endl;
     }
 
-    cout << "apex-- " << node->repr() << ", lb = " << lb
+    cout << "apex-- " << node << ", lb = " << lb
          << ", ub = " << ub
          << endl;
 
@@ -1218,8 +1218,8 @@ public:
     void flipRightSpineFlag(bool leaf) {
       if (!leaf && rightSpine && children.size()>=2) {
         cout << "flipRightSpineFlag: off ["
-             << children[children.size() - 2]->repr() << "], "
-             << " on [" << children[children.size() - 1]->repr() << "]" << endl;
+             << children[children.size() - 2] << "], "
+             << " on [" << children[children.size() - 1] << "]" << endl;
         children[children.size() - 2]->setRightSpine(false);
         children[children.size()-1]->setRightSpine(true);
       }
@@ -1285,7 +1285,7 @@ public:
         target->pushBack(_binOp, tm.times[ci], tm.values[ci], tm.children[ci+1]);
     }
 
-    cout << "node formation completed " << target->repr() << endl;;
+    cout << "node formation completed " << target << endl;;
     if (pi >= 0) { // new treelet
       cout << "made new treelet " << target << ": t=" << tm.times[pi]
            << ", p=" << parent << endl;
