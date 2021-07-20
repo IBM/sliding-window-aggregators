@@ -1245,12 +1245,13 @@ private:
       return multiSearchNext(latestPath, t);
   }
 
-  void doInitialMultisearch(
-        vector<pair<timeT, inT>> entries,
-        vector<Treelet> &treelets) {
+  template <class Iterator>
+  void doInitialMultisearch(Iterator begin, Iterator end,
+                            vector<Treelet> &treelets) {
     std::deque<ipathBreadcrumb> latestPath;
 
-    for (const auto [time, value]: entries) {
+    for (auto it=begin;it!=end;it++) {
+      const auto [time, value] = *it;
       auto [node, found] = multiSearchFind(latestPath, time);
       if (found) {
         node->localInsertEntry(_binOp, time, _binOp.lift(value));
@@ -1716,9 +1717,13 @@ public:
   }
 
   void bulkInsert(vector<pair<timeT, inT>> entries) {
+    bulkInsert(entries.begin(), entries.end());
+  }
+  template <class Iterator>
+  void bulkInsert(Iterator begin, Iterator end) {
     if (kind != finger) throw -1; // only support finger trees
     vector<Treelet> thisTreelets, nextTreelets;
-    doInitialMultisearch(entries, thisTreelets);
+    doInitialMultisearch(begin, end, thisTreelets);
 
     TopsRecord tops;
     // Level by level insertions

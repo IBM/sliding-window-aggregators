@@ -117,7 +117,7 @@ void simple_fixed_extreme() {
       vector<pair<timestamp, int>> bulk;
       for (int t = 0; t < 200; t += 3)
         bulk.push_back(make_pair(t, 100 + t));
-      bfinger_agg.bulkInsert(bulk);
+      bfinger_agg.bulkInsert(bulk.begin(), bulk.end());
       brute_bulkInsert(ref_agg, bulk);
     }
     assert(ref_agg.query() == bfinger_agg.query());
@@ -128,7 +128,7 @@ void simple_fixed_extreme() {
       vector<pair<timestamp, int>> bulk;
       for (int t = 1; t < 200; t += 3)
         bulk.push_back(make_pair(t, 100 + t));
-      bfinger_agg.bulkInsert(bulk);
+      bfinger_agg.bulkInsert(bulk.begin(), bulk.end());
       brute_bulkInsert(ref_agg, bulk);
     }
     assert(ref_agg.query() == bfinger_agg.query());
