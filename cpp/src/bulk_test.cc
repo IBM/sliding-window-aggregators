@@ -23,11 +23,15 @@ void brute_bulkInsert(AGG& agg, vector<pair<timestamp, int>>& bulk) {
  * simple_fixed_bulk - inserts two bulks of items into various locations
  * throughout the tree.
  */
+template<int minArity>
 void simple_fixed_bulk() {
     auto identity = 0;
-    auto f = Sum<int>();
-    auto bfinger_agg = btree::make_aggregate<timestamp, 2, btree::finger>(f, identity);
-    auto ref_agg = btree::make_aggregate<timestamp, 2, btree::finger>(f, identity);
+    // auto f = Sum<int>();
+    // auto bfinger_agg = btree::make_aggregate<timestamp, minArity, btree::finger>(f, identity);
+    // auto ref_agg = btree::make_aggregate<timestamp, minArity, btree::finger>(f, identity);
+    auto f = Collect<int>();
+    auto bfinger_agg = btree::make_aggregate<timestamp, minArity, btree::finger>(f, identity);
+    auto ref_agg = btree::make_aggregate<timestamp, minArity, btree::finger>(f, identity);
 
     vector<pair<timestamp, int>> initial{
         make_pair(1, 101),
@@ -87,12 +91,13 @@ void simple_fixed_bulk() {
  * simple_fixed_extreme - inserts bulks of items into either left or right ends
  * to test inserting in the extreme cases.
  */
+template<int minArity>
 void simple_fixed_extreme() {
     cout << "=== simple_fixed_extreme:" << endl;
     auto identity = 0;
-    auto f = Sum<int>();
-    auto bfinger_agg = btree::make_aggregate<timestamp, 2, btree::finger>(f, identity);
-    auto ref_agg = btree::make_aggregate<timestamp, 2, btree::finger>(f, identity);
+    auto f = Collect<int>();
+    auto bfinger_agg = btree::make_aggregate<timestamp, minArity, btree::finger>(f, identity);
+    auto ref_agg = btree::make_aggregate<timestamp, minArity, btree::finger>(f, identity);
 
     vector<pair<timestamp, int>> initial{
         make_pair(400, 101),
@@ -155,17 +160,15 @@ void simple_fixed_extreme() {
     assert(ref_agg.query() == bfinger_agg.query());
 }
 
-
-void random_bulk_inserts() {
+template<int minArity, class F>
+void random_bulk_inserts(F f, int numReps=30) {
     const timestamp tLow = -10, tHigh = 100000;
     const int nLow = 1, nHigh = 1000;
-    const int numReps = 200;
     set<timestamp> used;
 
     auto identity = 0;
-    auto f = Sum<int>();
-    auto bfinger_agg = btree::make_aggregate<timestamp, 2, btree::finger>(f, identity);
-    auto ref_agg = btree::make_aggregate<timestamp, 2, btree::finger>(f, identity);
+    auto bfinger_agg = btree::make_aggregate<timestamp, minArity, btree::finger>(f, identity);
+    auto ref_agg = btree::make_aggregate<timestamp, minArity, btree::finger>(f, identity);
     srand(0x212);
     for (int repNo=0;repNo<numReps;repNo++) {
         cout << "----- Round #" << repNo << endl;
@@ -193,16 +196,96 @@ void random_bulk_inserts() {
         brute_bulkInsert(ref_agg, bulk);
         auto refAns = ref_agg.query();
         auto aggAns = bfinger_agg.query();
-        cout << "refAns = " << refAns << ", aggAns = " << aggAns << endl;
-        assert(refAns == aggAns);
+        // cout << "refAns = " << refAns << ", aggAns = " << aggAns << endl;
+        bool ok = refAns == aggAns;
+        cout << "--> " << ok << endl;
+        assert(ok);
         for (auto [t, _val]: bulk) { used.insert(t); }
     }
 }
 
+template<int minArity>
+bool checkContents(btree::Aggregate<int, minArity, btree::finger, Collect<int>>* tree, int minTime, int maxTime) {
+  auto collected = tree->query();
+  int pred = minTime;
+  for (auto j=collected.begin(); j!=collected.end(); j++) {
+    if (pred + 1 != *j) {
+	std::cerr << "collected items ";
+	for (auto k=collected.begin(); k!=collected.end(); k++)
+	  std::cerr << *k << " ";
+	std::cerr << std::endl << "do not match tree " << *tree;
+	return false;
+    }
+    pred = *j;
+  }
+  return pred == maxTime;
+}
+
+template<int minArity>
+void test_one(int height, int iteration, bool verbose) {
+  typedef btree::Aggregate<int, minArity, btree::finger, Collect<int>> Tree;
+  auto tree = Tree::makeRandomTree(Collect<int>(), height);
+  int maxTime = tree->youngest();
+  int minTime = rand() % maxTime;
+  if (verbose) std::cout << "iteration " << iteration << ", minTime " << minTime << ", maxTime " << maxTime << std::endl;
+  if (verbose) std::cout << *tree;
+  tree->evictUpTo(minTime);
+  if (!checkContents(tree, minTime, maxTime)) {
+    std::cerr << "iteration " << iteration << " failed evictUpTo" << std::endl;
+    assert(false);
+  }
+  if (iteration < 3) {
+    if (true) std::cout << "height " << height << ", iteration " << iteration << ", minTime " << minTime << ", maxTime " << maxTime << std::endl;
+    for (int i=1+maxTime, n=2*maxTime; i<=n; i++)
+      tree->insert(i, i);
+    if (!checkContents(tree, minTime, 2*maxTime)) {
+      std::cerr << "iteration " << iteration << " failed inserts" << std::endl;
+      assert(false);
+    }
+  }
+  delete tree;
+}
+void bulk_evict_tests() {
+  for (int i=0, n=100; i<n; i++)
+    test_one<2>(3, i, false);
+  for (int i=0, n=1000; i<n; i++)
+    test_one<2>(4, i, false);
+  for (int i=0, n=100; i<n; i++)
+    test_one<3>(4, i, false);
+  for (int i=0, n=100; i<n; i++)
+    test_one<4>(4, i, false);
+  for (int i=0, n=500; i<n; i++)
+    test_one<2>(5, i, false);
+  for (int i=0, n=250; i<n; i++)
+    test_one<2>(6, i, false);
+  for (int i=0, n=100; i<n; i++)
+    test_one<2>(7, i, false);
+  std::cout << "bulk_evict_test passed" << std::endl;
+}
+
+void bulk_insert_tests() {
+    simple_fixed_bulk<2>();
+    simple_fixed_extreme<2>();
+    random_bulk_inserts<2>(Sum<int>(), 30);
+    random_bulk_inserts<2>(Collect<int>(), 10);
+    simple_fixed_bulk<4>();
+    simple_fixed_extreme<4>();
+    random_bulk_inserts<4>(Sum<int>(), 30);
+    random_bulk_inserts<4>(Collect<int>(), 10);
+    simple_fixed_bulk<5>();
+    simple_fixed_extreme<5>();
+    random_bulk_inserts<5>(Sum<int>(), 30);
+    random_bulk_inserts<5>(Collect<int>(), 10);
+    simple_fixed_bulk<8>();
+    simple_fixed_extreme<8>();
+    random_bulk_inserts<8>(Sum<int>(), 30);
+    random_bulk_inserts<8>(Collect<int>(), 10);
+  std::cout << "bulk_insert_test passed" << std::endl;
+}
+
 int main(int argc, char* argv[]) {
-    // simple_fixed_bulk();
-    // simple_fixed_extreme();
-    random_bulk_inserts();
+    bulk_evict_tests();
+    bulk_insert_tests();
 
     return 0;
 }
