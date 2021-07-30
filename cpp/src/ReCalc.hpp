@@ -6,6 +6,12 @@
 #include <iterator>
 #include <cassert>
 
+#ifdef DEBUG
+#define _IFDEBUG(x) x
+#else
+#define _IFDEBUG(x)
+#endif
+
 namespace recalc {
   using namespace std;
 
