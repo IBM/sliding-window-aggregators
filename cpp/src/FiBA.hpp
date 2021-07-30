@@ -1378,7 +1378,7 @@ public:
     return true;
   }
 
-  void evictUpTo(timeT const& time) {
+  void bulkEvict(timeT const& time) {
     BoundaryT boundary;
     searchBoundary(time, boundary);
     Node* skipUpTo = NULL;

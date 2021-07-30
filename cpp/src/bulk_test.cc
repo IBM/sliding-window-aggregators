@@ -229,9 +229,9 @@ void test_one(int height, int iteration, bool verbose) {
   int minTime = rand() % maxTime;
   if (verbose) std::cout << "iteration " << iteration << ", minTime " << minTime << ", maxTime " << maxTime << std::endl;
   if (verbose) std::cout << *tree;
-  tree->evictUpTo(minTime);
+  tree->bulkEvict(minTime);
   if (!checkContents(tree, minTime, maxTime)) {
-    std::cerr << "iteration " << iteration << " failed evictUpTo" << std::endl;
+    std::cerr << "iteration " << iteration << " failed bulkEvict" << std::endl;
     assert(false);
   }
   if (iteration < 3) {
