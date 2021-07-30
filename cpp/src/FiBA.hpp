@@ -1249,15 +1249,25 @@ private:
   void doInitialMultisearch(Iterator begin, Iterator end,
                             vector<Treelet> &treelets) {
     std::deque<ipathBreadcrumb> latestPath;
-
+    bool first=true;
+    timeT prevTime;
     for (auto it=begin;it!=end;it++) {
       const auto [time, value] = *it;
       auto [node, found] = multiSearchFind(latestPath, time);
       if (found) {
         node->localInsertEntry(_binOp, time, _binOp.lift(value));
-        treelets.push_back(Treelet(node)); // Trigger propagation
-      } else
-        treelets.push_back(Treelet(time, _binOp.lift(value), node, NULL));
+        if (first || prevTime != time) // a new (i.e., unseen) timestamp
+          treelets.push_back(Treelet(node)); // Trigger propagation
+      } else {
+        if (first || prevTime != time) // a new (i.e., unseen) timestamp
+          treelets.push_back(Treelet(time, _binOp.lift(value), node, NULL));
+        else { // combine the value with the previous entry
+          Treelet &latestTreelet = treelets.back();
+          latestTreelet.value =
+              _binOp.combine(latestTreelet.value, _binOp.lift(value));
+        }
+      }
+      prevTime = time; first = false;
     }
     if (false) {
       cout << "Initial treelets = [";
