@@ -24,12 +24,12 @@ void brute_bulkInsert(AGG &agg, vector<pair<timestamp, int>> &bulk) {
  * throughout the tree.
  */
 template <int minArity> void simple_fixed_bulk() {
-  auto identity = 0;
   // auto f = Sum<int>();
   // auto bfinger_agg = btree::make_aggregate<timestamp, minArity,
   // btree::finger>(f, identity); auto ref_agg =
   // btree::make_aggregate<timestamp, minArity, btree::finger>(f, identity);
   auto f = Collect<int>();
+  auto identity = f.identity;
   auto bfinger_agg =
       btree::make_aggregate<timestamp, minArity, btree::finger>(f, identity);
   auto ref_agg =
@@ -79,8 +79,8 @@ template <int minArity> void simple_fixed_bulk() {
  */
 template <int minArity> void simple_fixed_extreme() {
   cout << "=== simple_fixed_extreme:" << endl;
-  auto identity = 0;
   auto f = Collect<int>();
+  auto identity = f.identity;
   auto bfinger_agg =
       btree::make_aggregate<timestamp, minArity, btree::finger>(f, identity);
   auto ref_agg =
@@ -144,18 +144,19 @@ template <int minArity> void simple_fixed_extreme() {
   assert(ref_agg.query() == bfinger_agg.query());
 }
 
-template <int minArity, bool allowRepeats = false, class F>
-void random_bulk_inserts(F f, int numReps = 30) {
+template <int minArity, bool allowRepeats = false, class F, class Tree>
+void execute_random_inserts(F f, Tree& bfinger_agg_, Tree& ref_agg_,
+                            int numReps, int seed=0x212) {
+  using OurTree = btree::Aggregate<timestamp, minArity, btree::finger, F>;
+  OurTree& bfinger_agg = bfinger_agg_;
+  OurTree& ref_agg = ref_agg_;
+
   const timestamp tLow = -10, tHigh = 100000;
   const int nLow = 1, nHigh = 1000;
   set<timestamp> used;
+  auto identity = f.identity;
 
-  auto identity = 0;
-  auto bfinger_agg =
-      btree::make_aggregate<timestamp, minArity, btree::finger>(f, identity);
-  auto ref_agg =
-      btree::make_aggregate<timestamp, minArity, btree::finger>(f, identity);
-  srand(0x212);
+  srand(seed);
   for (int repNo = 0; repNo < numReps; repNo++) {
     cout << "----- Round #" << repNo << endl;
     auto available = set<timestamp>();
@@ -194,6 +195,33 @@ void random_bulk_inserts(F f, int numReps = 30) {
         used.insert(t);
       }
   }
+}
+
+template <int minArity, bool allowRepeats = false, class F>
+void random_bulk_inserts(F f, int numReps = 30) {
+  auto bfinger_agg =
+      btree::make_aggregate<timestamp, minArity, btree::finger>(f, f.identity);
+  auto ref_agg =
+      btree::make_aggregate<timestamp, minArity, btree::finger>(f, f.identity);
+
+  execute_random_inserts<minArity>(f, bfinger_agg, ref_agg, numReps);
+}
+
+template <int minArity, class F>
+void random_bulk_inserts_from_random_tree(F f, int height, int iter, int numReps=10) {
+  using Tree = btree::Aggregate<timestamp, minArity, btree::finger, F>;
+  auto identity = f.identity;
+  auto bfinger_aggP = Tree::makeRandomTree(f, height);
+  auto ref_agg =
+      btree::make_aggregate<timestamp, minArity, btree::finger>(f, identity);
+
+  // dump everything we have in the random tree into the reference tree
+  bfinger_aggP->walk(
+      [&](auto const t, auto const v) { ref_agg.insert_lifted(t, v); });
+
+  execute_random_inserts<minArity>(f, *bfinger_aggP, ref_agg, numReps, iter);
+
+  delete bfinger_aggP;
 }
 
 template <int minArity>
@@ -294,11 +322,33 @@ void bulk_insert_with_repeats_tests() {
 }
 
 
-// TODO: bulk insert - starting from a randomly-generated tree
+/*
+ * bulk_insert_from_random_trees - bulk insert tests starting from non-empty
+ * randomly-generated trees of different arities.
+ */
+void bulk_insert_from_random_trees() {
+  const int N = 20;
+  for (int i=0;i<N;i++)
+    random_bulk_inserts_from_random_tree<2>(Collect<int>(), 3, i, 2);
+  for (int i=0;i<N;i++)
+    random_bulk_inserts_from_random_tree<2>(Collect<int>(), 4, i, 2);
+  for (int i=0;i<N;i++)
+    random_bulk_inserts_from_random_tree<2>(Collect<int>(), 5, i, 2);
+  for (int i=0;i<N;i++)
+    random_bulk_inserts_from_random_tree<2>(Collect<int>(), 7, i, 2);
+  for (int i=0;i<N;i++)
+    random_bulk_inserts_from_random_tree<3>(Collect<int>(), 4, i, 2);
+  for (int i=0;i<N;i++)
+    random_bulk_inserts_from_random_tree<4>(Collect<int>(), 3, i, 2);
+  for (int i=0;i<N;i++)
+    random_bulk_inserts_from_random_tree<8>(Collect<int>(), 3, i, 2);
+}
+
 int main(int argc, char *argv[]) {
   bulk_evict_tests();
   bulk_insert_tests();
   bulk_insert_with_repeats_tests();
+  bulk_insert_from_random_trees();
 
   return 0;
 }
