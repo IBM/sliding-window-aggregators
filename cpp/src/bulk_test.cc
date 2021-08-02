@@ -158,7 +158,7 @@ void execute_random_inserts(F f, Tree& bfinger_agg_, Tree& ref_agg_,
 
   srand(seed);
   for (int repNo = 0; repNo < numReps; repNo++) {
-    cout << "----- Round #" << repNo << endl;
+    // cout << "----- Round #" << repNo << endl;
     auto available = set<timestamp>();
     for (timestamp t = tLow; t <= tHigh; t++) {
       if (allowRepeats || used.find(t) == used.end())
@@ -181,14 +181,14 @@ void execute_random_inserts(F f, Tree& bfinger_agg_, Tree& ref_agg_,
     sort(bulk.begin(), bulk.end());
     assert(bulk.size() == expectedCount);
     assert(bulk.size() > 0);
-    cout << "About to insert: n = " << bulk.size() << endl;
+    // cout << "About to insert: n = " << bulk.size() << endl;
     bfinger_agg.bulkInsert(bulk);
     brute_bulkInsert(ref_agg, bulk);
     auto refAns = ref_agg.query();
     auto aggAns = bfinger_agg.query();
     // cout << "refAns = " << refAns << ", aggAns = " << aggAns << endl;
     bool ok = refAns == aggAns;
-    cout << "--> " << ok << endl;
+    // cout << "--> " << ok << endl;
     assert(ok);
     if (!allowRepeats)
       for (auto [t, _val] : bulk) {
@@ -342,6 +342,7 @@ void bulk_insert_from_random_trees() {
     random_bulk_inserts_from_random_tree<4>(Collect<int>(), 3, i, 2);
   for (int i=0;i<N;i++)
     random_bulk_inserts_from_random_tree<8>(Collect<int>(), 3, i, 2);
+  std::cout << "bulk_insert_from_random_trees passed" << std::endl;
 }
 
 int main(int argc, char *argv[]) {
