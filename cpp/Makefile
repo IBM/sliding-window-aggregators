@@ -6,7 +6,7 @@ SWAG_ALGOS=src/ChunkedArrayQueue.hpp \
            src/OkasakisQueue.hpp src/FiBA.hpp \
            src/TimestampedFifo.hpp
 
-all: benchmark_driver benchmark_driver_stats ooo_adversary ooo_adversary_stats data_benchmark dynamic_benchmark shared
+all: benchmark_driver benchmark_driver_stats ooo_benchmark ooo_benchmark_stats data_benchmark dynamic_benchmark shared
 
 bin:
 	mkdir bin
@@ -38,11 +38,11 @@ benchmark_driver: log src/benchmark_driver.cc src/benchmark_core.h $(SWAG_ALGOS)
 benchmark_driver_stats: log src/benchmark_driver.cc src/benchmark_core.h $(SWAG_ALGOS)
 	$(CXX) $(CXXFLAGS) -DCOLLECT_STATS src/benchmark_driver.cc -o bin/benchmark_driver_stats
 
-ooo_adversary: log src/ooo_adversary_benchmark_driver.cc src/benchmark_core.h src/FiBA.hpp
-	$(CXX) $(CXXFLAGS) src/ooo_adversary_benchmark_driver.cc -o bin/ooo_adversary_benchmark_driver
+ooo_benchmark: log src/ooo_benchmark_driver.cc src/benchmark_core.h src/FiBA.hpp
+	$(CXX) $(CXXFLAGS) src/ooo_benchmark_driver.cc -o bin/ooo_benchmark_driver
 
-ooo_adversary_stats: log src/ooo_adversary_benchmark_driver.cc src/benchmark_core.h src/FiBA.hpp
-	$(CXX) $(CXXFLAGS) -DCOLLECT_STATS src/ooo_adversary_benchmark_driver.cc -o bin/ooo_adversary_benchmark_driver_stats
+ooo_benchmark_stats: log src/ooo_benchmark_driver.cc src/benchmark_core.h src/FiBA.hpp
+	$(CXX) $(CXXFLAGS) -DCOLLECT_STATS src/ooo_benchmark_driver.cc -o bin/ooo_benchmark_driver_stats
 
 data_benchmark: log src/data_benchmark.cc src/benchmark_core.h src/DataGenerators.h
 	$(CXX) $(CXXFLAGS) src/data_benchmark.cc -o bin/data_benchmark

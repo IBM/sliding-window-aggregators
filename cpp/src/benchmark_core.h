@@ -195,7 +195,7 @@ void dynamic_benchmark(Aggregate agg, Experiment exp) {
 }
 
 template <typename Aggregate>
-void ooo_adversary_benchmark(Aggregate agg, Experiment exp) {
+void ooo_benchmark(Aggregate agg, Experiment exp) {
     typename Aggregate::outT force_side_effect = typename Aggregate::outT();
     typename Aggregate::timeT i = 0;
 
@@ -784,45 +784,45 @@ template <
     int minDegree, 
     btree::Kind kind
 >
-bool query_call_ooo_adversary_benchmark(std::string aggregator, std::string aggregator_req, std::string function_req, Experiment exp) {
+bool query_call_ooo_benchmark(std::string aggregator, std::string aggregator_req, std::string function_req, Experiment exp) {
     if (aggregator_req == aggregator && function_req == "sum") {
-        ooo_adversary_benchmark(MakeAggregate<Sum<int>, time, minDegree, kind>()(0), exp);
+        ooo_benchmark(MakeAggregate<Sum<int>, time, minDegree, kind>()(0), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "max") {
-        ooo_adversary_benchmark(MakeAggregate<Max<int>, time, minDegree, kind>()(0), exp);
+        ooo_benchmark(MakeAggregate<Max<int>, time, minDegree, kind>()(0), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "mean") {
-        ooo_adversary_benchmark(MakeAggregate<Mean<int>, time, minDegree, kind>()(Mean<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<Mean<int>, time, minDegree, kind>()(Mean<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "stddev") {
-        ooo_adversary_benchmark(MakeAggregate<SampleStdDev<int>, time, minDegree, kind>()(SampleStdDev<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<SampleStdDev<int>, time, minDegree, kind>()(SampleStdDev<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "argmax") {
-        ooo_adversary_benchmark(MakeAggregate<ArgMax<int, int, IdentityLifter<int>>, time, minDegree, kind>()(ArgMax<int, int, IdentityLifter<int>>::identity), exp);
+        ooo_benchmark(MakeAggregate<ArgMax<int, int, IdentityLifter<int>>, time, minDegree, kind>()(ArgMax<int, int, IdentityLifter<int>>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "bloom") {
-        ooo_adversary_benchmark(MakeAggregate<BloomFilter<int>, time, minDegree, kind>()(BloomFilter<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<BloomFilter<int>, time, minDegree, kind>()(BloomFilter<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "collect") {
-        ooo_adversary_benchmark(MakeAggregate<Collect<int>, time, minDegree, kind>()(Collect<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<Collect<int>, time, minDegree, kind>()(Collect<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "mincount") {
-        ooo_adversary_benchmark(MakeAggregate<MinCount<int>, time, minDegree, kind>()(MinCount<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<MinCount<int>, time, minDegree, kind>()(MinCount<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "geomean") {
-        ooo_adversary_benchmark(MakeAggregate<GeometricMean<int>, time, minDegree, kind>()(GeometricMean<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<GeometricMean<int>, time, minDegree, kind>()(GeometricMean<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "busyloop") {
-        ooo_adversary_benchmark(MakeAggregate<BusyLoop<int>, time, minDegree, kind>()(0), exp);
+        ooo_benchmark(MakeAggregate<BusyLoop<int>, time, minDegree, kind>()(0), exp);
         return true;
     }
     return false;
@@ -835,45 +835,45 @@ template <
     > class MakeAggregate, 
     typename time
 >
-bool query_call_ooo_adversary_benchmark(std::string aggregator, std::string aggregator_req, std::string function_req, Experiment exp) {
+bool query_call_ooo_benchmark(std::string aggregator, std::string aggregator_req, std::string function_req, Experiment exp) {
     if (aggregator_req == aggregator && function_req == "sum") {
-        ooo_adversary_benchmark(MakeAggregate<Sum<int>, time>()(0), exp);
+        ooo_benchmark(MakeAggregate<Sum<int>, time>()(0), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "max") {
-        ooo_adversary_benchmark(MakeAggregate<Max<int>, time>()(0), exp);
+        ooo_benchmark(MakeAggregate<Max<int>, time>()(0), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "mean") {
-        ooo_adversary_benchmark(MakeAggregate<Mean<int>, time>()(Mean<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<Mean<int>, time>()(Mean<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "stddev") {
-        ooo_adversary_benchmark(MakeAggregate<SampleStdDev<int>, time>()(SampleStdDev<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<SampleStdDev<int>, time>()(SampleStdDev<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "argmax") {
-        ooo_adversary_benchmark(MakeAggregate<ArgMax<int, int, IdentityLifter<int>>, time>()(ArgMax<int, int, IdentityLifter<int>>::identity), exp);
+        ooo_benchmark(MakeAggregate<ArgMax<int, int, IdentityLifter<int>>, time>()(ArgMax<int, int, IdentityLifter<int>>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "bloom") {
-        ooo_adversary_benchmark(MakeAggregate<BloomFilter<int>, time>()(BloomFilter<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<BloomFilter<int>, time>()(BloomFilter<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "collect") {
-        ooo_adversary_benchmark(MakeAggregate<Collect<int>, time>()(Collect<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<Collect<int>, time>()(Collect<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "mincount") {
-        ooo_adversary_benchmark(MakeAggregate<MinCount<int>, time>()(MinCount<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<MinCount<int>, time>()(MinCount<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "geomean") {
-        ooo_adversary_benchmark(MakeAggregate<GeometricMean<int>, time>()(GeometricMean<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<GeometricMean<int>, time>()(GeometricMean<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "busyloop") {
-        ooo_adversary_benchmark(MakeAggregate<BusyLoop<int>, time>()(0), exp);
+        ooo_benchmark(MakeAggregate<BusyLoop<int>, time>()(0), exp);
         return true;
     }
     return false;
