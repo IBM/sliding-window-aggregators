@@ -67,16 +67,23 @@ struct Experiment {
     size_t window_size;
     uint64_t iterations;
     uint64_t ooo_distance;
+    uint64_t bulk_insert;
+    uint64_t bulk_evict;
     bool latency;
     std::vector<cycle_duration>& latencies;
 
     Experiment(size_t w, uint64_t i, bool l, std::vector<cycle_duration>& ls):
-        window_size(w), iterations(i), ooo_distance(0), latency(l), latencies(ls)
+        window_size(w), iterations(i), ooo_distance(0), bulk_insert(1), bulk_evict(1), latency(l), latencies(ls)
     {}
 
     Experiment(size_t w, uint64_t i, uint64_t d, bool l, std::vector<cycle_duration>& ls):
-        window_size(w), iterations(i), ooo_distance(d), latency(l), latencies(ls)
+        window_size(w), iterations(i), ooo_distance(d), bulk_insert(1), bulk_evict(1), latency(l), latencies(ls)
     {}
+
+    Experiment(size_t w, uint64_t i, uint64_t d, uint64_t b_i, uint64_t b_e, bool l, std::vector<cycle_duration>& ls):
+        window_size(w), iterations(i), ooo_distance(d), bulk_insert(b_i), bulk_evict(b_e), latency(l), latencies(ls)
+    {}
+
 };
 
 struct SharingExperiment {
@@ -255,6 +262,53 @@ void ooo_benchmark(Aggregate agg, Experiment exp) {
             exp.latencies.push_back(after - before);
         }
         std::cerr << force_side_effect << std::endl;
+    }
+}
+
+template <typename Aggregate>
+void bulk_evict_benchmark(Aggregate agg, Experiment exp) {
+    typename Aggregate::outT force_side_effect = typename Aggregate::outT();
+    typename Aggregate::timeT i = 0;
+
+    std::cout << "window size " << exp.window_size 
+              << ", iterations " << exp.iterations 
+              << ", ooo " << exp.ooo_distance
+              << ", bulk insert " << exp.bulk_insert
+              << ", bulk evict " << exp.bulk_evict
+              << std::endl;
+    if (!exp.latency) {
+        for (i = exp.iterations - exp.ooo_distance; i < exp.iterations; ++i) {
+            agg.insert(i, 1 + (i % 101));
+        }
+        for (i = 0; i < exp.window_size - exp.ooo_distance; ++i) {
+            agg.insert(i, 1 + (i % 101));
+        }
+
+        if (agg.size() != exp.window_size) {
+            std::cerr << "window is not exactly full; should be " << exp.window_size << ", but is " << agg.size();
+            exit(2);
+        }
+
+        auto start = std::chrono::system_clock::now();
+
+        uint64_t start_pos = exp.window_size - exp.ooo_distance;
+        uint64_t stop_pos = exp.iterations - exp.ooo_distance;
+        for (i = start_pos; i < stop_pos; /* nop */) {
+            std::atomic_thread_fence(std::memory_order_seq_cst);
+
+            agg.bulkEvict(i-1);
+            for (typename Aggregate::timeT j = 0; j < exp.window_size && i < stop_pos; ++j, ++i) {
+                agg.insert(i, 1 + (i % 101));
+                silly_combine(force_side_effect, agg.query());
+            }
+        }
+
+        std::chrono::duration<double> runtime = std::chrono::system_clock::now() - start;
+        std::cout << "core runtime: " << runtime.count() << std::endl;
+        std::cerr << force_side_effect << std::endl;
+    }
+    else {
+        throw std::runtime_error("bulk_evict_benchmark latency not implemented");
     }
 }
 
@@ -874,6 +928,61 @@ bool query_call_ooo_benchmark(std::string aggregator, std::string aggregator_req
     }
     else if (aggregator_req == aggregator && function_req == "busyloop") {
         ooo_benchmark(MakeAggregate<BusyLoop<int>, time>()(0), exp);
+        return true;
+    }
+    return false;
+}
+
+template <
+    template <
+        typename, 
+        typename time, 
+        int minDegree, 
+        btree::Kind kind
+    > class MakeAggregate, 
+    typename time, 
+    int minDegree, 
+    btree::Kind kind
+>
+bool query_call_bulk_evict_benchmark(std::string aggregator, std::string aggregator_req, std::string function_req, Experiment exp) {
+    if (aggregator_req == aggregator && function_req == "sum") {
+        bulk_evict_benchmark(MakeAggregate<Sum<int>, time, minDegree, kind>()(0), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "max") {
+        bulk_evict_benchmark(MakeAggregate<Max<int>, time, minDegree, kind>()(0), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "mean") {
+        bulk_evict_benchmark(MakeAggregate<Mean<int>, time, minDegree, kind>()(Mean<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "stddev") {
+        bulk_evict_benchmark(MakeAggregate<SampleStdDev<int>, time, minDegree, kind>()(SampleStdDev<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "argmax") {
+        bulk_evict_benchmark(MakeAggregate<ArgMax<int, int, IdentityLifter<int>>, time, minDegree, kind>()(ArgMax<int, int, IdentityLifter<int>>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "bloom") {
+        bulk_evict_benchmark(MakeAggregate<BloomFilter<int>, time, minDegree, kind>()(BloomFilter<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "collect") {
+        bulk_evict_benchmark(MakeAggregate<Collect<int>, time, minDegree, kind>()(Collect<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "mincount") {
+        bulk_evict_benchmark(MakeAggregate<MinCount<int>, time, minDegree, kind>()(MinCount<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "geomean") {
+        bulk_evict_benchmark(MakeAggregate<GeometricMean<int>, time, minDegree, kind>()(GeometricMean<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "busyloop") {
+        bulk_evict_benchmark(MakeAggregate<BusyLoop<int>, time, minDegree, kind>()(0), exp);
         return true;
     }
     return false;
