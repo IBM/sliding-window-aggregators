@@ -31,7 +31,7 @@ functions = {
             }
 
 def main():
-    u.run_ooo(aggregators, functions, degrees, 'bulk_evict')
+    u.run_ooo(aggregators, functions, degrees, 'bulk_evict_insert')
 
 if __name__ == "__main__":
     main()
