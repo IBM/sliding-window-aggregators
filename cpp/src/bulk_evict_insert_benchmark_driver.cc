@@ -36,17 +36,17 @@ int main(int argc, char** argv) {
     std::vector<cycle_duration> latencies;
     Experiment exp(window_size, iterations, degree, bulk_size, latency, latencies);
 
-    if (!(query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 2, btree::finger>("bfinger2", aggregator, function, exp) ||
-          query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 4, btree::finger>("bfinger4", aggregator, function, exp) ||
-          query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 8, btree::finger>("bfinger8", aggregator, function, exp) ||
+    if (!(query_call_bulk_evict_insert_benchmark<btree::MakeAggregate, timestamp, 2, btree::finger>("bfinger2", aggregator, function, exp) ||
+          query_call_bulk_evict_insert_benchmark<btree::MakeAggregate, timestamp, 4, btree::finger>("bfinger4", aggregator, function, exp) ||
+          query_call_bulk_evict_insert_benchmark<btree::MakeAggregate, timestamp, 8, btree::finger>("bfinger8", aggregator, function, exp) ||
 
-          query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 2, btree::classic>("bclassic2", aggregator, function, exp) ||
-          query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 4, btree::classic>("bclassic4", aggregator, function, exp) ||
-          query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 8, btree::classic>("bclassic8", aggregator, function, exp) ||
+          query_call_bulk_evict_insert_benchmark<btree::MakeAggregate, timestamp, 2, btree::classic>("bclassic2", aggregator, function, exp) ||
+          query_call_bulk_evict_insert_benchmark<btree::MakeAggregate, timestamp, 4, btree::classic>("bclassic4", aggregator, function, exp) ||
+          query_call_bulk_evict_insert_benchmark<btree::MakeAggregate, timestamp, 8, btree::classic>("bclassic8", aggregator, function, exp) ||
 
-          query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 2, btree::knuckle>("bknuckle2", aggregator, function, exp) ||
-          query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 4, btree::knuckle>("bknuckle4", aggregator, function, exp) ||
-          query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 8, btree::knuckle>("bknuckle8", aggregator, function, exp)
+          query_call_bulk_evict_insert_benchmark<btree::MakeAggregate, timestamp, 2, btree::knuckle>("bknuckle2", aggregator, function, exp) ||
+          query_call_bulk_evict_insert_benchmark<btree::MakeAggregate, timestamp, 4, btree::knuckle>("bknuckle4", aggregator, function, exp) ||
+          query_call_bulk_evict_insert_benchmark<btree::MakeAggregate, timestamp, 8, btree::knuckle>("bknuckle8", aggregator, function, exp)
        )) {
         std::cerr << "error: no matching kind of experiment: " << aggregator << ", " << function << std::endl;
         return 2;
