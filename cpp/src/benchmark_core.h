@@ -68,21 +68,20 @@ struct Experiment {
     size_t window_size;
     uint64_t iterations;
     uint64_t ooo_distance;
-    uint64_t bulk_insert;
-    uint64_t bulk_evict;
+    uint64_t bulk_size;
     bool latency;
     std::vector<cycle_duration>& latencies;
 
     Experiment(size_t w, uint64_t i, bool l, std::vector<cycle_duration>& ls):
-        window_size(w), iterations(i), ooo_distance(0), bulk_insert(1), bulk_evict(1), latency(l), latencies(ls)
+        window_size(w), iterations(i), ooo_distance(0), bulk_size(1), latency(l), latencies(ls)
     {}
 
     Experiment(size_t w, uint64_t i, uint64_t d, bool l, std::vector<cycle_duration>& ls):
-        window_size(w), iterations(i), ooo_distance(d), bulk_insert(1), bulk_evict(1), latency(l), latencies(ls)
+        window_size(w), iterations(i), ooo_distance(d), bulk_size(1), latency(l), latencies(ls)
     {}
 
-    Experiment(size_t w, uint64_t i, uint64_t d, uint64_t b_i, uint64_t b_e, bool l, std::vector<cycle_duration>& ls):
-        window_size(w), iterations(i), ooo_distance(d), bulk_insert(b_i), bulk_evict(b_e), latency(l), latencies(ls)
+    Experiment(size_t w, uint64_t i, uint64_t d, uint64_t b, bool l, std::vector<cycle_duration>& ls):
+        window_size(w), iterations(i), ooo_distance(d), bulk_size(b), latency(l), latencies(ls)
     {}
 
 };
@@ -274,8 +273,7 @@ void bulk_evict_benchmark(Aggregate agg, Experiment exp) {
     std::cout << "window size " << exp.window_size 
               << ", iterations " << exp.iterations 
               << ", ooo " << exp.ooo_distance
-              << ", bulk insert " << exp.bulk_insert
-              << ", bulk evict " << exp.bulk_evict
+              << ", bulk size " << exp.bulk_size
               << std::endl;
     if (!exp.latency) {
         for (i = exp.iterations - exp.ooo_distance; i < exp.iterations; ++i) {
@@ -297,8 +295,8 @@ void bulk_evict_benchmark(Aggregate agg, Experiment exp) {
         for (i = start_pos; i < stop_pos; /* nop */) {
             std::atomic_thread_fence(std::memory_order_seq_cst);
 
-            agg.bulkEvict(i-1);
-            for (typename Aggregate::timeT j = 0; j < exp.window_size && i < stop_pos; ++j, ++i) {
+            agg.bulkEvict(i - exp.window_size + exp.bulk_size - 1);
+            for (typename Aggregate::timeT j = 0; j < exp.bulk_size && i < stop_pos; ++j, ++i) {
                 agg.insert(i, 1 + (i % 101));
                 silly_combine(force_side_effect, agg.query());
             }
@@ -346,12 +344,14 @@ public:
         return tmp;
     }
 
+    // For equality purposes, we only care about the timestamp, not the value 
+    // associated with that timestamp.
     friend bool operator==(const SyntheticGenerator& a, const SyntheticGenerator& b) {
-        return a._next == b._next;
+        return a._next.first == b._next.first;
     }
 
     friend bool operator!=(const SyntheticGenerator& a, const SyntheticGenerator& b) {
-        return a._next != b._next;
+        return a._next.first != b._next.first;
     }
 
 private:
@@ -366,8 +366,7 @@ void bulk_evict_insert_benchmark(Aggregate agg, Experiment exp) {
     std::cout << "window size " << exp.window_size 
               << ", iterations " << exp.iterations 
               << ", ooo " << exp.ooo_distance
-              << ", bulk insert " << exp.bulk_insert
-              << ", bulk evict " << exp.bulk_evict
+              << ", bulk size " << exp.bulk_size
               << std::endl;
     if (!exp.latency) {
         for (i = exp.iterations - exp.ooo_distance; i < exp.iterations; ++i) {
@@ -386,14 +385,14 @@ void bulk_evict_insert_benchmark(Aggregate agg, Experiment exp) {
 
         uint64_t start_pos = exp.window_size - exp.ooo_distance;
         uint64_t stop_pos = exp.iterations - exp.ooo_distance;
-        for (i = start_pos; i < stop_pos; i += exp.window_size) {
+        for (i = start_pos; i < stop_pos; i += exp.bulk_size) {
             std::atomic_thread_fence(std::memory_order_seq_cst);
 
-            agg.bulkEvict(i-1);
+            agg.bulkEvict(i - exp.window_size + exp.bulk_size - 1);
 
             using SG = SyntheticGenerator<typename Aggregate::timeT, uint64_t>;
             SG begin(i, i);
-            SG end(i + exp.window_size, i + exp.window_size);
+            SG end(i + exp.bulk_size + 1, i + exp.bulk_size + 1);
             agg.bulkInsert(begin, end);
 
             silly_combine(force_side_effect, agg.query());
