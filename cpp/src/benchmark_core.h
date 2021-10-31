@@ -297,9 +297,10 @@ void bulk_evict_benchmark(Aggregate agg, Experiment exp) {
 
             agg.bulkEvict(i - exp.window_size + exp.bulk_size - 1);
             for (typename Aggregate::timeT j = 0; j < exp.bulk_size && i < stop_pos; ++j, ++i) {
+                std::atomic_thread_fence(std::memory_order_seq_cst);
                 agg.insert(i, 1 + (i % 101));
-                silly_combine(force_side_effect, agg.query());
             }
+            silly_combine(force_side_effect, agg.query());
         }
 
         std::chrono::duration<double> runtime = std::chrono::system_clock::now() - start;
