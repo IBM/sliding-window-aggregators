@@ -1,9 +1,12 @@
 #pragma once
+#include<vector>
+#include<utility>
 
 template <class Base, typename timeT, typename inT>
 class BulkAdapter : public Base {
+  using Base::Base;
 
-  void bulkInsert(vector<pair<timeT, inT>> entries) {
+  void bulkInsert(std::vector<std::pair<timeT, inT>> entries) {
     bulkInsert(entries.begin(), entries.end());
   }
 
