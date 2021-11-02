@@ -8,6 +8,7 @@
 #include "AggregationFunctions.hpp"
 #include "FiBA.hpp"
 #include "ReCalc.hpp"
+#include "BulkAdapter.hpp"
 
 typedef long long int timestamp;
 
@@ -345,11 +346,46 @@ void bulk_insert_from_random_trees() {
   std::cout << "bulk_insert_from_random_trees passed" << std::endl;
 }
 
+template <int minArity, class F>
+void bulk_insert_from_adapter(F f) {
+  auto bfinger_wrapped = btree::make_aggregate<timestamp, minArity, btree::finger, F, typename F::Partial, true>(f, f.identity);
+
+  vector<pair<timestamp, int>> bulkOne{
+      make_pair(5, 105),           make_pair(507, 100 + 507),
+      make_pair(509, 100 + 509),   make_pair(511, 100 + 511),
+      make_pair(515, 100 + 515),   make_pair(516, 100 + 516),
+      make_pair(517, 100 + 517),   make_pair(518, 100 + 518),
+      make_pair(1700, 100 + 1700), make_pair(1701, 100 + 1701),
+      make_pair(1702, 100 + 1702), make_pair(1703, 100 + 1703)};
+
+  bfinger_wrapped.bulkInsert(bulkOne);
+  // reset
+  bfinger_wrapped = btree::make_aggregate<timestamp, minArity, btree::finger, F, typename F::Partial, true>(f, f.identity);
+
+  bfinger_wrapped.bulkInsert(bulkOne.begin(), bulkOne.end());
+}
+
+template <int minArity, class F>
+void bulk_evict_from_adapter(F f) {
+  auto bfinger_wrapped = btree::make_aggregate<timestamp, minArity, btree::finger, F, typename F::Partial, true>(f, f.identity);
+  vector<pair<timestamp, int>> bulkOne{
+      make_pair(5, 105),           make_pair(507, 100 + 507),
+      make_pair(509, 100 + 509),   make_pair(511, 100 + 511),
+      make_pair(515, 100 + 515),   make_pair(516, 100 + 516),
+      make_pair(517, 100 + 517),   make_pair(518, 100 + 518),
+      make_pair(1700, 100 + 1700), make_pair(1701, 100 + 1701),
+      make_pair(1702, 100 + 1702), make_pair(1703, 100 + 1703)};
+
+  bfinger_wrapped.bulkEvict(1000);
+}
+
 int main(int argc, char *argv[]) {
   bulk_evict_tests();
   bulk_insert_tests();
   bulk_insert_with_repeats_tests();
   bulk_insert_from_random_trees();
+  bulk_insert_from_adapter<3>(Collect<int>());
+  bulk_evict_from_adapter<3>(Collect<int>());
 
   return 0;
 }

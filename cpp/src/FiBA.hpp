@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "utils.h"
+#include "BulkAdapter.hpp"
 
 namespace btree {
 
@@ -1878,25 +1879,36 @@ public:
   static Aggregate* makeRandomTree(binOpFunc binOp, int height) {
     MakeRandomTree maker(binOp, height);
     return maker.result();
-  }
 
+  }
   friend inline std::ostream& operator<<(std::ostream& os, Aggregate const& x) {
     return x._root->print(os, 0);
   }
 };
 
-template <typename timeT, int minArity, Kind kind, class BinaryFunction, class T>
+template <typename timeT, int minArity, Kind kind, class BinaryFunction, class T, bool simulatedBulk=false>
 Aggregate<timeT, minArity, kind, BinaryFunction>
 make_aggregate(BinaryFunction f, T elem) {
-  return Aggregate<timeT, minArity, kind, BinaryFunction>(f);
+  if (simulatedBulk)
+    return BulkAdapter<
+      Aggregate<timeT, minArity, kind, BinaryFunction>,
+      timeT, typename BinaryFunction::In
+      >(f);
+  else
+    return Aggregate<timeT, minArity, kind, BinaryFunction>(f);
 }
 
-template <typename BinaryFunction, typename timeT, int minArity, Kind kind>
+template <typename BinaryFunction, typename timeT, int minArity, Kind kind, bool simulatedBulk=false>
 struct MakeAggregate {
   template <typename T>
   Aggregate<timeT, minArity, kind, BinaryFunction> operator()(T elem) {
     BinaryFunction f;
-    return make_aggregate<timeT, minArity, kind>(f, elem);
+    return make_aggregate<
+      timeT, minArity, kind,
+      BinaryFunction,
+      typename BinaryFunction::Partial,
+      simulatedBulk
+      >(f, elem);
   }
 };
 }
