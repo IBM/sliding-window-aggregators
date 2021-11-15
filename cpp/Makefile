@@ -4,7 +4,8 @@ SWAG_ALGOS=src/ChunkedArrayQueue.hpp \
            src/ImplicitQueueABA.hpp src/DABA.hpp src/DABALite.hpp \
 		   src/SubtractOnEvict.hpp \
            src/OkasakisQueue.hpp src/FiBA.hpp \
-           src/TimestampedFifo.hpp
+           src/TimestampedFifo.hpp \
+		   src/AMTA.hpp
 
 all: benchmark_driver \
 	 benchmark_driver_stats \
@@ -39,6 +40,9 @@ bin/test: log src/test.cc $(SWAG_ALGOS)
 
 bin/bulk_test: log src/bulk_test.cc $(SWAG_ALGOS)
 	$(CXX) -std=gnu++17 -DHAS_UNCAUGHT_EXCEPTIONS=1 -ggdb src/bulk_test.cc -o $@
+
+bin/amta_test: src/amta_test.cc $(SWAG_ALGOS)
+	$(CXX) -std=gnu++17 -ggdb -DHAS_UNCAUGHT_EXCEPTIONS=1 -ggdb src/amta_test.cc -o $@
 
 benchmark_driver: log src/benchmark_driver.cc src/benchmark_core.h $(SWAG_ALGOS)
 	$(CXX) $(CXXFLAGS) src/benchmark_driver.cc -o bin/benchmark_driver
