@@ -148,8 +148,26 @@ public:
     else
       rebuildFrontFrom(c);
   }
-  void bulkEvict() {
-    throw 1;
+  void bulkEvict(timeT const& time) {
+    if (_tails.empty() || time < oldest()) return ; // nothing to evict
+
+    for (;;) {
+      Node *head = _tails.back();
+      timeT rightTime = head->rightEmpty() ? head->times[0] : head->times[1];
+
+      if (time < rightTime) {
+        // stop at this root, but slice and dice it before we quit
+        if (head->full()) {
+          if (time >= head->times[0])
+            ; // delete the left subtree completely & slice the right tree
+          else
+            ; // slice the left subtree but leave the right tree alone
+        } else
+          ; // slice the right subtree
+        break; // done, no more eviction this time
+      }
+      // evict this whole root, plus perhaps some more
+    }
   }
   void bulkInsert(vector<pair<timeT, inT>> entries) {
     bulkInsert(entries.begin(), entries.end());
@@ -165,7 +183,7 @@ public:
 
   timeT oldest() const {
     return _frontNode->leftPopped() ? _frontNode->times[1]
-                                   : _frontNode->times[0];
+                                    : _frontNode->times[0];
   }
 
   outT query() const {
