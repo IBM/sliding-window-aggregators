@@ -7,9 +7,6 @@
 #include <vector>
 #include <iterator>
 
-
-// BUG: evicting size 1
-
 namespace amta {
 
 using namespace std;
@@ -24,14 +21,14 @@ public:
 private:
   struct Node {
     aggT agg[2];
-    timeT latestTime[2];
+    timeT times[2];
     Node* children[2];
     Node* parent;
     int arity;
-    Node(aggT a, Node* left) : parent(NULL), arity(0) { push_back(a, left); }
-    void push_back(aggT a, Node* child) {
+    Node(aggT a, timeT t, Node* left) : parent(NULL), arity(0) { push_back(a, t, left); }
+    void push_back(aggT a, timeT t, Node* child) {
       assert (arity == 0 || arity == 1);
-      agg[arity] = a; children[arity] = child; arity++;
+      agg[arity] = a; times[arity] = t; children[arity] = child; arity++;
       if (child != NULL) child->parent = this;
     }
     void pop_front() {
@@ -41,15 +38,16 @@ private:
       else
         arity = -1;
     }
-    bool leftEmpty() { return arity == -1; }
+    bool leftPopped() { return arity == -1; }
     bool rightEmpty() { return arity == 1; }
     bool full() { return arity == 2; }
 
     ostream& printNode(ostream& os) const {
       os << "[";
-      for (int i=0;i<arity;i++) os << this->agg[i] << ",";
+      for (int i = 0; i < arity; i++)
+        os << this->times[i] << "/" << this->agg[i] << ",";
       if (arity == -1)
-        os << "-, " << this->agg[1];
+        os << "-, " << this->times[1] << "/"  << this->agg[1];
       os << "]";
       return os;
     }
@@ -92,7 +90,7 @@ public:
   void rebuildFrontFrom(Node *c) {
     aggT agg = _frontStack.empty()?_identE:_frontStack.back();
     while (c != NULL) {
-      Node *next = c->leftEmpty() ? c->children[1] : c->children[0];
+      Node *next = c->leftPopped() ? c->children[1] : c->children[0];
       if (c->full()) {
         agg = _binOp.combine(c->agg[1], agg);
         _frontStack.push_back(agg);
@@ -150,7 +148,9 @@ public:
     else
       rebuildFrontFrom(c);
   }
-  void bulkEvict() { throw 1; }
+  void bulkEvict() {
+    throw 1;
+  }
   void bulkInsert(vector<pair<timeT, inT>> entries) {
     bulkInsert(entries.begin(), entries.end());
   }
@@ -164,8 +164,8 @@ public:
   }
 
   timeT oldest() const {
-    return _frontNode->leftEmpty() ? _frontNode->latestTime[1]
-                                   : _frontNode->latestTime[0];
+    return _frontNode->leftPopped() ? _frontNode->times[1]
+                                   : _frontNode->times[0];
   }
 
   outT query() const {
@@ -176,25 +176,29 @@ public:
 
   timeT youngest() const {
     Node *backNode = _tails.front();
-    return backNode->full() ? backNode->latestTime[1] : backNode->latestTime[0];
+    return (backNode->full() || backNode->leftPopped())
+               ? backNode->times[1]
+               : backNode->times[0];
   }
 
   void insert_lifted(timeT const& time, aggT const& liftedValue) {
     bool hasCarry = true;
     Node *carriedFrom = NULL;
     aggT carry = liftedValue;
+    timeT carryTime = time;
     bool bigRootHit = false;
     _backSum = _binOp.combine(_backSum, liftedValue);
     for (auto it = _tails.begin(); it != _tails.end(); it++) {
       Node *node = *it;
-      if (node->full() || node->leftEmpty()) { // has room for carry
+      if (node->full() || node->leftPopped()) { // has room for carry
         auto nextCarry = node->full()
                              ? _binOp.combine(node->agg[0], node->agg[1])
                              : node->agg[1];
-        *it = new Node(carry, carriedFrom); // with just carry
-        carriedFrom = node, carry = nextCarry;
+        auto nextTime = node->times[1];
+        *it = new Node(carry, carryTime, carriedFrom); // with just carry
+        carriedFrom = node, carry = nextCarry, carryTime = nextTime;
       } else { // found a non-full node
-        node->push_back(carry, carriedFrom);
+        node->push_back(carry, carryTime, carriedFrom);
         hasCarry = false;
         if (it + 1 == _tails.end())
           bigRootHit = true;
@@ -202,7 +206,7 @@ public:
       }
     }
     if (hasCarry) {
-      Node *n = new Node(carry, carriedFrom);
+      Node *n = new Node(carry, carryTime, carriedFrom);
       if (_tails.empty())
         _frontNode = n;
       _tails.push_back(n);
