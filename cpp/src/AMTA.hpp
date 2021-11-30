@@ -7,9 +7,24 @@
 #include <vector>
 #include <iterator>
 
+/* This file contains an implementation of our interpretation of the Amortized
+ * MTA data structure from the following paper:
+ *
+ *   Álvaro Villalba, Josep Lluís Berral, and David Carrera
+ *
+ *   Constant-Time Sliding Window Framework with Reduced Memory Footprint and
+ *   Efficient Bulk Evictions
+ *
+ *   IEEE Transactions on Parallel and Distributed Systems
+ *   (Volume: 30, Issue: 3, March 1 2019)
+ *
+ *   https://doi.org/10.1109/TPDS.2018.2868960
+ * */
 namespace amta {
 
 using namespace std;
+
+constexpr bool PRINT_DEBUG = false;
 template <typename _timeT, typename binOpFunc>
 class Aggregate {
 public:
@@ -19,28 +34,46 @@ public:
   typedef _timeT timeT;
 
 private:
+  /* Node is an internal binary-tree node structure and as such, a node
+   * can have at most two children.
+   *
+   *     o The "arity" field can be 0, 1, 2, -1, indicating how many children it
+   *     has, where -1 means one child on the right (left has been popped).
+   *
+   *     o For i = 0, 1, agg[i] stores the aggregated value of the subtree
+   *     pointed to by children[i]--and times[i] is the largest timestamp in
+   *     that subtree.
+   * */
   struct Node {
     aggT agg[2];
     timeT times[2];
     Node* children[2];
     Node* parent;
     int arity;
-    Node(aggT a, timeT t, Node* left) : parent(NULL), arity(0) { push_back(a, t, left); }
-    void push_back(aggT a, timeT t, Node* child) {
+    Node(aggT a, timeT t, Node* left) { init(a, t, left); }
+    void init(aggT a, timeT t, Node *left) {
+      parent = NULL, arity = 0;
+      push_back(a, t, left);
+    }
+    void push_back(aggT a, timeT t, Node *child) {
       assert (arity == 0 || arity == 1);
       agg[arity] = a; times[arity] = t; children[arity] = child; arity++;
       if (child != NULL) child->parent = this;
     }
-    void pop_front() {
+    Node* pop_front() {
       assert(arity != 0);
-      if (abs(arity) == 1)
+      if (abs(arity) == 1) {
         arity = 0;
-      else
+        return this->children[1];
+      } else {
         arity = -1;
+        return this->children[0];
+      }
     }
     bool leftPopped() { return arity == -1; }
     bool rightEmpty() { return arity == 1; }
     bool full() { return arity == 2; }
+    bool isLeaf() { return arity == 0; }
 
     ostream& printNode(ostream& os) const {
       os << "[";
@@ -63,6 +96,7 @@ private:
   Node* _frontNode; // ptr to the node storing the oldest elt
   deque<aggT> _frontStack;
   aggT _identE, _frontSum, _backSum;
+  vector<Node *> _freeList;
 
 public:
   Aggregate(binOpFunc binOp, aggT identE_)
@@ -71,7 +105,8 @@ public:
   }
 
   ~Aggregate() {
-      // TODO: write me
+    while (!_freeList.empty())
+      _compactFreeList();
   }
 
   void print() {
@@ -136,11 +171,11 @@ public:
       if (c->arity != 0)
         break;
       Node *next = c->parent;
-      delete c;
+      _deleteNode(c);
       c = next;
     }
     if (c == NULL) { // hit the big root
-//      std::cout << "big root emptied, moving on..." << std::endl;
+      if (PRINT_DEBUG) std::cout << "big root emptied, moving on..." << std::endl;
       _tails.pop_back();
       _frontNode = NULL;
       rebuildFront(), rebuildBack();
@@ -148,26 +183,108 @@ public:
     else
       rebuildFrontFrom(c);
   }
+
+  void _slice(Node *node, timeT const& time) {
+    while (node != NULL) {
+      if (!node->leftPopped()) {
+        if (time < node->times[0]) {
+          node = node->children[0];
+          continue;
+        }
+        else if (time == node->times[0]) {
+          _deleteNode(node->pop_front());
+          break;
+        }
+      }
+      if (!node->rightEmpty() && time < node->times[1]) {
+          _deleteNode(node->pop_front());
+          node = node->children[1];
+          continue;
+      }
+      // should never reach this case
+      throw 1;
+    }
+  }
+
+  void _emptyOutNode(Node *node) {
+    if (node != NULL && !node->isLeaf()) {
+      if (!node->leftPopped())
+        _freeList.push_back(node->children[0]);
+      if (!node->rightEmpty())
+        _freeList.push_back(node->children[1]);
+    }
+  }
+
+  Node* _newNode(aggT a, timeT t, Node* left) {
+    if (_freeList.empty())
+      return new Node(a, t, left);
+    Node* node = _freeList.back();
+    _freeList.pop_back();
+    _emptyOutNode(node);
+    node->init(a, t, left);
+    return node;
+  }
+
+  void _deleteNode(Node* node, bool recursive=true) {
+    if (node == NULL)
+      return ; // nothing to delete
+    if (recursive) _emptyOutNode(node);
+    delete node;
+  }
+
+  void _compactFreeList() {
+    Node* node = _freeList.back();
+    _freeList.pop_back();
+    _emptyOutNode(node);
+    delete node;
+  }
+
   void bulkEvict(timeT const& time) {
     if (_tails.empty() || time < oldest()) return ; // nothing to evict
 
-    for (;;) {
+    _size = -1; // size tracking will stop working from this point on
+    while (!_tails.empty()) {
       Node *head = _tails.back();
-      timeT rightTime = head->rightEmpty() ? head->times[0] : head->times[1];
-
-      if (time < rightTime) {
-        // stop at this root, but slice and dice it before we quit
+      timeT mostRecent = head->rightEmpty() ? head->times[0] : head->times[1];
+      if (PRINT_DEBUG) std::cout << "considering --" << *head << std::endl;
+      if (PRINT_DEBUG) std::cout << "mostRecent=" << mostRecent << std::endl;
+      if (time < mostRecent) {
+        if (PRINT_DEBUG) std::cout << "Slicing the head node" << std::endl;
+        // stop at this root, but slice it before we quit
         if (head->full()) {
-          if (time >= head->times[0])
-            ; // delete the left subtree completely & slice the right tree
-          else
-            ; // slice the left subtree but leave the right tree alone
-        } else
-          ; // slice the right subtree
-        break; // done, no more eviction this time
+          if (PRINT_DEBUG) std::cout << "head is full" << std::endl;
+          if (time >= head->times[0]) {
+            // delete the left subtree completely & slice the right tree
+            if (PRINT_DEBUG) std::cout << "== delete left; slice right" << std::endl;
+            _deleteNode(head->pop_front());
+            _slice(head->children[1], time);
+          } else {
+            if (PRINT_DEBUG) std::cout << "== slice left" << std::endl;
+             // slice the left subtree but leave the right tree alone
+            _slice(head->children[0], time);
+          }
+        } else {
+          int indicator = head->rightEmpty()?0:1;
+          if (PRINT_DEBUG) {
+            std::cout << "## not full, slicing indictor=" << indicator
+                      << std::endl;
+          }
+          _slice(head->children[indicator], time); // slice the only subtree
+        }
+
+        // done, no more eviction this time
+        break;
       }
+      if (PRINT_DEBUG) std::cout << "Evicting whole head" << std::endl;
       // evict this whole root, plus perhaps some more
+      _deleteNode(head); _tails.pop_back();
+
+      // shortcut the case where this head ends with time
+      if (mostRecent == time) break;
     }
+    rebuildBack(), rebuildFront();
+
+    if (PRINT_DEBUG) this->print();
   }
   void bulkInsert(vector<pair<timeT, inT>> entries) {
     bulkInsert(entries.begin(), entries.end());
@@ -213,7 +330,7 @@ public:
                              ? _binOp.combine(node->agg[0], node->agg[1])
                              : node->agg[1];
         auto nextTime = node->times[1];
-        *it = new Node(carry, carryTime, carriedFrom); // with just carry
+        *it = _newNode(carry, carryTime, carriedFrom); // with just carry
         carriedFrom = node, carry = nextCarry, carryTime = nextTime;
       } else { // found a non-full node
         node->push_back(carry, carryTime, carriedFrom);
@@ -224,7 +341,7 @@ public:
       }
     }
     if (hasCarry) {
-      Node *n = new Node(carry, carryTime, carriedFrom);
+      Node *n = _newNode(carry, carryTime, carriedFrom);
       if (_tails.empty())
         _frontNode = n;
       _tails.push_back(n);
@@ -238,13 +355,13 @@ public:
   }
 
   void insert(inT const& val) {
-    if (0 == _size) {
+    if (_tails.empty()) {
       insert(0, val);
     } else {
       timeT const time = 1 + youngest();
       insert(time, val);
     }
-    _size++;
+    if (_size >= 0) _size++;
   }
 };
 
