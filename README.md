@@ -113,6 +113,18 @@ provide more background on sliding window aggregation algorithms.
 - **first appeared**: no known source
 - **implementations**: [C++](cpp/src/SubtractOnEvict.hpp) (strictly in-order),
                       [Rust](rust/src/soe/mod.rs) (strictly in-order)
+                      
+# Amortized MTA (AMTA)
+- **full name**: Amortized Monoid Tree Aggregator
+- **ordering**: in-order required
+- **operator requirements**: associativity
+- **time complexity**: 
+    -  worst-case O(log *n*), amortized O(1) for `insert` and `evict`;
+    -  worst-case O(1) for `query`; and 
+    -  worst-case O(log *n*) for `bulkEvict`
+- **space requirements**: O(*n*)
+- **first appeared**: [Constant-Time Sliding Window Framework with Reduced Memory Footprint and Efficient Bulk Evictions][tpds2018]
+- **implementions**: [C++](cpp/src/AMTA.hpp)
 
 [swag_tutorial]: https://dl.acm.org/doi/abs/10.1145/3093742.3095107
 [swag_encyclopedia]: http://hirzels.com/martin/papers/encyc18-sliding-window.pdf
@@ -122,3 +134,4 @@ provide more background on sliding window aggregation algorithms.
 [vldb2019]: http://www.vldb.org/pvldb/vol12/p1167-tangwongsan.pdf
 [vldb2015]: http://www.vldb.org/pvldb/vol8/p702-tangwongsan.pdf
 [vldbj2021]: https://doi.org/10.1007/s00778-021-00668-3
+[tpds2018]: https://doi.org/10.1109/TPDS.2018.2868960
