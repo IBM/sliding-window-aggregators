@@ -23,6 +23,7 @@
 #include "Reactive.hpp"
 #include "OkasakisQueue.hpp"
 #include "FiBA.hpp"
+#include "AMTA.hpp"
 
 typedef long long int timestamp;
 
@@ -58,6 +59,7 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
     auto bclassic_agg = btree::make_aggregate<timestamp, 2, btree::classic>(f, identity);
     auto bknuckle_agg = btree::make_aggregate<timestamp, 2, btree::knuckle>(f, identity);
     auto bfinger_agg = btree::make_aggregate<timestamp, 2, btree::finger>(f, identity);
+    auto amta_agg = amta::make_aggregate<timestamp>(f, identity);
 
     for (uint64_t i = 0; i < iterations; ++i) {
         size_t sz = recalc_agg.size();
@@ -76,6 +78,7 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
         real_assert(sz == bclassic_agg.size(), name + ": recalc size != bclassic");
         real_assert(sz == bknuckle_agg.size(), name + ": recalc size != bknuckle");
         real_assert(sz == bfinger_agg.size(), name + ": recalc size != bfinger");
+        real_assert(sz == amta_agg.size(), name + ": recalc size != amta");
 
         if (recalc_agg.size() == window_size) {
             daba_agg.evict();
@@ -94,6 +97,7 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
             bclassic_agg.evict();
             bknuckle_agg.evict();
             bfinger_agg.evict();
+            amta_agg.evict();
         }
 
         recalc_agg.insert(i);
@@ -112,6 +116,7 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
         bclassic_agg.insert(i);
         bknuckle_agg.insert(i);
         bfinger_agg.insert(i);
+        amta_agg.insert(i);
 
         typename F::Out res = recalc_agg.query();
         real_assert(res == daba_agg.query(), name + ": recalc != daba");
@@ -129,6 +134,7 @@ void test_alg_no_inverse(F f, typename F::Partial identity, uint64_t iterations,
         real_assert(res == bclassic_agg.query(), name + ": recalc != bclassic");
         real_assert(res == bknuckle_agg.query(), name + ": recalc != bknuckle");
         real_assert(res == bfinger_agg.query(), name + ": recalc != bfinger");
+        real_assert(res == amta_agg.query(), name + ": recalc != amta");
     }
     std::cout << name << " passed" << std::endl;
 }
@@ -151,6 +157,7 @@ void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iteration
     auto bclassic_agg = btree::make_aggregate<timestamp, 2, btree::classic>(f, identity);
     auto bknuckle_agg = btree::make_aggregate<timestamp, 2, btree::knuckle>(f, identity);
     auto bfinger_agg = btree::make_aggregate<timestamp, 2, btree::finger>(f, identity);
+    auto amta_agg = amta::make_aggregate<timestamp>(f, identity);
 
     for (uint64_t i = 0; i < iterations; ++i) {
         size_t sz = recalc_agg.size();
@@ -168,6 +175,7 @@ void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iteration
         real_assert(sz == bclassic_agg.size(), name + ": recalc size != bclassic");
         real_assert(sz == bknuckle_agg.size(), name + ": recalc size != bknuckle");
         real_assert(sz == bfinger_agg.size(), name + ": recalc size != bfinger");
+        real_assert(sz == amta_agg.size(), name + ": recalc size != amta");
 
         if (recalc_agg.size() == window_size) {
             daba_agg.evict();
@@ -186,6 +194,7 @@ void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iteration
             bclassic_agg.evict();
             bknuckle_agg.evict();
             bfinger_agg.evict();
+            amta_agg.evict();
         }
 
         recalc_agg.insert(i);
@@ -204,6 +213,7 @@ void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iteration
         bclassic_agg.insert(i);
         bknuckle_agg.insert(i);
         bfinger_agg.insert(i);
+        amta_agg.insert(i);
 
         typename F::Out res = recalc_agg.query();
         real_assert(res == daba_agg.query(), name + ": recalc != daba");
@@ -221,6 +231,7 @@ void test_alg_with_inverse(F f, typename F::Partial identity, uint64_t iteration
         real_assert(res == bclassic_agg.query(), name + ": recalc != bclassic");
         real_assert(res == bknuckle_agg.query(), name + ": recalc != bknuckle");
         real_assert(res == bfinger_agg.query(), name + ": recalc != bfinger");
+        real_assert(res == amta_agg.query(), name + ": recalc != amta");
     }
     std::cout << name << " passed" << std::endl;
 }
@@ -245,6 +256,7 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
   auto bclassic_agg = btree::make_aggregate<timestamp, 2, btree::classic>(f, identity);
   auto bknuckle_agg = btree::make_aggregate<timestamp, 2, btree::knuckle>(f, identity);
   auto bfinger_agg = btree::make_aggregate<timestamp, 2, btree::finger>(f, identity);
+  auto amta_agg = amta::make_aggregate<timestamp>(f, identity);
 
   while (rep-- > 0) {
     for (uint64_t i=0;i<window_size;i++) {
@@ -263,6 +275,7 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
       bclassic_agg.insert(i);
       bknuckle_agg.insert(i);
       bfinger_agg.insert(i);
+      amta_agg.insert(i);
 
       typename F::Out res = recalc_agg.query();
       real_assert(res == daba_agg.query(), name + ": recalc != daba");
@@ -279,6 +292,7 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
       real_assert(res == bclassic_agg.query(), name + ": recalc != bclassic");
       real_assert(res == bknuckle_agg.query(), name + ": recalc != bknuckle");
       real_assert(res == bfinger_agg.query(), name + ": recalc != bfinger");
+      real_assert(res == amta_agg.query(), name + ": recalc != amta");
     }
     // drain
     while (recalc_agg.size() > 0) {
@@ -297,6 +311,7 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
       bclassic_agg.evict();
       bknuckle_agg.evict();
       bfinger_agg.evict();
+      amta_agg.evict();
 
       typename F::Out res = recalc_agg.query();
       real_assert(res == daba_agg.query(), name + ": recalc != daba");
@@ -313,6 +328,7 @@ void test_alg_no_inverse_sawtooth(F f, typename F::Partial identity,
       real_assert(res == bclassic_agg.query(), name + ": recalc != bclassic");
       real_assert(res == bknuckle_agg.query(), name + ": recalc != bknuckle");
       real_assert(res == bfinger_agg.query(), name + ": recalc != bfinger");
+      real_assert(res == amta_agg.query(), name + ": recalc != amta");
     }
     // std::cout << "round over" << std::endl;
   }
@@ -340,6 +356,7 @@ void test_alg_no_inverse_thirds(F f, typename F::Partial identity,
   auto bclassic_agg = btree::make_aggregate<timestamp, 2, btree::classic>(f, identity);
   auto bknuckle_agg = btree::make_aggregate<timestamp, 2, btree::knuckle>(f, identity);
   auto bfinger_agg = btree::make_aggregate<timestamp, 2, btree::finger>(f, identity);
+  auto amta_agg = amta::make_aggregate<timestamp>(f, identity);
 
   uint64_t third = window_size / 3;
   // seesawing between 1/3 and n
@@ -362,6 +379,7 @@ void test_alg_no_inverse_thirds(F f, typename F::Partial identity,
       bclassic_agg.insert(epoch_no);
       bknuckle_agg.insert(epoch_no);
       bfinger_agg.insert(epoch_no);
+      amta_agg.insert(epoch_no);
 
       typename F::Out res = recalc_agg.query();
       real_assert(res == daba_agg.query(), name + ": recalc != daba");
@@ -378,6 +396,7 @@ void test_alg_no_inverse_thirds(F f, typename F::Partial identity,
       real_assert(res == bclassic_agg.query(), name + ": recalc != bclassic");
       real_assert(res == bknuckle_agg.query(), name + ": recalc != bknuckle");
       real_assert(res == bfinger_agg.query(), name + ": recalc != bfinger");
+      real_assert(res == amta_agg.query(), name + ": recalc != amta");
     }
     // drain down to 1/3
     while (recalc_agg.size() > third) {
@@ -396,6 +415,7 @@ void test_alg_no_inverse_thirds(F f, typename F::Partial identity,
       bclassic_agg.evict();
       bknuckle_agg.evict();
       bfinger_agg.evict();
+      amta_agg.evict();
 
       typename F::Out res = recalc_agg.query();
       real_assert(res == daba_agg.query(), name + ": recalc != daba");
@@ -412,6 +432,7 @@ void test_alg_no_inverse_thirds(F f, typename F::Partial identity,
       real_assert(res == bclassic_agg.query(), name + ": recalc != bclassic");
       real_assert(res == bknuckle_agg.query(), name + ": recalc != bknuckle");
       real_assert(res == bfinger_agg.query(), name + ": recalc != bfinger");
+      real_assert(res == amta_agg.query(), name + ": recalc != amta");
     }
     // std::cout << "round over" << std::endl;
   }
