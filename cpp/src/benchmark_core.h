@@ -11,35 +11,12 @@
 #include <chrono>
 #include <iterator>
 
-#include "DABA.hpp"
-#include "DABALite.hpp"
-#include "TwoStacks.hpp"
-#include "TwoStacksLite.hpp"
-#include "ImplicitTwoStacksLite.hpp"
-#include "FlatFIT.hpp"
-#include "FlatFIT.hpp"
-#include "DynamicFlatFIT.hpp"
-#include "ImplicitQueueABA.hpp"
-#include "SubtractOnEvict.hpp"
-#include "ReCalc.hpp"
-#include "Reactive.hpp"
 #include "AggregationFunctions.hpp"
-#include "OkasakisQueue.hpp"
-#include "Reactive.hpp"
+
+#include "SubtractOnEvict.hpp"
 #include "FiBA.hpp"
 
-#include "TimestampedTwoStacks.hpp"
-#include "TimestampedTwoStacksLite.hpp"
-#include "TimestampedImplicitTwoStacksLite.hpp"
-#include "TimestampedDynamicFlatFIT.hpp"
-#include "TimestampedDABA.hpp"
-#include "TimestampedDABALite.hpp"
-
-#include "DataGenerators.h"
-
 #include "utils.h"
-
-//typedef long long int timestamp;
 
 template <typename T>
 struct IdentityLifter {

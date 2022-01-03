@@ -3,6 +3,7 @@
 
 #include<deque>
 #include"ChunkedArrayQueue.hpp"
+#include "RingBufferQueue.hpp"
 #include<iostream>
 #include<iterator>
 #include<cassert>

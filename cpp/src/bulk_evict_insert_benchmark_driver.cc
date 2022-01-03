@@ -1,6 +1,10 @@
 #include "benchmark_core.h"
-#include "AMTA.hpp"
 #include "utils.h"
+
+#include "AMTA.hpp"
+#include "FiBA.hpp"
+#include "TimestampedTwoStacksLite.hpp"
+#include "TimestampedDABALite.hpp"
 
 typedef uint64_t timestamp;
 

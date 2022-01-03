@@ -1,8 +1,16 @@
 #include <malloc.h>
-#include "DataGenerators.h"
 #include "benchmark_core.h"
-#include "TimestampedFifo.hpp"
+
 #include "utils.h"
+
+#include "DataGenerators.h"
+#include "TimestampedTwoStacks.hpp"
+#include "TimestampedTwoStacksLite.hpp"
+#include "TimestampedImplicitTwoStacksLite.hpp"
+#include "TimestampedDynamicFlatFIT.hpp"
+#include "TimestampedDABA.hpp"
+#include "TimestampedDABALite.hpp"
+#include "TimestampedFifo.hpp"
 
 #include <vector>
 #include <sstream>
