@@ -1193,6 +1193,57 @@ bool query_call_bulk_evict_insert_benchmark(std::string aggregator, std::string 
 template <
     template <
         typename, 
+        typename time
+    > class MakeAggregate, 
+    typename time
+>
+bool query_call_bulk_evict_insert_benchmark(std::string aggregator, std::string aggregator_req, std::string function_req, Experiment exp) {
+    if (aggregator_req == aggregator && function_req == "sum") {
+        bulk_evict_insert_benchmark(MakeAggregate<Sum<int>, time>()(0), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "max") {
+        bulk_evict_insert_benchmark(MakeAggregate<Max<int>, time>()(0), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "mean") {
+        bulk_evict_insert_benchmark(MakeAggregate<Mean<int>, time>()(Mean<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "stddev") {
+        bulk_evict_insert_benchmark(MakeAggregate<SampleStdDev<int>, time>()(SampleStdDev<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "argmax") {
+        bulk_evict_insert_benchmark(MakeAggregate<ArgMax<int, int, IdentityLifter<int>>, time>()(ArgMax<int, int, IdentityLifter<int>>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "bloom") {
+        bulk_evict_insert_benchmark(MakeAggregate<BloomFilter<int>, time>()(BloomFilter<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "collect") {
+        bulk_evict_insert_benchmark(MakeAggregate<Collect<int>, time>()(Collect<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "mincount") {
+        bulk_evict_insert_benchmark(MakeAggregate<MinCount<int>, time>()(MinCount<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "geomean") {
+        bulk_evict_insert_benchmark(MakeAggregate<GeometricMean<int>, time>()(GeometricMean<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "busyloop") {
+        bulk_evict_insert_benchmark(MakeAggregate<BusyLoop<int>, time>()(0), exp);
+        return true;
+    }
+    return false;
+}
+
+template <
+    template <
+        typename, 
         bool caching
     > class MakeAggregate, 
     bool caching

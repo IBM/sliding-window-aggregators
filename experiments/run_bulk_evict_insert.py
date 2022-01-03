@@ -1,28 +1,25 @@
 #!/usr/bin/env python2.7
 
-import run_utilities as u
+import run_utility as u
 
 aggregators = [
-                "bclassic2",
-                "bclassic4",
-                "bclassic8",
                 "bfinger2",
                 "bfinger4",
                 "bfinger8",
-                #"bfinger16",
-                #"bfinger32",
+                "amta",
+                "two_stacks_lite",
+                "daba_lite",
               ]
 
-degrees = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 
-           1*u.KB, 2*u.KB, 4*u.KB, 8*u.KB, 16*u.KB, 32*u.KB, 64*u.KB, 128*u.KB, 256*u.KB, 512*u.KB,
-           1*u.MB, 2*u.MB, 4*u.MB]
+degrees = [0]
+
+# the current window sizes and iterations take an enormously long time
 
 base_window_sizes = [4*u.MB]
-                    #[1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 
-                    # 1*u.KB, 2*u.KB, 4*u.KB, 8*u.KB, 16*u.KB, 32*u.KB, 64*u.KB, 128*u.KB, 256*u.KB, 512*u.KB,
-                    # 1*u.MB, 2*u.MB, 4*u.MB]
 
-base_iterations = 100 * u.MILLION
+base_iterations = 1 * u.MILLION
+
+bulk_sizes = [1, 256]
 
 functions = { 
              "sum": (base_iterations, base_window_sizes),
@@ -31,7 +28,7 @@ functions = {
             }
 
 def main():
-    u.run_ooo(aggregators, functions, degrees, 'bulk_evict_insert')
+    u.run_bulk(aggregators, functions, degrees, bulk_sizes, 'bulk_evict_insert')
 
 if __name__ == "__main__":
     main()
