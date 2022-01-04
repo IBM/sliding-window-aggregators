@@ -1,4 +1,18 @@
-CXXFLAGS=-std=gnu++17 -DHAS_UNCAUGHT_EXCEPTIONS=1 -static -O3 -DNDEBUG ${EXTRAS}
+UNAME := $(shell uname)
+
+ifeq ($(UNAME), Darwin)
+	EXTRAS = 
+else
+	EXTRAS = -static
+endif
+
+DEBUG ?= 0
+ifeq ($(DEBUG), 1)
+	CXXFLAGS=-std=gnu++17 -DHAS_UNCAUGHT_EXCEPTIONS=1 -g -fsanitize=address -fno-omit-frame-pointer ${EXTRAS}
+else
+	CXXFLAGS=-std=gnu++17 -DHAS_UNCAUGHT_EXCEPTIONS=1 -O3 -DNDEBUG ${EXTRAS}
+endif
+
 SWAG_ALGOS=src/ChunkedArrayQueue.hpp \
 		   src/TwoStacks.hpp src/TwoStacksLite.hpp\
            src/ImplicitQueueABA.hpp src/DABA.hpp src/DABALite.hpp \
