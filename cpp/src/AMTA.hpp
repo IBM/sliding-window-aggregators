@@ -197,7 +197,8 @@ public:
         }
       }
       if (!node->rightEmpty() && time < node->times[1]) {
-          _deleteNode(node->pop_front());
+          if (!node->leftPopped())
+            _deleteNode(node->pop_front());
           node = node->children[1];
           continue;
       }
