@@ -1,6 +1,11 @@
 #include "benchmark_core.h"
 #include "utils.h"
 
+#include "AMTA.hpp"
+#include "FiBA.hpp"
+#include "TimestampedTwoStacksLite.hpp"
+#include "TimestampedDABALite.hpp"
+
 typedef uint64_t timestamp;
 
 int main(int argc, char** argv) {
@@ -40,13 +45,10 @@ int main(int argc, char** argv) {
           query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 4, btree::finger>("bfinger4", aggregator, function, exp) ||
           query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 8, btree::finger>("bfinger8", aggregator, function, exp) ||
 
-          query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 2, btree::classic>("bclassic2", aggregator, function, exp) ||
-          query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 4, btree::classic>("bclassic4", aggregator, function, exp) ||
-          query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 8, btree::classic>("bclassic8", aggregator, function, exp) ||
 
-          query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 2, btree::knuckle>("bknuckle2", aggregator, function, exp) ||
-          query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 4, btree::knuckle>("bknuckle4", aggregator, function, exp) ||
-          query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 8, btree::knuckle>("bknuckle8", aggregator, function, exp)
+          query_call_bulk_evict_benchmark<timestamped_twostacks_lite::MakeBulkAggregate, timestamp>("two_stacks_lite", aggregator, function, exp) ||
+          query_call_bulk_evict_benchmark<timestamped_dabalite::MakeBulkAggregate, timestamp>("daba_lite", aggregator, function, exp) ||
+          query_call_bulk_evict_benchmark<amta::MakeAggregate, timestamp>("amta", aggregator, function, exp)
        )) {
         std::cerr << "error: no matching kind of experiment: " << aggregator << ", " << function << std::endl;
         return 2;

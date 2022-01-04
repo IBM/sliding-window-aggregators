@@ -4,6 +4,7 @@
 
 template <class Base, typename timeT, typename inT>
 class BulkAdapter : public Base {
+public:
   using Base::Base;
 
   void bulkInsert(std::vector<std::pair<timeT, inT>> entries) {
