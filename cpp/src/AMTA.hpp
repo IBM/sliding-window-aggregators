@@ -101,7 +101,7 @@ private:
 public:
   Aggregate(binOpFunc binOp, aggT identE_)
       : _binOp(binOp), _size(0), _tails(), _frontNode(NULL),
-        _frontStack(), _identE(identE_), _frontSum(identE_), _backSum(identE_) {
+        _frontStack(), _identE(identE_), _frontSum(identE_), _backSum(identE_), _freeList() {
   }
 
   ~Aggregate() {
@@ -197,7 +197,8 @@ public:
         }
       }
       if (!node->rightEmpty() && time < node->times[1]) {
-          _deleteNode(node->pop_front());
+          if (!node->leftPopped())
+            _deleteNode(node->pop_front());
           node = node->children[1];
           continue;
       }
@@ -208,10 +209,11 @@ public:
 
   void _emptyOutNode(Node *node) {
     if (node != NULL && !node->isLeaf()) {
-      if (!node->leftPopped())
-        _freeList.push_back(node->children[0]);
-      if (!node->rightEmpty())
-        _freeList.push_back(node->children[1]);
+      Node *c = NULL;
+      if (!node->leftPopped() && (c = node->children[0]) != NULL)
+        _freeList.push_back(c);
+      if (!node->rightEmpty() && (c = node->children[1]) != NULL)
+        _freeList.push_back(c);
     }
   }
 
@@ -352,6 +354,7 @@ public:
 
   void insert(timeT const& time, inT const& value) {
     insert_lifted(time, _binOp.lift(value));
+    if (_size >= 0) _size++;
   }
 
   void insert(inT const& val) {
@@ -361,7 +364,6 @@ public:
       timeT const time = 1 + youngest();
       insert(time, val);
     }
-    if (_size >= 0) _size++;
   }
 };
 
