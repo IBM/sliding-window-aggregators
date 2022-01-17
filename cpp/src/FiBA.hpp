@@ -1807,7 +1807,7 @@ public:
       }
     }
     if (false) cout << "_dump: " << *_root << endl;
-    checkInvariant(__FILE__, __LINE__);
+    assert(checkInvariant(__FILE__, __LINE__));
     if (false) cout << "---------------- done bulkInsert ------------------" << endl;
   }
 
