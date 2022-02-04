@@ -380,12 +380,12 @@ void bulk_evict_from_adapter(F f) {
 }
 
 int main(int argc, char *argv[]) {
-  bulk_evict_tests();
+  // bulk_evict_tests();
   bulk_insert_tests();
   bulk_insert_with_repeats_tests();
   bulk_insert_from_random_trees();
-  bulk_insert_from_adapter<3>(Collect<int>());
-  bulk_evict_from_adapter<3>(Collect<int>());
+  // bulk_insert_from_adapter<3>(Collect<int>());
+  // bulk_evict_from_adapter<3>(Collect<int>());
 
   return 0;
 }
