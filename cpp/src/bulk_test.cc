@@ -68,10 +68,12 @@ template <int minArity> void simple_fixed_bulk() {
   bfinger_agg.bulkInsert(bulkTwo);
   brute_bulkInsert(ref_agg, bulkTwo);
 
-  assert(ref_agg.query() == bfinger_agg.query());
-
   auto ans1 = bfinger_agg.query();
   std::cout << "ans = " << ans1 << std::endl;
+  auto ans0 = ref_agg.query();
+  std::cout << "ref = " << ans0 << std::endl;
+
+  assert(ref_agg.query() == bfinger_agg.query());
 }
 
 /*
