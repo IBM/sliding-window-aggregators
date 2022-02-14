@@ -13,13 +13,15 @@ aggregators = [
 
 degrees = [0]
 
-# the current window sizes and iterations take an enormously long time
-
 base_window_sizes = [4*u.MB]
 
-base_iterations = 1 * u.MILLION
+base_iterations = 10 * u.MILLION
 
-bulk_sizes = [1, 256]
+bulk_sizes = [
+    1, 8, 64,
+    1*u.KB, 8*u.KB, 64*u.KB, 
+    1*u.MB,
+]
 
 functions = { 
              "sum": (base_iterations, base_window_sizes),

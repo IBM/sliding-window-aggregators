@@ -92,20 +92,21 @@ def run_bulk(aggregators, functions, degrees, bulks, name_base, sample_size=5):
                     for d in degrees:
                         if d > w:
                             continue
-                        row = [f, w, d]
-                        print w, d, ':',
 
                         iterations = base_iterations + w
                         for b in bulks:
+                            row = [f, w, d, b]
+                            print w, d, b, ':',
+
                             for i in range(sample_size):
                                 runtime = exec_runtime(['../bin/' + name_base + '_benchmark_driver', agg, f, str(w), str(d), str(b), str(iterations)])
                                 print runtime,
                                 sys.stdout.flush()
                                 row.append(runtime)
 
-                        print
-                        results.writerow(row)
-                        results_file.flush()
+                            print
+                            results.writerow(row)
+                            results_file.flush()
 
 
 def run_fifo(aggregators, functions, name_base, sample_size=5):
