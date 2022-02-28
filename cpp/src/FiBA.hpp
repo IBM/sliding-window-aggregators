@@ -1182,9 +1182,11 @@ private:
     }
   };
 
+  // using TreeletContainer = deque<CommonRoot>;
+  using TreeletContainer = vector<CommonRoot>;
   class ConsolidatedTreelet {
     public:
-    deque<CommonRoot> commonRoots;
+    TreeletContainer commonRoots;
 
     ConsolidatedTreelet()
         : commonRoots() {}
@@ -1546,10 +1548,8 @@ private:
   void doBulkLocalInsert(ConsolidatedTreelet &treelets,
                          ConsolidatedTreelet &nextTreelets, TopsRecord &tops,
                          int &level) {
-    deque<CommonRoot> &commonRoots = treelets.commonRoots;
-    while (!commonRoots.empty()) {
-      CommonRoot cr = commonRoots.front();
-      commonRoots.pop_front();
+    TreeletContainer &commonRoots = treelets.commonRoots;
+    for (CommonRoot cr: commonRoots) {
 
       if (cr.realCount == 0 && cr.level > level) {
         nextTreelets.push_back(cr);
@@ -1817,15 +1817,17 @@ public:
   void bulkInsert(Iterator begin, Iterator end) {
     if (kind != finger) throw -1; // only support finger trees
     // vector<Treelet> thisTreelets, nextTreelets;
-    ConsolidatedTreelet curTreelets;
+    ConsolidatedTreelet curTreelets, nextTreelets;
     doInitialMultisearch(begin, end, curTreelets);
 
     TopsRecord tops;
     int level = 0;
     // Level by level insertions
     while (!curTreelets.empty()) {
-      ConsolidatedTreelet nextTreelets;
       doBulkLocalInsert(curTreelets, nextTreelets, tops, level);
+      // TODO: do proper software engineering
+      curTreelets.commonRoots.swap(nextTreelets.commonRoots);
+      nextTreelets.commonRoots.clear();
       if (false) {
         cout << "(next) treelets = [";
         for (auto tl : nextTreelets.commonRoots) {
@@ -1833,7 +1835,6 @@ public:
         }
         cout << "]" << endl;
       }
-      curTreelets = nextTreelets;
     }
 
     if (false) cout << "top_rs=" << tops.topRightSpine << ", top_ls=" << tops.topLeftSpine
