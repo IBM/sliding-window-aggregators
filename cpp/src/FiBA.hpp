@@ -1197,6 +1197,8 @@ private:
       return commonRoots.back();
     }
 
+    void swap(ConsolidatedTreelet &cst) { commonRoots.swap(cst.commonRoots); }
+    void clear() { commonRoots.clear(); }
 
     void push_back(CommonRoot &cr) { commonRoots.push_back(cr); }
 
@@ -1825,9 +1827,8 @@ public:
     // Level by level insertions
     while (!curTreelets.empty()) {
       doBulkLocalInsert(curTreelets, nextTreelets, tops, level);
-      // TODO: do proper software engineering
-      curTreelets.commonRoots.swap(nextTreelets.commonRoots);
-      nextTreelets.commonRoots.clear();
+      curTreelets.swap(nextTreelets);
+      nextTreelets.clear();
       if (false) {
         cout << "(next) treelets = [";
         for (auto tl : nextTreelets.commonRoots) {
