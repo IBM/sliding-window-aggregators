@@ -1140,35 +1140,85 @@ private:
    */
   using ipathBreadcrumb =  tuple<Node *, timeT, timeT>;
 
-  struct Treelet {
+  struct Twig {
     timeT time;
     aggT value;
-    Node *node;
     Node *rightChild;
-    int level;
-
-    Treelet(Node *node_, int level_)
-        : node(node_), rightChild(FAKE_NODE), level(level_){};
-
-    Treelet(Node *node_, Node *rightChild_, int level_)
-        : node(node_), rightChild(rightChild_), level(level_){};
-
-    Treelet(timeT const &time_, aggT const &value_, Node *node_,
-            Node *rightChild_, int level_)
-        : time(time_), value(value_), node(node_), rightChild(rightChild_),
-          level(level_){};
-
-    friend ostream &operator<<(ostream &os, const Treelet &tl) {
-      return os << "{"
-                << "time=" << tl.time << ", "
-                << "value=" << tl.value << ", "
-                << "node=" << tl.node << ", "
-                << "rightChild=" << tl.rightChild << ", "
-                << "level=" << tl.level << ", "
-                << "}";
-    }
-    inline bool isReal() { return rightChild != FAKE_NODE; }
+    Twig() {}
+    Twig(timeT time_, aggT value_, Node *rightChild_)
+        : time(time_), value(value_), rightChild(rightChild_) {}
   };
+
+  struct CommonRoot {
+    Node *node;
+    int realCount;
+    int level;
+    vector<Twig> members;
+
+    CommonRoot(Node *node_, int level_)
+        : node(node_), realCount(0), level(level_), members(){};
+
+    void push_back() { /* no op -- this root already existed */ }
+
+    void push_back(timeT const &time_, aggT const &value_,
+                   Node *rightChild_) {
+      this->members.push_back(Twig(time_, value_, rightChild_));
+      realCount++;
+    }
+
+    friend ostream &operator<<(ostream &os, const CommonRoot &cr) {
+      os << "{node=" << cr.node << ", "
+         << "realCount=" << cr.realCount << ", "
+         << "level=" << cr.level << ":";
+
+      for (auto t: cr.members) {
+        os << "["
+           << "time=" << t.time << ", "
+           << "value=" << t.value << ", "
+           << "rightChild=" << t.rightChild << "]";
+      }
+
+      return os << "}";
+    }
+  };
+
+  // using TreeletContainer = deque<CommonRoot>;
+  using TreeletContainer = vector<CommonRoot>;
+  class ConsolidatedTreelet {
+    public:
+    TreeletContainer commonRoots;
+
+    ConsolidatedTreelet()
+        : commonRoots() {}
+
+    CommonRoot& establishCommonRoot(Node *node_, int level_) {
+      if (commonRoots.empty() || commonRoots.back().node != node_)
+        commonRoots.push_back(CommonRoot(node_, level_));
+      return commonRoots.back();
+    }
+
+    void swap(ConsolidatedTreelet &cst) { commonRoots.swap(cst.commonRoots); }
+    void clear() { commonRoots.clear(); }
+
+    void push_back(CommonRoot &cr) { commonRoots.push_back(cr); }
+
+    void push_back(Node *node_, int level_) {
+      establishCommonRoot(node_, level_).push_back();
+    }
+
+    void push_back(Node *node_, timeT const &time_, aggT const &value_,
+                   Node *rightChild_, int level_) {
+      establishCommonRoot(node_, level_).push_back(time_, value_, rightChild_);
+    }
+
+    CommonRoot &back() {
+      return commonRoots.back();
+    }
+
+    bool empty() { return commonRoots.empty(); }
+  };
+
+  inline bool isRealChild(Node *rightChild) { return rightChild != FAKE_NODE; }
 
   tuple<Node *, bool, int>
   scopedDescend(std::deque<ipathBreadcrumb> &latestPath, Node *node,
@@ -1260,7 +1310,7 @@ private:
 
   template <class Iterator>
   void doInitialMultisearch(Iterator begin, Iterator end,
-                            vector<Treelet> &treelets) {
+                            ConsolidatedTreelet &treelets) {
     std::deque<ipathBreadcrumb> latestPath;
     bool first = true;
     timeT prevTime;
@@ -1271,100 +1321,103 @@ private:
       if (found) {
         node->localInsertEntry(_binOp, time, _binOp.lift(value));
         if (first || prevTime != time) // a new (i.e., unseen) timestamp
-          treelets.push_back(Treelet(node, thisLevel)); // Trigger propagation
+          treelets.push_back(node, thisLevel); // Trigger propagation
       } else {
         assert(thisLevel == 0); // must be at the same level as the right finger
         if (first || prevTime != time) // a new (i.e., unseen) timestamp
-          treelets.push_back(
-              Treelet(time, _binOp.lift(value), node, NULL, thisLevel));
+          treelets.push_back(node, time, _binOp.lift(value), NULL, thisLevel);
         else { // combine the value with the previous entry
-          Treelet &latestTreelet = treelets.back();
-          latestTreelet.value =
-              _binOp.combine(latestTreelet.value, _binOp.lift(value));
+          CommonRoot &cr = treelets.back();
+          Twig &tw = cr.members.back();
+          tw.value = _binOp.combine(tw.value, _binOp.lift(value));
         }
       }
       prevTime = time; first = false; level = thisLevel;
     }
     if (false) {
       cout << "Initial treelets = [";
-      for (auto tl: treelets) { cout << tl << " "; }
+      for (auto cr: treelets.commonRoots) { cout << cr << " "; }
       cout << "]" << endl;
     }
   }
 
   class TreeletMerger {
     public:
-    TreeletMerger(bool activateRightSpine)
-      : times(), values(), children(), rightSpine(activateRightSpine) {
-      if (false) cout << "TreeletMerger(activateRightSpine=" << activateRightSpine << ")" << endl;
+      TreeletMerger(bool activateRightSpine, Node *node_, CommonRoot &cr)
+          : _rightSpine(activateRightSpine), _isLeaf(node_->isLeaf()),
+            _prevChild(NULL), _totalCount(cr.realCount + node_->arity() - 1),
+            _pos(0), _crMembers(cr.members) {
+        const int arity = node_->arity();
+
+        if (!_isLeaf)  // left-most child
+          _cursor.rightChild = node_->getChild(0);
+
+        for (int i=0;i<arity-1;i++) {
+          _existing.push_back(Twig(node_->getTime(i), node_->getValue(i),
+                                   _isLeaf ? NULL : node_->getChild(i + 1)));
+        }
+
+        _nodeIt = _existing.begin(), _tlIt = _crMembers.begin(); // start at the start
+        if (false) {
+          cout << "TreeletMerger(activateRightSpine=" << activateRightSpine
+               << ")" << endl;
+          cout << "cr:";
+          for (auto m: _crMembers) cout << m.time << ", ";
+          cout << endl << "node:";
+          for (auto m: _existing)  cout << m.time << ", ";
+          cout << endl;
+        }
+      }
+
+    size_t totalCount() { return this->_totalCount; }
+
+    bool hasNext() {
+      return _nodeIt != _existing.end() || _tlIt != _crMembers.end();
     }
 
-    void mergeIn(Node *node, typename vector<Treelet>::iterator &start,
-                 typename vector<Treelet>::iterator &end, size_t treeletCount) {
-      size_t n = node->arity() + treeletCount - 1;
-      size_t nodeIndex = 0;
-      typename vector<Treelet>::iterator tlIt = start;
-      if (!node->isLeaf()) { children.push_back(node->getChild(0)); }
-      if (false) cout << "mergeIn: treeletCount=" << treeletCount << ", trail=";
+    Twig& next() {
+      if (_pos++ > 0)
+        _prevChild = _cursor.rightChild, _stepNext();
 
-      while (nodeIndex < node->arity()-1 && tlIt != end) {
-        if (!tlIt->isReal()) {tlIt++; continue;} // skip "fake" treelets
-        const timeT& tlTime = tlIt->time;
-        const timeT& nTime = node->getTime(nodeIndex);
-
-        if (false) cout << "C";
-        if (tlTime < nTime) {
-          if (!node->isLeaf()) { children.push_back(tlIt->rightChild); }
-          values.push_back(tlIt->value);
-          times.push_back((tlIt++)->time);
-        }
-        else {
-          if (!node->isLeaf()) { children.push_back(node->getChild(nodeIndex+1)); }
-          values.push_back(node->getValue(nodeIndex));
-          times.push_back(node->getTime(nodeIndex++));
-        }
-        flipRightSpineFlag(node->isLeaf());
-      }
-      while (nodeIndex < node->arity()-1) { // done with treelets
-        if (false) cout << "L";
-        if (!node->isLeaf()) { children.push_back(node->getChild(nodeIndex+1)); }
-        values.push_back(node->getValue(nodeIndex));
-        times.push_back(node->getTime(nodeIndex));
-        nodeIndex++;
-        flipRightSpineFlag(node->isLeaf());
-      }
-      while (tlIt != end) {
-        if (!tlIt->isReal()) {tlIt++; continue;} // skip "fake" treelets
-        if (!node->isLeaf()) {
-          children.push_back(tlIt->rightChild);
-        }
-        values.push_back(tlIt->value);
-        times.push_back(tlIt->time);
-        tlIt++;
-        flipRightSpineFlag(node->isLeaf());
-      }
-      if (false) cout << "." << endl;
-      // DEBUG prints
-      if (false) {
-        cout << "tm: times = [";
-        for (auto t : times)
-          cout << t << ", ";
-        cout << "]" << endl;
-      }
+      return _cursor;
     }
 
-    vector<timeT> times;
-    vector<aggT> values;
-    vector<Node *> children;
-    bool rightSpine;
     private:
+    const bool _rightSpine, _isLeaf;
+    size_t _totalCount;
+    Twig _cursor;
+    Node* _prevChild;
+    deque<Twig> _existing;
+    size_t _pos;
+    vector<Twig>& _crMembers;
+    typename deque<Twig>::iterator _nodeIt;
+    typename vector<Twig>::iterator _tlIt;
+
+    void _stepNext() {
+      const bool hasNode = _nodeIt != _existing.end(),
+                 hasCR = _tlIt != _crMembers.end();
+
+      if (!hasNode && !hasCR) throw 1; // panic! shouldn't have been called
+      if (hasCR && !hasNode)
+        _cursor = *(_tlIt++);
+      else if (hasCR && hasNode) {
+        if (_tlIt->time < _nodeIt->time)
+          _cursor = *(_tlIt++);
+        else
+          _cursor = *(_nodeIt++);
+      } else  // hasNode but no more CR
+        _cursor = *(_nodeIt++);
+
+      flipRightSpineFlag(_isLeaf);
+    }
+
     void flipRightSpineFlag(bool leaf) {
-      if (!leaf && rightSpine && children.size()>=2) {
+      if (!leaf && _rightSpine && _prevChild != NULL) {
         if (false) cout << "flipRightSpineFlag: off ["
-             << children[children.size() - 2] << "], "
-             << " on [" << children[children.size() - 1] << "]" << endl;
-        children[children.size() - 2]->setRightSpine(false);
-        children[children.size()-1]->setRightSpine(true);
+             << _prevChild << "], "
+             << " on [" << _cursor.rightChild << "]" << endl;
+        _prevChild->setRightSpine(false);
+        _cursor.rightChild->setRightSpine(true);
       }
     }
   };
@@ -1386,62 +1439,68 @@ private:
   };
 
   void
-  doBulkLocalInsertNoOverflow(typename vector<Treelet>::iterator &groupStart,
-                              typename vector<Treelet>::iterator &groupEnd,
-                              Node *thisTarget) {
+  doBulkLocalInsertNoOverflow(CommonRoot &cr) {
     if (false)
       cout << "> doBulkLocalInsertNoOverflow:";
-    for (auto it = groupStart; it != groupEnd; it++) {
-      if (!it->isReal())
-        continue;
-      if (false)
-        cout << "R";
+    size_t n = cr.realCount;
+    Node* thisTarget = cr.node;
+    for (auto& tw: cr.members) {
+      if (false) cout << "R";
       if (thisTarget->isLeaf())
-        thisTarget->localInsertEntry(_binOp, it->time, it->value);
+        thisTarget->localInsertEntry(_binOp, tw.time, tw.value);
       else
-        thisTarget->localInsert(_binOp, it->time, it->value, it->rightChild);
+        thisTarget->localInsert(_binOp, tw.time, tw.value, tw.rightChild);
     }
     if (false)
       cout << endl;
     thisTarget->localRepairAggIfUp(_binOp); // Repair once at the end
   }
 
-  Node* migrateInto(Node* old, Node *target, int pi, int ub, TreeletMerger& tm,
-                      vector<Treelet> &nextTreelets, int nextLevel) {
+  Node* migrateInto(Node* old, Node *target, int maxCount, TreeletMerger& tm,
+                    ConsolidatedTreelet& nextTreelets, int nextLevel) {
+    bool intoExisting = NULL!=target;
+    Twig firstTwig = tm.next();
+    const bool isLeaf = old->isLeaf();
+    Node* parent = old->parent();
+
     if (false) {
-      cout << "migrateInto: old=" << old << ", pi=" << pi << ", ub=" << ub
-           << endl;
+      cout << "migrateInto: old=" << old << ", maxCount=" << maxCount << endl;
       cout << "migrateInto: moved_times=";
-      if (pi >= 0)
-        cout << "(" << tm.times[pi] << ")";
+      if (!intoExisting) cout << "(" << firstTwig.time << ")";
       cout << "[";
-      for (int i = pi + 1; i < ub; i++)
-        cout << tm.times[i] << ", ";
-      cout << "]" << endl;
     }
+
     if (target == NULL)
       target = newNode(old->isLeaf());
 
-    Node* parent = old->parent();
     if (parent == NULL) { cerr << "should never happen" << endl; throw 1; }
     target->setParent(parent);
     target->clear();
-    if (!target->isLeaf())
-      target->setOnlyChild(tm.children[pi+1]);
 
-    for (int ci=pi+1;ci<ub;ci++) {
-      if (target->isLeaf())
-        target->pushBackEntry(_binOp, tm.times[ci], tm.values[ci]);
+    if (!isLeaf)
+      target->setOnlyChild(firstTwig.rightChild);
+
+    int taken = 0;
+    while (tm.hasNext() && taken++ < maxCount) {
+      Twig& thisTwig = tm.next();
+
+      if (false) cout << thisTwig.time << ", ";
+
+      if (isLeaf)
+        target->pushBackEntry(_binOp, thisTwig.time, thisTwig.value);
       else
-        target->pushBack(_binOp, tm.times[ci], tm.values[ci], tm.children[ci+1]);
+        target->pushBack(_binOp, thisTwig.time, thisTwig.value, thisTwig.rightChild);
     }
 
-    if (false) cout << "node formation completed " << target << endl;;
-    if (pi >= 0) { // new treelet
-      if (false) cout << "made new treelet " << target << ": t=" << tm.times[pi]
-           << ", p=" << parent << endl;
-      nextTreelets.push_back(
-          Treelet(tm.times[pi], tm.values[pi], parent, target, nextLevel));
+    if (false) {
+      cout << "]" << endl;
+      cout << "node formation completed " << target << endl;;
+    }
+
+    if (!intoExisting) { // new treelet
+      if (false) cout << "made new treelet " << target << ": t=" << firstTwig.time
+                      << ", p=" << parent << endl;
+      nextTreelets.push_back(parent, firstTwig.time, firstTwig.value, target, nextLevel);
     }
     target->localRepairAggIfUp(_binOp);
 
@@ -1449,81 +1508,75 @@ private:
   }
 
   void massSplit(Node *thisTarget, TreeletMerger &tm,
-                 vector<Treelet> &nextTreelets, int nextLevel) {
-    int rangeStart = -1, totalArity = tm.times.size() + 1, a = minArity;
+                 ConsolidatedTreelet &nextTreelets, int nextLevel) {
+    int timeTaken = -1, totalArity = tm.totalCount() + 1, a = minArity;
     Node *nn = thisTarget;
     bool fromRightSpine=thisTarget->rightSpine() || thisTarget->isRoot();
     // assumption: current node is overflowing
     if (thisTarget->isRoot()) heightIncrease(false);
 
-    while (totalArity - rangeStart - 1 > maxArity) {
+    while (totalArity - timeTaken - 1 > maxArity) {
       if (nn == thisTarget && thisTarget->rightSpine())
         thisTarget->setRightSpine(false);
-      nn = migrateInto(thisTarget, nn, rangeStart, rangeStart + a + 1, tm,
-                       nextTreelets, nextLevel);
-      rangeStart += a + 1, nn = NULL;
+      nn = migrateInto(thisTarget, nn, a, tm, nextTreelets, nextLevel);
+      timeTaken += a + 1, nn = NULL;
     }
 
-    nn = migrateInto(thisTarget, nn, rangeStart, totalArity-1, tm,
-                     nextTreelets, nextLevel);
+    nn = migrateInto(thisTarget, nn, maxArity, tm, nextTreelets, nextLevel);
     if (nn != thisTarget && fromRightSpine) {
-      if (false) cout << "setting " << nn << " to right spine!" << endl;
+      if (false)
+        cout << "setting " << nn << " to right spine!" << endl;
       if (false) cout << "removing " << thisTarget << " from right spine." << endl;
       nn->setRightSpine(true);
       if (this->_rightFinger == thisTarget)
         this->_rightFinger = nn;
     }
+
+    assert(false == tm.hasNext());
   }
 
-  void doBulkLocalInsertOverflow(typename vector<Treelet>::iterator &groupStart,
-                                 typename vector<Treelet>::iterator &groupEnd,
-                                 size_t groupCount, Node *thisTarget,
-                                 vector<Treelet> &nextTreelets, int nextLevel) {
+  void doBulkLocalInsertOverflow(CommonRoot &cr,
+                                 ConsolidatedTreelet &nextTreelets,
+                                 int nextLevel) {
     if (false)
-      cout << "doBulkLocalInsert: groupCount=" << groupCount << endl;
-    TreeletMerger tm(thisTarget->isRoot() || thisTarget->rightSpine());
+      cout << "doBulkLocalInsert: groupCount=" << cr.realCount << endl;
+    Node* thisTarget = cr.node;
+    TreeletMerger tm(thisTarget->isRoot() || thisTarget->rightSpine(),
+                     thisTarget, cr);
 
-    tm.mergeIn(thisTarget, groupStart, groupEnd, groupCount);
     massSplit(thisTarget, tm, nextTreelets, nextLevel);
   }
 
-  void doBulkLocalInsert(vector<Treelet> &treelets,
-                         vector<Treelet> &nextTreelets, TopsRecord &tops,
+  void doBulkLocalInsert(ConsolidatedTreelet &treelets,
+                         ConsolidatedTreelet &nextTreelets, TopsRecord &tops,
                          int &level) {
-    auto groupStart = treelets.begin();
-    while (groupStart != treelets.end()) {
-      if (!groupStart->isReal() && groupStart->level > level) {
-        nextTreelets.push_back(*groupStart);
-        groupStart++;
+    TreeletContainer &commonRoots = treelets.commonRoots;
+    for (CommonRoot cr: commonRoots) {
+
+      if (cr.realCount == 0 && cr.level > level) {
+        nextTreelets.push_back(cr);
         continue;
       }
-      auto groupEnd = groupStart;
-      Node *thisTarget = groupStart->node;
-      size_t groupCount = 0;
-      while (groupEnd != treelets.end() && groupEnd->node == thisTarget) {
-        if (groupEnd->isReal())
-          groupCount++; // count real treelets
-        groupEnd++;
-      }
 
+      Node* thisTarget = cr.node;
       if (false) cout << "thisTarget: rightSpine=" << thisTarget->rightSpine()
            << ", isRoot=" << thisTarget->isRoot() << endl;
+
       // Case 1: This node won't overflow
-      if (thisTarget->arity() + groupCount <= maxArity) {
-        doBulkLocalInsertNoOverflow(groupStart, groupEnd, thisTarget);
+      if (thisTarget->arity() + cr.realCount <= maxArity) {
+        // doBulkLocalInsertNoOverflow(groupStart, groupEnd, thisTarget);
+        doBulkLocalInsertNoOverflow(cr);
       } else
         // Case 2: the node will overflow
-        doBulkLocalInsertOverflow(groupStart, groupEnd, groupCount, thisTarget,
-                                  nextTreelets, level + 1);
+        doBulkLocalInsertOverflow(cr, nextTreelets, level + 1);
 
       if (thisTarget->hasAggUp())
-        nextTreelets.push_back(Treelet(thisTarget->parent(), level + 1));
+        nextTreelets.push_back(thisTarget->parent(), level + 1);
       else {
         if (false)
           cout << "topping out at " << thisTarget << endl;
         tops.topOut(thisTarget);
       }
-      groupStart = groupEnd;
     }
     level++; // ...onto the next level
   }
@@ -1765,19 +1818,20 @@ public:
   template <class Iterator>
   void bulkInsert(Iterator begin, Iterator end) {
     if (kind != finger) throw -1; // only support finger trees
-    vector<Treelet> thisTreelets, nextTreelets;
-    doInitialMultisearch(begin, end, thisTreelets);
+    // vector<Treelet> thisTreelets, nextTreelets;
+    ConsolidatedTreelet curTreelets, nextTreelets;
+    doInitialMultisearch(begin, end, curTreelets);
 
     TopsRecord tops;
     int level = 0;
     // Level by level insertions
-    while (!thisTreelets.empty()) {
+    while (!curTreelets.empty()) {
+      doBulkLocalInsert(curTreelets, nextTreelets, tops, level);
+      curTreelets.swap(nextTreelets);
       nextTreelets.clear();
-      doBulkLocalInsert(thisTreelets, nextTreelets, tops, level);
-      thisTreelets.swap(nextTreelets);
       if (false) {
         cout << "(next) treelets = [";
-        for (auto tl : thisTreelets) {
+        for (auto tl : nextTreelets.commonRoots) {
           cout << tl << " ";
         }
         cout << "]" << endl;
