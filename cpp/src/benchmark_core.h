@@ -9,36 +9,14 @@
 #include <sstream>
 #include <atomic>
 #include <chrono>
+#include <iterator>
 
-#include "DABA.hpp"
-#include "DABALite.hpp"
-#include "TwoStacks.hpp"
-#include "TwoStacksLite.hpp"
-#include "ImplicitTwoStacksLite.hpp"
-#include "FlatFIT.hpp"
-#include "FlatFIT.hpp"
-#include "DynamicFlatFIT.hpp"
-#include "ImplicitQueueABA.hpp"
-#include "SubtractOnEvict.hpp"
-#include "ReCalc.hpp"
-#include "Reactive.hpp"
 #include "AggregationFunctions.hpp"
-#include "OkasakisQueue.hpp"
-#include "Reactive.hpp"
+
+#include "SubtractOnEvict.hpp"
 #include "FiBA.hpp"
 
-#include "TimestampedTwoStacks.hpp"
-#include "TimestampedTwoStacksLite.hpp"
-#include "TimestampedImplicitTwoStacksLite.hpp"
-#include "TimestampedDynamicFlatFIT.hpp"
-#include "TimestampedDABA.hpp"
-#include "TimestampedDABALite.hpp"
-
-#include "DataGenerators.h"
-
 #include "utils.h"
-
-//typedef long long int timestamp;
 
 template <typename T>
 struct IdentityLifter {
@@ -67,16 +45,22 @@ struct Experiment {
     size_t window_size;
     uint64_t iterations;
     uint64_t ooo_distance;
+    uint64_t bulk_size;
     bool latency;
     std::vector<cycle_duration>& latencies;
 
     Experiment(size_t w, uint64_t i, bool l, std::vector<cycle_duration>& ls):
-        window_size(w), iterations(i), ooo_distance(0), latency(l), latencies(ls)
+        window_size(w), iterations(i), ooo_distance(0), bulk_size(1), latency(l), latencies(ls)
     {}
 
     Experiment(size_t w, uint64_t i, uint64_t d, bool l, std::vector<cycle_duration>& ls):
-        window_size(w), iterations(i), ooo_distance(d), latency(l), latencies(ls)
+        window_size(w), iterations(i), ooo_distance(d), bulk_size(1), latency(l), latencies(ls)
     {}
+
+    Experiment(size_t w, uint64_t i, uint64_t d, uint64_t b, bool l, std::vector<cycle_duration>& ls):
+        window_size(w), iterations(i), ooo_distance(d), bulk_size(b), latency(l), latencies(ls)
+    {}
+
 };
 
 struct SharingExperiment {
@@ -195,7 +179,7 @@ void dynamic_benchmark(Aggregate agg, Experiment exp) {
 }
 
 template <typename Aggregate>
-void ooo_adversary_benchmark(Aggregate agg, Experiment exp) {
+void ooo_benchmark(Aggregate agg, Experiment exp) {
     typename Aggregate::outT force_side_effect = typename Aggregate::outT();
     typename Aggregate::timeT i = 0;
 
@@ -255,6 +239,149 @@ void ooo_adversary_benchmark(Aggregate agg, Experiment exp) {
             exp.latencies.push_back(after - before);
         }
         std::cerr << force_side_effect << std::endl;
+    }
+}
+
+template <typename Aggregate>
+void bulk_evict_benchmark(Aggregate agg, Experiment exp) {
+    typename Aggregate::outT force_side_effect = typename Aggregate::outT();
+    typename Aggregate::timeT i = 0;
+
+    std::cout << "window size " << exp.window_size 
+              << ", iterations " << exp.iterations 
+              << ", ooo " << exp.ooo_distance
+              << ", bulk size " << exp.bulk_size
+              << std::endl;
+    if (!exp.latency) {
+        for (i = exp.iterations - exp.ooo_distance; i < exp.iterations; ++i) {
+            agg.insert(i, 1 + (i % 101));
+        }
+        for (i = 0; i < exp.window_size - exp.ooo_distance; ++i) {
+            agg.insert(i, 1 + (i % 101));
+        }
+
+        if (agg.size() != exp.window_size) {
+            std::cerr << "window is not exactly full; should be " << exp.window_size << ", but is " << agg.size();
+            exit(2);
+        }
+
+        auto start = std::chrono::system_clock::now();
+
+        uint64_t start_pos = exp.window_size - exp.ooo_distance;
+        uint64_t stop_pos = exp.iterations - exp.ooo_distance;
+        for (i = start_pos; i < stop_pos; /* nop */) {
+            std::atomic_thread_fence(std::memory_order_seq_cst);
+
+            agg.bulkEvict(i - exp.window_size + exp.bulk_size - 1);
+            for (typename Aggregate::timeT j = 0; j < exp.bulk_size && i < stop_pos; ++j, ++i) {
+                std::atomic_thread_fence(std::memory_order_seq_cst);
+                agg.insert(i, 1 + (i % 101));
+            }
+            silly_combine(force_side_effect, agg.query());
+        }
+
+        std::chrono::duration<double> runtime = std::chrono::system_clock::now() - start;
+        std::cout << "core runtime: " << runtime.count() << std::endl;
+        std::cerr << force_side_effect << std::endl;
+    }
+    else {
+        throw std::runtime_error("bulk_evict_benchmark latency not implemented");
+    }
+}
+
+template<typename Timestamp, typename Value>
+class SyntheticGenerator {
+public:
+    using iterator_category = std::forward_iterator_tag;
+    using difference_type = Timestamp;
+    using value_type = std::pair<Timestamp, Value>;
+    using pointer = value_type*;
+    using reference = value_type&;
+
+    SyntheticGenerator(const Timestamp& ts, const Value& val):
+        _next(std::make_pair(ts, val))
+    {}
+
+    reference operator*() {
+        return _next;
+    }
+
+    pointer operator->() {
+        return &_next;
+    }
+
+    SyntheticGenerator& operator++() {
+        ++_next.first;
+        _next.second = 1 + (_next.second % 101);
+        return *this;
+    }
+
+    SyntheticGenerator operator++(int) {
+        SyntheticGenerator tmp = *this;
+        ++(*this);
+        return tmp;
+    }
+
+    // For equality purposes, we only care about the timestamp, not the value 
+    // associated with that timestamp.
+    friend bool operator==(const SyntheticGenerator& a, const SyntheticGenerator& b) {
+        return a._next.first == b._next.first;
+    }
+
+    friend bool operator!=(const SyntheticGenerator& a, const SyntheticGenerator& b) {
+        return a._next.first != b._next.first;
+    }
+
+private:
+    value_type _next;
+};
+
+template <typename Aggregate>
+void bulk_evict_insert_benchmark(Aggregate agg, Experiment exp) {
+    typename Aggregate::outT force_side_effect = typename Aggregate::outT();
+    typename Aggregate::timeT i = 0;
+
+    std::cout << "window size " << exp.window_size 
+              << ", iterations " << exp.iterations 
+              << ", ooo " << exp.ooo_distance
+              << ", bulk size " << exp.bulk_size
+              << std::endl;
+    if (!exp.latency) {
+        for (i = exp.iterations - exp.ooo_distance; i < exp.iterations; ++i) {
+            agg.insert(i, 1 + (i % 101));
+        }
+        for (i = 0; i < exp.window_size - exp.ooo_distance; ++i) {
+            agg.insert(i, 1 + (i % 101));
+        }
+
+        if (agg.size() != exp.window_size) {
+            std::cerr << "window is not exactly full; should be " << exp.window_size << ", but is " << agg.size();
+            exit(2);
+        }
+
+        auto start = std::chrono::system_clock::now();
+
+        uint64_t start_pos = exp.window_size - exp.ooo_distance;
+        uint64_t stop_pos = exp.iterations - exp.ooo_distance;
+        for (i = start_pos; i < stop_pos; i += exp.bulk_size) {
+            std::atomic_thread_fence(std::memory_order_seq_cst);
+
+            agg.bulkEvict(i - exp.window_size + exp.bulk_size - 1);
+
+            using SG = SyntheticGenerator<typename Aggregate::timeT, uint64_t>;
+            SG begin(i, i);
+            SG end(i + exp.bulk_size + 1, i + exp.bulk_size + 1);
+            agg.bulkInsert(begin, end);
+
+            silly_combine(force_side_effect, agg.query());
+        }
+
+        std::chrono::duration<double> runtime = std::chrono::system_clock::now() - start;
+        std::cout << "core runtime: " << runtime.count() << std::endl;
+        std::cerr << force_side_effect << std::endl;
+    }
+    else {
+        throw std::runtime_error("bulk_evict_benchmark latency not implemented");
     }
 }
 
@@ -784,45 +911,45 @@ template <
     int minDegree, 
     btree::Kind kind
 >
-bool query_call_ooo_adversary_benchmark(std::string aggregator, std::string aggregator_req, std::string function_req, Experiment exp) {
+bool query_call_ooo_benchmark(std::string aggregator, std::string aggregator_req, std::string function_req, Experiment exp) {
     if (aggregator_req == aggregator && function_req == "sum") {
-        ooo_adversary_benchmark(MakeAggregate<Sum<int>, time, minDegree, kind>()(0), exp);
+        ooo_benchmark(MakeAggregate<Sum<int>, time, minDegree, kind>()(0), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "max") {
-        ooo_adversary_benchmark(MakeAggregate<Max<int>, time, minDegree, kind>()(0), exp);
+        ooo_benchmark(MakeAggregate<Max<int>, time, minDegree, kind>()(0), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "mean") {
-        ooo_adversary_benchmark(MakeAggregate<Mean<int>, time, minDegree, kind>()(Mean<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<Mean<int>, time, minDegree, kind>()(Mean<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "stddev") {
-        ooo_adversary_benchmark(MakeAggregate<SampleStdDev<int>, time, minDegree, kind>()(SampleStdDev<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<SampleStdDev<int>, time, minDegree, kind>()(SampleStdDev<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "argmax") {
-        ooo_adversary_benchmark(MakeAggregate<ArgMax<int, int, IdentityLifter<int>>, time, minDegree, kind>()(ArgMax<int, int, IdentityLifter<int>>::identity), exp);
+        ooo_benchmark(MakeAggregate<ArgMax<int, int, IdentityLifter<int>>, time, minDegree, kind>()(ArgMax<int, int, IdentityLifter<int>>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "bloom") {
-        ooo_adversary_benchmark(MakeAggregate<BloomFilter<int>, time, minDegree, kind>()(BloomFilter<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<BloomFilter<int>, time, minDegree, kind>()(BloomFilter<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "collect") {
-        ooo_adversary_benchmark(MakeAggregate<Collect<int>, time, minDegree, kind>()(Collect<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<Collect<int>, time, minDegree, kind>()(Collect<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "mincount") {
-        ooo_adversary_benchmark(MakeAggregate<MinCount<int>, time, minDegree, kind>()(MinCount<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<MinCount<int>, time, minDegree, kind>()(MinCount<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "geomean") {
-        ooo_adversary_benchmark(MakeAggregate<GeometricMean<int>, time, minDegree, kind>()(GeometricMean<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<GeometricMean<int>, time, minDegree, kind>()(GeometricMean<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "busyloop") {
-        ooo_adversary_benchmark(MakeAggregate<BusyLoop<int>, time, minDegree, kind>()(0), exp);
+        ooo_benchmark(MakeAggregate<BusyLoop<int>, time, minDegree, kind>()(0), exp);
         return true;
     }
     return false;
@@ -835,45 +962,257 @@ template <
     > class MakeAggregate, 
     typename time
 >
-bool query_call_ooo_adversary_benchmark(std::string aggregator, std::string aggregator_req, std::string function_req, Experiment exp) {
+bool query_call_ooo_benchmark(std::string aggregator, std::string aggregator_req, std::string function_req, Experiment exp) {
     if (aggregator_req == aggregator && function_req == "sum") {
-        ooo_adversary_benchmark(MakeAggregate<Sum<int>, time>()(0), exp);
+        ooo_benchmark(MakeAggregate<Sum<int>, time>()(0), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "max") {
-        ooo_adversary_benchmark(MakeAggregate<Max<int>, time>()(0), exp);
+        ooo_benchmark(MakeAggregate<Max<int>, time>()(0), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "mean") {
-        ooo_adversary_benchmark(MakeAggregate<Mean<int>, time>()(Mean<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<Mean<int>, time>()(Mean<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "stddev") {
-        ooo_adversary_benchmark(MakeAggregate<SampleStdDev<int>, time>()(SampleStdDev<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<SampleStdDev<int>, time>()(SampleStdDev<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "argmax") {
-        ooo_adversary_benchmark(MakeAggregate<ArgMax<int, int, IdentityLifter<int>>, time>()(ArgMax<int, int, IdentityLifter<int>>::identity), exp);
+        ooo_benchmark(MakeAggregate<ArgMax<int, int, IdentityLifter<int>>, time>()(ArgMax<int, int, IdentityLifter<int>>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "bloom") {
-        ooo_adversary_benchmark(MakeAggregate<BloomFilter<int>, time>()(BloomFilter<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<BloomFilter<int>, time>()(BloomFilter<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "collect") {
-        ooo_adversary_benchmark(MakeAggregate<Collect<int>, time>()(Collect<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<Collect<int>, time>()(Collect<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "mincount") {
-        ooo_adversary_benchmark(MakeAggregate<MinCount<int>, time>()(MinCount<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<MinCount<int>, time>()(MinCount<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "geomean") {
-        ooo_adversary_benchmark(MakeAggregate<GeometricMean<int>, time>()(GeometricMean<int>::identity), exp);
+        ooo_benchmark(MakeAggregate<GeometricMean<int>, time>()(GeometricMean<int>::identity), exp);
         return true;
     }
     else if (aggregator_req == aggregator && function_req == "busyloop") {
-        ooo_adversary_benchmark(MakeAggregate<BusyLoop<int>, time>()(0), exp);
+        ooo_benchmark(MakeAggregate<BusyLoop<int>, time>()(0), exp);
+        return true;
+    }
+    return false;
+}
+
+template <
+    template <
+        typename, 
+        typename time, 
+        int minDegree, 
+        btree::Kind kind
+    > class MakeAggregate, 
+    typename time, 
+    int minDegree, 
+    btree::Kind kind
+>
+bool query_call_bulk_evict_benchmark(std::string aggregator, std::string aggregator_req, std::string function_req, Experiment exp) {
+    if (aggregator_req == aggregator && function_req == "sum") {
+        bulk_evict_benchmark(MakeAggregate<Sum<int>, time, minDegree, kind>()(0), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "max") {
+        bulk_evict_benchmark(MakeAggregate<Max<int>, time, minDegree, kind>()(0), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "mean") {
+        bulk_evict_benchmark(MakeAggregate<Mean<int>, time, minDegree, kind>()(Mean<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "stddev") {
+        bulk_evict_benchmark(MakeAggregate<SampleStdDev<int>, time, minDegree, kind>()(SampleStdDev<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "argmax") {
+        bulk_evict_benchmark(MakeAggregate<ArgMax<int, int, IdentityLifter<int>>, time, minDegree, kind>()(ArgMax<int, int, IdentityLifter<int>>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "bloom") {
+        bulk_evict_benchmark(MakeAggregate<BloomFilter<int>, time, minDegree, kind>()(BloomFilter<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "collect") {
+        bulk_evict_benchmark(MakeAggregate<Collect<int>, time, minDegree, kind>()(Collect<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "mincount") {
+        bulk_evict_benchmark(MakeAggregate<MinCount<int>, time, minDegree, kind>()(MinCount<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "geomean") {
+        bulk_evict_benchmark(MakeAggregate<GeometricMean<int>, time, minDegree, kind>()(GeometricMean<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "busyloop") {
+        bulk_evict_benchmark(MakeAggregate<BusyLoop<int>, time, minDegree, kind>()(0), exp);
+        return true;
+    }
+    return false;
+}
+
+template <
+    template <
+        typename, 
+        typename time
+    > class MakeAggregate, 
+    typename time
+>
+bool query_call_bulk_evict_benchmark(std::string aggregator, std::string aggregator_req, std::string function_req, Experiment exp) {
+    if (aggregator_req == aggregator && function_req == "sum") {
+        bulk_evict_benchmark(MakeAggregate<Sum<int>, time>()(0), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "max") {
+        bulk_evict_benchmark(MakeAggregate<Max<int>, time>()(0), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "mean") {
+        bulk_evict_benchmark(MakeAggregate<Mean<int>, time>()(Mean<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "stddev") {
+        bulk_evict_benchmark(MakeAggregate<SampleStdDev<int>, time>()(SampleStdDev<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "argmax") {
+        bulk_evict_benchmark(MakeAggregate<ArgMax<int, int, IdentityLifter<int>>, time>()(ArgMax<int, int, IdentityLifter<int>>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "bloom") {
+        bulk_evict_benchmark(MakeAggregate<BloomFilter<int>, time>()(BloomFilter<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "collect") {
+        bulk_evict_benchmark(MakeAggregate<Collect<int>, time>()(Collect<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "mincount") {
+        bulk_evict_benchmark(MakeAggregate<MinCount<int>, time>()(MinCount<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "geomean") {
+        bulk_evict_benchmark(MakeAggregate<GeometricMean<int>, time>()(GeometricMean<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "busyloop") {
+        bulk_evict_benchmark(MakeAggregate<BusyLoop<int>, time>()(0), exp);
+        return true;
+    }
+    return false;
+}
+
+template <
+    template <
+        typename, 
+        typename time, 
+        int minDegree, 
+        btree::Kind kind
+    > class MakeAggregate, 
+    typename time, 
+    int minDegree, 
+    btree::Kind kind
+>
+bool query_call_bulk_evict_insert_benchmark(std::string aggregator, std::string aggregator_req, std::string function_req, Experiment exp) {
+    if (aggregator_req == aggregator && function_req == "sum") {
+        bulk_evict_insert_benchmark(MakeAggregate<Sum<int>, time, minDegree, kind>()(0), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "max") {
+        bulk_evict_insert_benchmark(MakeAggregate<Max<int>, time, minDegree, kind>()(0), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "mean") {
+        bulk_evict_insert_benchmark(MakeAggregate<Mean<int>, time, minDegree, kind>()(Mean<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "stddev") {
+        bulk_evict_insert_benchmark(MakeAggregate<SampleStdDev<int>, time, minDegree, kind>()(SampleStdDev<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "argmax") {
+        bulk_evict_insert_benchmark(MakeAggregate<ArgMax<int, int, IdentityLifter<int>>, time, minDegree, kind>()(ArgMax<int, int, IdentityLifter<int>>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "bloom") {
+        bulk_evict_insert_benchmark(MakeAggregate<BloomFilter<int>, time, minDegree, kind>()(BloomFilter<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "collect") {
+        bulk_evict_insert_benchmark(MakeAggregate<Collect<int>, time, minDegree, kind>()(Collect<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "mincount") {
+        bulk_evict_insert_benchmark(MakeAggregate<MinCount<int>, time, minDegree, kind>()(MinCount<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "geomean") {
+        bulk_evict_insert_benchmark(MakeAggregate<GeometricMean<int>, time, minDegree, kind>()(GeometricMean<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "busyloop") {
+        bulk_evict_insert_benchmark(MakeAggregate<BusyLoop<int>, time, minDegree, kind>()(0), exp);
+        return true;
+    }
+    return false;
+}
+
+template <
+    template <
+        typename, 
+        typename time
+    > class MakeAggregate, 
+    typename time
+>
+bool query_call_bulk_evict_insert_benchmark(std::string aggregator, std::string aggregator_req, std::string function_req, Experiment exp) {
+    if (aggregator_req == aggregator && function_req == "sum") {
+        bulk_evict_insert_benchmark(MakeAggregate<Sum<int>, time>()(0), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "max") {
+        bulk_evict_insert_benchmark(MakeAggregate<Max<int>, time>()(0), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "mean") {
+        bulk_evict_insert_benchmark(MakeAggregate<Mean<int>, time>()(Mean<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "stddev") {
+        bulk_evict_insert_benchmark(MakeAggregate<SampleStdDev<int>, time>()(SampleStdDev<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "argmax") {
+        bulk_evict_insert_benchmark(MakeAggregate<ArgMax<int, int, IdentityLifter<int>>, time>()(ArgMax<int, int, IdentityLifter<int>>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "bloom") {
+        bulk_evict_insert_benchmark(MakeAggregate<BloomFilter<int>, time>()(BloomFilter<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "collect") {
+        bulk_evict_insert_benchmark(MakeAggregate<Collect<int>, time>()(Collect<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "mincount") {
+        bulk_evict_insert_benchmark(MakeAggregate<MinCount<int>, time>()(MinCount<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "geomean") {
+        bulk_evict_insert_benchmark(MakeAggregate<GeometricMean<int>, time>()(GeometricMean<int>::identity), exp);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "busyloop") {
+        bulk_evict_insert_benchmark(MakeAggregate<BusyLoop<int>, time>()(0), exp);
         return true;
     }
     return false;

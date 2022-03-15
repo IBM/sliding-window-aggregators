@@ -1,5 +1,7 @@
 #include "benchmark_core.h"
 
+#include "FiBA.hpp"
+
 typedef uint64_t timestamp;
 
 int main(int argc, char** argv) {

@@ -3,6 +3,7 @@
 
 #include<deque>
 #include"ChunkedArrayQueue.hpp"
+#include "RingBufferQueue.hpp"
 #include<iostream>
 #include<iterator>
 #include<cassert>
@@ -12,6 +13,8 @@
 #else
 #define _IFDEBUG(x)
 #endif
+
+#include "BulkAdapter.hpp"
 
 namespace timestamped_dabalite {
   template<typename valT, typename timeT>
@@ -247,6 +250,25 @@ namespace timestamped_dabalite {
       return make_aggregate<timeT, BinaryFunction>(f, elem);
     }
   };
+   
+  template <typename timeT, class BinaryFunction, class T>
+  auto make_bulk_aggregate(BinaryFunction f, T elem) {
+    return BulkAdapter<
+        Aggregate<BinaryFunction, timeT>,
+        timeT,
+        typename BinaryFunction::In
+    >(f, elem);
+  }
+
+  template <typename BinaryFunction, typename timeT>
+  struct MakeBulkAggregate {
+    template <typename T>
+    auto operator()(T elem) {
+      BinaryFunction f;
+      return make_bulk_aggregate<timeT, BinaryFunction>(f, elem);
+    }
+  };
+ 
 }
 
 namespace timestamped_rb_dabalite {
@@ -278,6 +300,7 @@ namespace timestamped_rb_dabalite {
         return make_aggregate<MAX_CAPACITY, timeT, BinaryFunction>(f, elem);
     }
   };      
+
 }
 
 #endif

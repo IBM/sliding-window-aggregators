@@ -1,5 +1,20 @@
 #include "benchmark_core.h"
 
+#include "DABA.hpp"
+#include "DABALite.hpp"
+#include "TwoStacks.hpp"
+#include "TwoStacksLite.hpp"
+#include "ImplicitTwoStacksLite.hpp"
+#include "FlatFIT.hpp"
+#include "DynamicFlatFIT.hpp"
+#include "ImplicitQueueABA.hpp"
+#include "SubtractOnEvict.hpp"
+#include "ReCalc.hpp"
+#include "Reactive.hpp"
+#include "OkasakisQueue.hpp"
+#include "Reactive.hpp"
+#include "FiBA.hpp"
+
 typedef uint64_t timestamp;
 
 template <template <typename, typename time> class MakeAggregate, typename time>
