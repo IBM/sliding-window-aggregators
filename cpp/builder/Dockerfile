@@ -1,5 +1,5 @@
-# Based on Ubuntu 18.04
-FROM buildpack-deps:bionic
+# Based on Ubuntu 20.04
+FROM buildpack-deps:focal 
 
 RUN apt-get update && \
 	apt-get install -y libboost-all-dev zip && \
