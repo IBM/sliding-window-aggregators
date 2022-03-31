@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
     }
 
     if (latency) {
-        std::ofstream out("results/latency_bulk_evict_" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str + ".txt");
+        std::ofstream out("results/latency_bulk_evict_insert_" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str + ".txt");
         for (auto e: latencies) {
             out << e << std::endl;
         }
