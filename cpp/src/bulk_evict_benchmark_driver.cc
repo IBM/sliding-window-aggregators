@@ -39,7 +39,12 @@ int main(int argc, char** argv) {
               << iterations << std::endl;
 
     std::vector<cycle_duration> latencies;
+    std::vector<cycle_duration> evict_latencies;
+    std::vector<cycle_duration> insert_latencies;
+
     Experiment exp(window_size, iterations, degree, bulk_size, latency, latencies);
+    exp.extra_latencies.push_back(evict_latencies);
+    exp.extra_latencies.push_back(insert_latencies);
 
     if (!(query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 2, btree::finger>("bfinger2", aggregator, function, exp) ||
           query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 4, btree::finger>("bfinger4", aggregator, function, exp) ||
@@ -58,6 +63,14 @@ int main(int argc, char** argv) {
         std::ofstream out("results/latency_bulk_evict_" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str + ".txt");
         for (auto e: latencies) {
             out << e << std::endl;
+        }
+        std::ofstream evict("results/latency_bulk_evict_evict" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str + ".txt");
+        for (auto e: evict_latencies) {
+            evict << e << std::endl;
+        }
+        std::ofstream insert("results/latency_bulk_evict_insert" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str + ".txt");
+        for (auto e: insert_latencies) {
+            insert << e << std::endl;
         }
     }
 

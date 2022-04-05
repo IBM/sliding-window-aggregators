@@ -48,17 +48,21 @@ struct Experiment {
     uint64_t bulk_size;
     bool latency;
     std::vector<cycle_duration>& latencies;
+    std::vector<std::reference_wrapper<std::vector<cycle_duration>>> extra_latencies;
 
     Experiment(size_t w, uint64_t i, bool l, std::vector<cycle_duration>& ls):
-        window_size(w), iterations(i), ooo_distance(0), bulk_size(1), latency(l), latencies(ls)
+        window_size(w), iterations(i), ooo_distance(0), bulk_size(1), latency(l), latencies(ls),
+        extra_latencies()
     {}
 
     Experiment(size_t w, uint64_t i, uint64_t d, bool l, std::vector<cycle_duration>& ls):
-        window_size(w), iterations(i), ooo_distance(d), bulk_size(1), latency(l), latencies(ls)
+        window_size(w), iterations(i), ooo_distance(d), bulk_size(1), latency(l), latencies(ls),
+        extra_latencies()
     {}
 
     Experiment(size_t w, uint64_t i, uint64_t d, uint64_t b, bool l, std::vector<cycle_duration>& ls):
-        window_size(w), iterations(i), ooo_distance(d), bulk_size(b), latency(l), latencies(ls)
+        window_size(w), iterations(i), ooo_distance(d), bulk_size(b), latency(l), latencies(ls),
+        extra_latencies()
     {}
 
 };
@@ -305,15 +309,23 @@ void bulk_evict_benchmark(Aggregate agg, Experiment exp) {
             std::atomic_thread_fence(std::memory_order_release);
 
             agg.bulkEvict(i - exp.window_size + exp.bulk_size - 1);
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto evict = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
             for (typename Aggregate::timeT j = 0; j < exp.bulk_size && i < stop_pos; ++j, ++i) {
                 std::atomic_thread_fence(std::memory_order_seq_cst);
                 agg.insert(i, 1 + (i % 101));
             }
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto insert = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
             silly_combine(force_side_effect, agg.query());
             std::atomic_thread_fence(std::memory_order_acquire);
             auto after = rdtsc();
             std::atomic_thread_fence(std::memory_order_release);
             exp.latencies.push_back(after - before);
+            exp.extra_latencies[0].get().push_back(evict - before);
+            exp.extra_latencies[1].get().push_back(insert - evict);
         }
         std::cerr << force_side_effect << std::endl;
     }
