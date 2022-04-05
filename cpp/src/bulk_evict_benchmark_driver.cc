@@ -60,18 +60,18 @@ int main(int argc, char** argv) {
     }
 
     if (latency) {
-        std::ofstream out("results/latency_bulk_evict_" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str + ".txt");
-        for (auto e: latencies) {
-            out << e << std::endl;
-        }
-        std::ofstream evict("results/latency_bulk_evict_evict" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str + ".txt");
-        for (auto e: evict_latencies) {
-            evict << e << std::endl;
-        }
-        std::ofstream insert("results/latency_bulk_evict_insert" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str + ".txt");
-        for (auto e: insert_latencies) {
-            insert << e << std::endl;
-        }
+        write_latency(
+            "results/latency_bulk_evict_" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str + ".txt",
+            latencies
+        );
+        write_latency(
+            "results/latency_bulk_evict_opevict_" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str + ".txt",
+            evict_latencies
+        );
+        write_latency(
+            "results/latency_bulk_evict_opinsert_" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str + ".txt",
+            insert_latencies
+        );
     }
 
     return 0;
