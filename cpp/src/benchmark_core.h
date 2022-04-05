@@ -48,17 +48,21 @@ struct Experiment {
     uint64_t bulk_size;
     bool latency;
     std::vector<cycle_duration>& latencies;
+    std::vector<std::reference_wrapper<std::vector<cycle_duration>>> extra_latencies;
 
     Experiment(size_t w, uint64_t i, bool l, std::vector<cycle_duration>& ls):
-        window_size(w), iterations(i), ooo_distance(0), bulk_size(1), latency(l), latencies(ls)
+        window_size(w), iterations(i), ooo_distance(0), bulk_size(1), latency(l), latencies(ls),
+        extra_latencies()
     {}
 
     Experiment(size_t w, uint64_t i, uint64_t d, bool l, std::vector<cycle_duration>& ls):
-        window_size(w), iterations(i), ooo_distance(d), bulk_size(1), latency(l), latencies(ls)
+        window_size(w), iterations(i), ooo_distance(d), bulk_size(1), latency(l), latencies(ls),
+        extra_latencies()
     {}
 
     Experiment(size_t w, uint64_t i, uint64_t d, uint64_t b, bool l, std::vector<cycle_duration>& ls):
-        window_size(w), iterations(i), ooo_distance(d), bulk_size(b), latency(l), latencies(ls)
+        window_size(w), iterations(i), ooo_distance(d), bulk_size(b), latency(l), latencies(ls),
+        extra_latencies()
     {}
 
 };
@@ -285,7 +289,46 @@ void bulk_evict_benchmark(Aggregate agg, Experiment exp) {
         std::cerr << force_side_effect << std::endl;
     }
     else {
-        throw std::runtime_error("bulk_evict_benchmark latency not implemented");
+        for (i = exp.iterations - exp.ooo_distance; i < exp.iterations; ++i) {
+            agg.insert(i, 1 + (i % 101));
+        }
+        for (i = 0; i < exp.window_size - exp.ooo_distance; ++i) {
+            agg.insert(i, 1 + (i % 101));
+        }
+
+        if (agg.size() != exp.window_size) {
+            std::cerr << "window is not exactly full; should be " << exp.window_size << ", but is " << agg.size();
+            exit(2);
+        }
+
+        uint64_t start_pos = exp.window_size - exp.ooo_distance;
+        uint64_t stop_pos = exp.iterations - exp.ooo_distance;
+        for (i = start_pos; i < stop_pos; /* nop */) {
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto before = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+
+            agg.bulkEvict(i - exp.window_size + exp.bulk_size - 1);
+
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto evict = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+            for (typename Aggregate::timeT j = 0; j < exp.bulk_size && i < stop_pos; ++j, ++i) {
+                std::atomic_thread_fence(std::memory_order_seq_cst);
+                agg.insert(i, 1 + (i % 101));
+            }
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto insert = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+            silly_combine(force_side_effect, agg.query());
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto after = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+            exp.latencies.push_back(after - before);
+            exp.extra_latencies[0].get().push_back(evict - before);
+            exp.extra_latencies[1].get().push_back(insert - evict);
+        }
+        std::cerr << force_side_effect << std::endl;
     }
 }
 
@@ -381,7 +424,50 @@ void bulk_evict_insert_benchmark(Aggregate agg, Experiment exp) {
         std::cerr << force_side_effect << std::endl;
     }
     else {
-        throw std::runtime_error("bulk_evict_benchmark latency not implemented");
+        for (i = exp.iterations - exp.ooo_distance; i < exp.iterations; ++i) {
+            agg.insert(i, 1 + (i % 101));
+        }
+        for (i = 0; i < exp.window_size - exp.ooo_distance; ++i) {
+            agg.insert(i, 1 + (i % 101));
+        }
+
+        if (agg.size() != exp.window_size) {
+            std::cerr << "window is not exactly full; should be " << exp.window_size << ", but is " << agg.size();
+            exit(2);
+        }
+
+        uint64_t start_pos = exp.window_size - exp.ooo_distance;
+        uint64_t stop_pos = exp.iterations - exp.ooo_distance;
+        for (i = start_pos; i < stop_pos; i += exp.bulk_size) {
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto before = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+
+            agg.bulkEvict(i - exp.window_size + exp.bulk_size - 1);
+
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto evict = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+
+            using SG = SyntheticGenerator<typename Aggregate::timeT, uint64_t>;
+            SG begin(i, i);
+            SG end(i + exp.bulk_size + 1, i + exp.bulk_size + 1);
+            agg.bulkInsert(begin, end);
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto insert = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+
+            silly_combine(force_side_effect, agg.query());
+
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto after = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+            exp.latencies.push_back(after - before);
+            exp.extra_latencies[0].get().push_back(evict - before);
+            exp.extra_latencies[1].get().push_back(insert - evict);
+        }
+
+        std::cerr << force_side_effect << std::endl;
     }
 }
 
@@ -1718,6 +1804,14 @@ bool query_call_data_benchmark(const std::string& aggregator,
     }
 
     return false;
+}
+
+template <typename T=cycle_duration>
+void write_latency(std::string filespec, std::vector<T> &latencies) {
+    std::ofstream out(filespec);
+    for (auto e: latencies) {
+        out << e << std::endl;
+    }
 }
 
 
