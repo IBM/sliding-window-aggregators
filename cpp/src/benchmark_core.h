@@ -309,6 +309,7 @@ void bulk_evict_benchmark(Aggregate agg, Experiment exp) {
             std::atomic_thread_fence(std::memory_order_release);
 
             agg.bulkEvict(i - exp.window_size + exp.bulk_size - 1);
+
             std::atomic_thread_fence(std::memory_order_acquire);
             auto evict = rdtsc();
             std::atomic_thread_fence(std::memory_order_release);
@@ -444,10 +445,17 @@ void bulk_evict_insert_benchmark(Aggregate agg, Experiment exp) {
 
             agg.bulkEvict(i - exp.window_size + exp.bulk_size - 1);
 
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto evict = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+
             using SG = SyntheticGenerator<typename Aggregate::timeT, uint64_t>;
             SG begin(i, i);
             SG end(i + exp.bulk_size + 1, i + exp.bulk_size + 1);
             agg.bulkInsert(begin, end);
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto insert = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
 
             silly_combine(force_side_effect, agg.query());
 
@@ -455,6 +463,8 @@ void bulk_evict_insert_benchmark(Aggregate agg, Experiment exp) {
             auto after = rdtsc();
             std::atomic_thread_fence(std::memory_order_release);
             exp.latencies.push_back(after - before);
+            exp.extra_latencies[0].get().push_back(evict - before);
+            exp.extra_latencies[1].get().push_back(insert - evict);
         }
 
         std::cerr << force_side_effect << std::endl;
@@ -1794,6 +1804,14 @@ bool query_call_data_benchmark(const std::string& aggregator,
     }
 
     return false;
+}
+
+template <typename T=cycle_duration>
+void write_latency(std::string filespec, std::vector<T> &latencies) {
+    std::ofstream out(filespec);
+    for (auto e: latencies) {
+        out << e << std::endl;
+    }
 }
 
 
