@@ -50,6 +50,23 @@ def run_ooo_latency(aggregators, functions, name_base):
                     iterations = base_iterations + w
                     exec_no_fail(['../bin/' + name_base + '_benchmark_driver', agg, f, str(w), str(d), str(iterations), 'latency'])
 
+def run_bulk_latency(aggregators, functions, degrees, bulk_sizes, name_base):
+    for agg in aggregators:
+        for f, params in functions.items():
+            base_iterations = params[0]
+            window_sizes = params[1]
+
+            for w in window_sizes:
+                for d in degrees:
+                    for b in bulk_sizes:
+                        print(agg + '_' + f, w, d, b, ':')
+                        sys.stdout.flush()
+                        iterations = base_iterations + w
+                        exec_no_fail(
+                            ['../bin/' + name_base + '_benchmark_driver', 
+                            agg, f, str(w), str(d), str(b), str(iterations), 'latency']
+                        )
+
 def get_runtime(stdout):
     for line in stdout.splitlines():
         if 'core runtime: ' in line:
