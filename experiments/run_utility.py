@@ -1,3 +1,4 @@
+from __future__ import print_function 
 import csv, time, sys, math, collections, os
 from subprocess import call, Popen, PIPE
 
@@ -35,6 +36,19 @@ def run_fifo_latency(aggregators, functions):
             window_size = params[1]
             iterations = base_iterations + window_size
             exec_no_fail(['../bin/benchmark_driver', agg, f, str(window_size), str(iterations), 'latency'])
+
+def run_ooo_latency(aggregators, functions, name_base):
+    for agg in aggregators:
+        for f, params in functions.iteritems():
+            base_iterations = params[0]
+            window_sizes = params[1]
+
+            for w in window_sizes:
+                for d in [0, w/4]:
+                    print(agg + '_' + f, w, d, ':')
+                    sys.stdout.flush()
+                    iterations = base_iterations + w
+                    exec_no_fail(['../bin/' + name_base + '_benchmark_driver', agg, f, str(w), str(d), str(iterations), 'latency'])
 
 def get_runtime(stdout):
     for line in stdout.splitlines():
@@ -233,6 +247,6 @@ def run_data(aggregators, functions, durations, data_sets, name_base, latency=''
                         exp_file.write(' '.join([agg, f, str(d), latency]) + '\n')
 
         stdout = exec_no_fail(['../bin/' + name_base + '_benchmark', exp_filename, str(sample_size), data_set, data_file])
-        with open('results/' + data_set + '_' + name_base + '.log', 'w') as log:
+        with open('results/' + data_set + '_' + name_base + '.log', 'wt') as log:
             log.write(stdout)
 
