@@ -60,15 +60,15 @@ int main(int argc, char** argv) {
 
     if (latency) {
         write_latency(
-            "results/latency_bulk_evict_insert_" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str + ".txt",
+            "results/latency_bulk_evict_insert_" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str + "_b" + bulk_size_str +  ".txt",
             latencies
         );
         write_latency(
-            "results/latency_bulk_evict_insert_opevict_" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str + ".txt",
+            "results/latency_bulk_evict_insert_opevict_" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str + "_b" + bulk_size_str +  ".txt",
             evict_latencies
         );
         write_latency(
-            "results/latency_bulk_evict_insert_opinsert_" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str + ".txt",
+            "results/latency_bulk_evict_insert_opinsert_" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str + "_b" + bulk_size_str +  ".txt",
             insert_latencies
         );
     }
