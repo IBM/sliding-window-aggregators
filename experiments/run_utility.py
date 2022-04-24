@@ -62,12 +62,12 @@ def run_ooo(aggregators, functions, degrees, name_base, sample_size=5):
                     if d > w:
                         continue
                     row = [f, w, d]
-                    print(w, d, ':',)
+                    print(w, d, ':', end='')
 
                     iterations = base_iterations + w
                     for i in range(sample_size):
                         runtime = exec_runtime(['../bin/' + name_base + '_benchmark_driver', agg, f, str(w), str(d), str(iterations)])
-                        print(runtime,)
+                        print(runtime, end='')
                         sys.stdout.flush()
                         row.append(runtime)
 
@@ -96,11 +96,11 @@ def run_bulk(aggregators, functions, degrees, bulks, name_base, sample_size=5):
                         iterations = base_iterations + w
                         for b in bulks:
                             row = [f, w, d, b]
-                            print(w, d, b, ':',)
+                            print(w, d, b, ':', end='')
 
                             for i in range(sample_size):
                                 runtime = exec_runtime(['../bin/' + name_base + '_benchmark_driver', agg, f, str(w), str(d), str(b), str(iterations)])
-                                print(runtime,)
+                                print(runtime, end='')
                                 sys.stdout.flush()
                                 row.append(runtime)
 
@@ -121,12 +121,12 @@ def run_fifo(aggregators, functions, name_base, sample_size=5):
 
             for w in window_sizes:
                 row = [f, w]
-                print(w, ':',)
+                print(w, ':', end='')
 
                 iterations = base_iterations + w
                 for i in range(sample_size):
                     runtime = exec_runtime(['../bin/benchmark_driver', agg, f, str(w), str(iterations)])
-                    print(runtime,)
+                    print(runtime, end='')
                     sys.stdout.flush()
                     row.append(runtime)
 
@@ -148,12 +148,12 @@ def run_dynamic(aggregators, functions, name_base, sample_size=5):
 
             for w in window_sizes:
                 row = [f, w]
-                print(w, ':',)
+                print(w, ':', end='')
 
                 iterations = base_iterations + w
                 for i in range(sample_size):
                     runtime = exec_runtime(['../bin/dynamic_benchmark_driver', agg, f, str(w), str(iterations)])
-                    print(runtime,)
+                    print(runtime, end='')
                     sys.stdout.flush()
                     row.append(runtime)
 
@@ -178,12 +178,12 @@ def run_shared(aggregators, functions, name_base, sample_size=5):
 
                 for sw in small_window_sizes:
                     row = [f, big_window_size, sw]
-                    print(sw, ':',)
+                    print(sw, ':', end='')
 
                     iterations = base_iterations + big_window_size
                     for i in range(sample_size):
                         runtime = exec_runtime(['../bin/' + name_base + '_benchmark_driver', agg, f, str(big_window_size), str(sw), str(iterations), sk])
-                        print(runtime,)
+                        print(runtime, end='')
                         sys.stdout.flush()
                         row.append(runtime)
 
@@ -208,12 +208,12 @@ def run_shared_half(aggregators, functions, window_sizes, name_base, sample_size
                     small_window_size = w / 2
 
                     row = [f, big_window_size, small_window_size]
-                    print(big_window_size, small_window_size, ':',)
+                    print(big_window_size, small_window_size, ':', end='')
 
                     iterations = base_iterations + big_window_size
                     for i in range(sample_size):
                         runtime = exec_runtime(['../bin/' + name_base + '_benchmark_driver', agg, f, str(big_window_size), str(small_window_size), str(iterations), sk])
-                        print(runtime,)
+                        print(runtime, end='')
                         sys.stdout.flush()
                         row.append(runtime)
 
@@ -226,7 +226,7 @@ def run_shared_half(aggregators, functions, window_sizes, name_base, sample_size
 def run_data(aggregators, functions, durations, data_sets, name_base, latency='', sample_size=5):
     for data_set, data_file in data_sets.items():
         exp_filename = 'experiments_to_run.txt'
-        with open(exp_filename, 'w') as exp_file:
+        with open(exp_filename, 'wt') as exp_file:
             for agg in aggregators:
                 for f in functions:
                     for d in durations:

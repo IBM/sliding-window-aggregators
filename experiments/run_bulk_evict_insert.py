@@ -19,8 +19,8 @@ base_iterations = 5 * u.MILLION
 
 bulk_sizes = [
     1, 8, 64,
-    #1*u.KB, 8*u.KB, 64*u.KB, 
-    #1*u.MB,
+    1*u.KB, 8*u.KB, 64*u.KB, 
+    1*u.MB,
 ]
 
 functions = { 

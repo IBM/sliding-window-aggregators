@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import utilities as u
+import run_utility as u
 
 aggregators = [
                 "bclassic2",

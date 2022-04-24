@@ -26,7 +26,7 @@ functions = {
             }
 
 def main():
-    u.run_bulk(aggregators, functions, degrees, bulk_sizes, 'bulk_evict')jk
+    u.run_bulk(aggregators, functions, degrees, bulk_sizes, 'bulk_evict')
 
 if __name__ == "__main__":
     main()

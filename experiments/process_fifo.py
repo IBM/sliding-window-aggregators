@@ -2,8 +2,7 @@
 
 import sys, collections
 import process_utility as u
-
-base_iterations = 200 * u.MILLION
+from run_fifo import base_iterations
 
 aggregators = [u.Aggregator("daba", '-', 'black'),
                u.Aggregator("daba_lite", '--', 'black'),
