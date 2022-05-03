@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import run_utility as u
 
@@ -20,7 +20,7 @@ base_iterations = 1 * u.MILLION
 bulk_sizes = [1, 256, 1024, 16384]
 
 
-functions = { 
+functions = {
              "sum": (base_iterations, base_window_sizes),
              "geomean": (base_iterations, base_window_sizes),
              "bloom": (base_iterations, base_window_sizes),

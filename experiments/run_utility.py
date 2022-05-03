@@ -1,4 +1,3 @@
-from __future__ import print_function 
 import csv, time, sys, math, collections, os
 from subprocess import call, Popen, PIPE
 
@@ -63,7 +62,7 @@ def run_bulk_latency(aggregators, functions, degrees, bulk_sizes, name_base):
                         sys.stdout.flush()
                         iterations = base_iterations + w
                         exec_no_fail(
-                            ['../bin/' + name_base + '_benchmark_driver', 
+                            ['../bin/' + name_base + '_benchmark_driver',
                             agg, f, str(w), str(d), str(b), str(iterations), 'latency']
                         )
 
@@ -235,7 +234,7 @@ def run_shared_half(aggregators, functions, window_sizes, name_base, sample_size
                 base_iterations = params
 
                 for w in window_sizes:
-                    big_window_size = w 
+                    big_window_size = w
                     small_window_size = w / 2
 
                     row = [f, big_window_size, small_window_size]
