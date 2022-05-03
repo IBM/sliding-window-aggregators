@@ -1,5 +1,5 @@
-# Based on Ubuntu 18.04
-FROM buildpack-deps:bionic
+# Based on Ubuntu 22.04
+FROM buildpack-deps:jammy
 
 RUN apt-get update && \
 	apt-get install -y libboost-all-dev zip && \
