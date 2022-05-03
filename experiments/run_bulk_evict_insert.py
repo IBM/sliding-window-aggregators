@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 import run_utility as u
 
@@ -15,7 +15,7 @@ degrees = [0]
 
 base_window_sizes = [4*u.MB]
 
-base_iterations = 10 * u.MILLION
+base_iterations = 5 * u.MILLION
 
 bulk_sizes = [
     1, 8, 64,

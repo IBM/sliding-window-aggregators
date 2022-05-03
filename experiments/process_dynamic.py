@@ -1,9 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys, collections
 import process_utility as u
-
-base_iterations = 200 * u.MILLION
+from run_dynamic import base_iterations
 
 aggregators = [u.Aggregator("daba", '-', 'black'),
                u.Aggregator("daba_lite", '--', 'black'),
