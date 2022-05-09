@@ -8,6 +8,7 @@ endif
 
 DEBUG ?= 0
 ifeq ($(DEBUG), 1)
+	EXTRAS = 
 	CXXFLAGS=-std=gnu++17 -DHAS_UNCAUGHT_EXCEPTIONS=1 -g -fsanitize=address -fno-omit-frame-pointer ${EXTRAS}
 else
 	CXXFLAGS=-std=gnu++17 -DHAS_UNCAUGHT_EXCEPTIONS=1 -O3 -DNDEBUG ${EXTRAS}

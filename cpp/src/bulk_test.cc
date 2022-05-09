@@ -350,7 +350,7 @@ void bulk_insert_from_random_trees() {
 
 template <int minArity, class F>
 void bulk_insert_from_adapter(F f) {
-  auto bfinger_wrapped = btree::make_aggregate<timestamp, minArity, btree::finger, F, typename F::Partial, true>(f, f.identity);
+  auto bfinger_wrapped = btree::make_bulk_aggregate<timestamp, minArity, btree::finger, F, typename F::Partial>(f, f.identity);
 
   vector<pair<timestamp, int>> bulkOne{
       make_pair(5, 105),           make_pair(507, 100 + 507),
@@ -369,7 +369,7 @@ void bulk_insert_from_adapter(F f) {
 
 template <int minArity, class F>
 void bulk_evict_from_adapter(F f) {
-  auto bfinger_wrapped = btree::make_aggregate<timestamp, minArity, btree::finger, F, typename F::Partial, true>(f, f.identity);
+  auto bfinger_wrapped = btree::make_bulk_aggregate<timestamp, minArity, btree::finger, F, typename F::Partial>(f, f.identity);
   vector<pair<timestamp, int>> bulkOne{
       make_pair(5, 105),           make_pair(507, 100 + 507),
       make_pair(509, 100 + 509),   make_pair(511, 100 + 511),

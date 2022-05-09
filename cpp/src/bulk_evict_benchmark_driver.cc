@@ -50,11 +50,14 @@ int main(int argc, char** argv) {
           query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 4, btree::finger>("bfinger4", aggregator, function, exp) ||
           query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 8, btree::finger>("bfinger8", aggregator, function, exp) ||
 
+          query_call_bulk_evict_benchmark<btree::MakeBulkAggregate, timestamp, 2, btree::finger>("nbfinger2", aggregator, function, exp) ||
+          query_call_bulk_evict_benchmark<btree::MakeBulkAggregate, timestamp, 4, btree::finger>("nbfinger4", aggregator, function, exp) ||
+          query_call_bulk_evict_benchmark<btree::MakeBulkAggregate, timestamp, 8, btree::finger>("nbfinger8", aggregator, function, exp) ||
 
           query_call_bulk_evict_benchmark<timestamped_twostacks_lite::MakeBulkAggregate, timestamp>("two_stacks_lite", aggregator, function, exp) ||
           query_call_bulk_evict_benchmark<timestamped_dabalite::MakeBulkAggregate, timestamp>("daba_lite", aggregator, function, exp) ||
           query_call_bulk_evict_benchmark<amta::MakeAggregate, timestamp>("amta", aggregator, function, exp)
-       )) {
+          )) {
         std::cerr << "error: no matching kind of experiment: " << aggregator << ", " << function << std::endl;
         return 2;
     }

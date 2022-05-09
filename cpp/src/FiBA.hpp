@@ -1940,28 +1940,42 @@ public:
   }
 };
 
-template <typename timeT, int minArity, Kind kind, class BinaryFunction, class T, bool simulatedBulk=false>
+template <typename timeT, int minArity, Kind kind, class BinaryFunction, class T>
 Aggregate<timeT, minArity, kind, BinaryFunction>
 make_aggregate(BinaryFunction f, T elem) {
-  if (simulatedBulk)
-    return BulkAdapter<
-      Aggregate<timeT, minArity, kind, BinaryFunction>,
-      timeT, typename BinaryFunction::In
-      >(f);
-  else
     return Aggregate<timeT, minArity, kind, BinaryFunction>(f);
 }
 
-template <typename BinaryFunction, typename timeT, int minArity, Kind kind, bool simulatedBulk=false>
+template <typename BinaryFunction, typename timeT, int minArity, Kind kind>
 struct MakeAggregate {
   template <typename T>
-  Aggregate<timeT, minArity, kind, BinaryFunction> operator()(T elem) {
+Aggregate<timeT, minArity, kind, BinaryFunction> operator()(T elem) {
     BinaryFunction f;
     return make_aggregate<
       timeT, minArity, kind,
       BinaryFunction,
-      typename BinaryFunction::Partial,
-      simulatedBulk
+      typename BinaryFunction::Partial
+      >(f, elem);
+  }
+};
+
+template <typename timeT, int minArity, Kind kind, class BinaryFunction, class T>
+auto make_bulk_aggregate(BinaryFunction f, T elem) {
+  return BulkAdapter<
+    Aggregate<timeT, minArity, kind, BinaryFunction>,
+    timeT, typename BinaryFunction::In
+    >(f);
+}
+
+template <typename BinaryFunction, typename timeT, int minArity, Kind kind>
+struct MakeBulkAggregate {
+  template <typename T>
+  auto operator()(T elem) {
+    BinaryFunction f;
+    return make_bulk_aggregate<
+      timeT, minArity, kind,
+      BinaryFunction,
+      typename BinaryFunction::Partial
       >(f, elem);
   }
 };
