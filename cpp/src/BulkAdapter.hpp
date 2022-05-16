@@ -19,7 +19,7 @@ public:
   }
 
   void bulkEvict(timeT const& time) {
-      while (Base::oldest() <= time) {
+      while (Base::size() > 0 && Base::oldest() <= time) {
           Base::evict();
       }
   }

@@ -6,6 +6,9 @@ aggregators = [
                 "bfinger2",
                 "bfinger4",
                 "bfinger8",
+                "nbfinger2",
+                "nbfinger4",
+                "nbfinger8",
                 "amta",
                 "two_stacks_lite",
                 "daba_lite",
@@ -15,7 +18,7 @@ degrees = [0, 256, 1024]
 
 base_window_sizes = [4*u.MB]
 
-base_iterations = 1 * u.MILLION
+base_iterations = 5 * u.MILLION
 
 bulk_sizes = [1, 256, 1024, 16384]
 
