@@ -639,6 +639,85 @@ void data_benchmark(Aggregate agg, DataExperiment exp, Generator& gen, std::ostr
     }
 }
 
+template <typename Data, typename Aggregate, typename Generator>
+void bulk_data_benchmark(Aggregate agg, DataExperiment exp, Generator& gen, std::ostream& out) {
+    typename Aggregate::outT force_side_effect = typename Aggregate::outT();
+    // add 1 time unit so that youngest - delta is the last timestamp to be evicted
+    auto delta = exp.window_duration; 
+    delta++;
+
+    gen.reset();
+
+    if (!exp.latency) {
+        std::chrono::time_point<std::chrono::system_clock> start;
+        bool warmup = true;
+        uint64_t count = 0;
+
+        for (; gen.is_valid(); ++gen) {
+            std::atomic_thread_fence(std::memory_order_seq_cst);
+            if (agg.size() == 0 || exp.window_duration >= agg.youngest() - (*gen).order()) {
+                agg.insert((*gen).order(), *gen);
+                if (!warmup) {
+                    ++count;
+                }
+
+                typename Aggregate::timeT youngest = agg.youngest();
+                if (exp.window_duration < (youngest - agg.oldest())) {
+                    agg.bulkEvict(youngest - delta); 
+                    if (warmup) { 
+                        start = std::chrono::system_clock::now();
+                    }
+                    warmup = false;
+                }
+                silly_combine(force_side_effect, agg.query());
+            }
+        }
+
+        std::chrono::duration<double> runtime = std::chrono::system_clock::now() - start;
+        if (warmup) {
+            std::cout << "core runtime: invalid" << std::endl;
+        }
+        else {
+            std::cout << "core runtime: " << runtime.count() << std::endl;
+        }
+        std::cout << force_side_effect << std::endl;
+
+        out << ", " << count << "," << runtime.count();
+    }
+    else {
+        bool warmup = true;
+
+        for (; gen.is_valid(); ++gen) {
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto before = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+            if (agg.size() == 0 || exp.window_duration >= agg.youngest() - (*gen).order()) {
+                agg.insert((*gen).order(), *gen);
+
+                typename Aggregate::timeT youngest = agg.youngest();
+                if (exp.window_duration < (youngest - agg.oldest())) {
+                    agg.bulkEvict(youngest - delta); 
+                    warmup = false;
+                }
+                silly_combine(force_side_effect, agg.query());
+            }
+
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto after = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+            if (!warmup) {
+                exp.latencies.push_back(after - before);
+            }
+        }
+
+        if (warmup) {
+            std::cerr << "warmup still true, results invalid" << std::endl;
+        }
+
+        std::cout << force_side_effect << std::endl;
+    }
+}
+
 template <
     template <
         typename
@@ -1800,6 +1879,53 @@ bool query_call_data_benchmark(const std::string& aggregator,
     else if (aggregator_req == aggregator && function_req == "relvar") {
         using RelVar = RelativeVariation<Data,double>;
         data_benchmark<Data>(MakeAggregate<RelVar, typename Data::timestamp, MAX_CAPACITY>()(RelVar::identity), exp, gen, out);
+        return true;
+    }
+
+    return false;
+}
+
+template <
+    typename Data, 
+    template <
+        typename, 
+        typename, 
+        int minDegree, 
+        btree::Kind kind
+    > class MakeAggregate, 
+    int minDegree, 
+    btree::Kind kind,
+    typename Generator
+>
+bool query_call_bulk_data_benchmark(const std::string& aggregator, 
+                               const std::string& aggregator_req, 
+                               const std::string& function_req, 
+                               const DataExperiment& exp, 
+                               Generator& gen, 
+                               std::ostream& out) {
+    if (aggregator_req == aggregator && function_req == "sum") {
+        using SumOp = Sum<Data,int,int>;
+        bulk_data_benchmark<Data>(MakeAggregate<SumOp, typename Data::timestamp, minDegree, kind>()(SumOp::identity), exp, gen, out);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "max") {
+        using MaxOp = Max<Data,typename Data::timestamp,typename Data::timestamp>;
+        bulk_data_benchmark<Data>(MakeAggregate<MaxOp, typename Data::timestamp, minDegree, kind>()(MaxOp::identity), exp, gen, out);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "geomean") {
+        using GeoOp = GeometricMean<Data,double>;
+        bulk_data_benchmark<Data>(MakeAggregate<GeoOp, typename Data::timestamp, minDegree, kind>()(GeoOp::identity), exp, gen, out);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "bloom") {
+        using BloomOp = BloomFilter<Data,uint64_t>;
+        bulk_data_benchmark<Data>(MakeAggregate<BloomOp, typename Data::timestamp, minDegree, kind>()(BloomOp::identity), exp, gen, out);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "relvar") {
+        using RelVar = RelativeVariation<Data,double>;
+        bulk_data_benchmark<Data>(MakeAggregate<RelVar, typename Data::timestamp, minDegree, kind>()(RelVar::identity), exp, gen, out);
         return true;
     }
 

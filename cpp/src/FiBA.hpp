@@ -936,7 +936,7 @@ private:
     { }
   };
 
-  using BoundaryT = deque<BoundaryLevel>;
+  using BoundaryT = vector<BoundaryLevel>;
 
   void searchBoundary(timeT time, BoundaryT& result) const {
     Node* node = _root;
@@ -1693,17 +1693,19 @@ public:
     return true;
   }
 
+  BoundaryT boundary;
   void bulkEvict(timeT const& time) {
-    BoundaryT boundary;
+    if (!boundary.empty()) { throw 1; }
     searchBoundary(time, boundary);
     Node* skipUpTo = NULL;
     Node* top = NULL;
     if (false) cout << "boundary.size() " << boundary.size() << endl;
-    for (int i=0, n=boundary.size(); i<n; i++) {
-      BoundaryLevel const& level = boundary[n - i - 1];
+    int n = boundary.size();
+    for (int i=0; !boundary.empty(); i++, boundary.pop_back()) {
+      BoundaryLevel const& level = boundary.back();
       if (false) cout << *_root << "level " << (i + 1);
       if (false) cout << ", node " << level.node << ", neighbor " << level.neighbor << ", ancestor " << level.ancestor;
-      if (level.neighbor != NULL)
+      if (level.neighbor != NULL && i > 0) // repair neighbor only after the starting level
         level.neighbor->localRepairAggIfUp(_binOp);
       if (skipUpTo == NULL || skipUpTo == level.node) {
         skipUpTo = NULL;
@@ -1757,8 +1759,9 @@ public:
       }
       if (false) cout << endl;
     }
+    while (!boundary.empty()) boundary.pop_back();
+
     assert(top != NULL);
-    int i = boundary.size();
     if (false) cout << *_root;
     bool hitLeft, hitRight;
     if (top->isRoot()) {
@@ -1772,7 +1775,7 @@ public:
       hitLeft = top->leftSpine();
       hitRight = top->rightSpine();
     } else {
-      if (false) cout << "continuing repair for underflow at level " << i << endl;
+      if (false) cout << "continuing repair for underflow at level " << n << endl;
       top = rebalanceAfterEvict(top, &hitLeft, &hitRight);
     }
     if (false) cout << *_root;

@@ -20,12 +20,17 @@ SWAG_ALGOS=src/ChunkedArrayQueue.hpp \
 		   src/SubtractOnEvict.hpp \
            src/OkasakisQueue.hpp src/FiBA.hpp \
            src/TimestampedFifo.hpp \
+		   src/TimestampedDABA.hpp src/TimestampedDynamicFlatFIT.hpp \
+		   src/TimestampedImplicitTwoStacksLite.hpp \
+		   src/TimestampedTwoStacksLite.hpp \
+   	       src/TimestampedDABALite.hpp src/TimestampedTwoStacks.hpp \
 		   src/AMTA.hpp
 
 all: benchmark_driver \
 	 benchmark_driver_stats \
 	 bulk_evict_benchmark \
 	 bulk_evict_insert_benchmark \
+	 bulk_data_benchmark \
 	 ooo_benchmark \
 	 ooo_benchmark_stats \
 	 data_benchmark \
@@ -73,6 +78,9 @@ bulk_evict_benchmark: log src/bulk_evict_benchmark_driver.cc src/benchmark_core.
 
 bulk_evict_insert_benchmark: log src/bulk_evict_insert_benchmark_driver.cc src/benchmark_core.h src/FiBA.hpp
 	$(CXX) $(CXXFLAGS) src/bulk_evict_insert_benchmark_driver.cc -o bin/bulk_evict_insert_benchmark_driver
+
+bulk_data_benchmark: log src/bulk_data_benchmark.cc src/benchmark_core.h src/DataGenerators.h
+	$(CXX) $(CXXFLAGS) src/bulk_data_benchmark.cc -o bin/bulk_data_benchmark
 
 ooo_benchmark_stats: log src/ooo_benchmark_driver.cc src/benchmark_core.h src/FiBA.hpp
 	$(CXX) $(CXXFLAGS) -DCOLLECT_STATS src/ooo_benchmark_driver.cc -o bin/ooo_benchmark_driver_stats
