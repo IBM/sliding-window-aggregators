@@ -1,0 +1,11 @@
+#!/bin/bash
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+BULK_DATA_PRELUDE=${BULK_DATA_PRELUDE:-taskset 0x1 numactl --cpubind=0 --membind=0}
+
+
+echo "$BULK_DATA_PRELUDE $SCRIPT_DIR/bulk_data_benchmark $@"
+
+$BULK_DATA_PRELUDE $SCRIPT_DIR/bulk_data_benchmark $@
+
