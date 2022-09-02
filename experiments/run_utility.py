@@ -108,9 +108,9 @@ def run_ooo(aggregators, functions, degrees, name_base, sample_size=5):
         results_file.close()
 
 
-def run_bulk(aggregators, functions, degrees, bulks, name_base, sample_size=5):
+def run_bulk(aggregators, functions, degrees, bulks, name_base, sample_size=5, filemode="w"):
     for agg in aggregators:
-        with open('results/' + name_base + '_' + agg + '.csv', 'w') as results_file:
+        with open('results/' + name_base + '_' + agg + '.csv', filemode) as results_file:
             results = csv.writer(results_file)
 
             for f, params in functions.items():
@@ -262,7 +262,7 @@ def run_data(aggregators, functions, durations, data_sets, name_base, latency=''
                     for d in durations:
                         exp_file.write(' '.join([agg, f, str(d), latency]) + '\n')
 
-        stdout = exec_no_fail(['../bin/' + name_base + '_benchmark', exp_filename, str(sample_size), data_set, data_file])
+        stdout = exec_no_fail(['../bin/shell_' + name_base + '_benchmark', exp_filename, str(sample_size), data_set, data_file])
         with open('results/' + data_set + '_' + name_base + '.log', 'wt') as log:
             log.write(stdout)
 

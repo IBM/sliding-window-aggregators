@@ -18,14 +18,15 @@ degrees = [0]
 
 base_window_sizes = [4*u.MB]
 
-base_iterations = 10 * u.MILLION
+base_iterations = 50 * u.MILLION
 
-bulk_sizes = [1, 256]
+bulk_sizes = [1, 4, 8, 64, 256, 1*u.KB, 8*u.KB, 64*u.KB, 128*u.KB, 
+              512*u.KB, 2*u.MB]
 
 functions = { 
              "sum": (base_iterations, base_window_sizes),
              "geomean": (base_iterations, base_window_sizes),
-             "bloom": (base_iterations/100, base_window_sizes),
+             "bloom": (base_iterations/25, base_window_sizes),
             }
 
 def main():
