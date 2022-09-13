@@ -5,6 +5,7 @@ from matplotlib.ticker import LogLocator
 import numpy as np
 from sys import stdout
 import process_utility as u
+from bulk_data_common import *
 
 aggs_sorted = [
     "bfinger4",
@@ -14,14 +15,7 @@ aggs_sorted = [
     "nbfinger8",
     "nbclassic8",
 ]
-rename_list = {
-    "bfinger4": "b_fiba4",
-    "bfinger8": "b_fiba8",
-    "nbfinger4": "nb_fiba4",
-    "nbfinger8": "nb_fiba8",
-    "nbclassic4": "nb_bclassic4",
-    "nbclassic8": "nb_bclassic8",
-}
+
 max_yaxis = {
     "sum": 5e5,
     "geomean": 5e5,
@@ -44,7 +38,7 @@ def get_screen_name(name: str) -> str:
     return rename_list.get(name, name)
     
 
-def make_violin_graph(data, aggs_sorted, name, title, preamble, func):
+def make_violin_graph(data, aggs_sorted, name, title, preamble, func, use_custom_y=False):
     graph = plt.figure(figsize=(6, 0.75 * 4))
     ax = graph.add_subplot(111)
     ax.set_title(title)
@@ -91,9 +85,11 @@ def make_violin_graph(data, aggs_sorted, name, title, preamble, func):
     
     ax.vlines(pos, ymin=[np.min(l) for l in all_latencies], 
                    ymax=[np.max(l) for l in all_latencies], color=DARK_GREY, linewidth=1.25, capstyle="round")
-    ax.set_yticks(y_ticks)
-    ax.yaxis.set_minor_locator(LogLocator())
-    plt.ylim(top=max_yaxis[func])
+    plt.ylim(bottom=1)
+    if use_custom_y:
+        ax.set_yticks(y_ticks)
+        ax.yaxis.set_minor_locator(LogLocator())
+        plt.ylim(top=max_yaxis[func])
 
     plt.setp(
         ax,
@@ -126,7 +122,7 @@ def main():
                     "results/" + preamble + "_" + agg + "_" + exp_name + ".txt"
                 )
             print('#', flush=True) # next line
-            make_violin_graph(data, aggs_sorted, exp_name, exp_title, preamble, f)
+            make_violin_graph(data, aggs_sorted, exp_name, exp_title, preamble, f, use_custom_y=True)
 
 
 if __name__ == "__main__":

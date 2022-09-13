@@ -7,6 +7,7 @@ import numpy as np
 import process_utility as u
 from run_bulk_evict import base_iterations, bulk_sizes, base_window_sizes, functions
 from run_bulk_evict_insert import base_iterations
+from bulk_data_common import *
 
 Line = collections.namedtuple("Line", ["style", "color"])
 
@@ -90,7 +91,7 @@ def make_throughput_graph(preamble, function, i, mapping, constant, varying, agg
             x_axis,
             throughput,
             yerr=stddev,
-            label=agg,
+            label=rename_list.get(agg, agg),
             linewidth=2,
             linestyle=aggregators[agg].style,
             color=aggregators[agg].color,

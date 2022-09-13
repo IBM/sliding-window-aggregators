@@ -229,45 +229,6 @@ def make_throughput_graph(title, preamble, varying, function, aggs, aggregators)
     graph.savefig("figures/" + preamble + "_" + function + ".pdf")
 
 
-def make_data_throughput_graph(
-    title: str, preamble: str, varying: str, function: str, aggs: Dict[str, Dict[str, Data]], aggregators: list[str]
-):
-    graph = plt.figure()
-    ax = graph.add_subplot(111)
-    ax.set_title(title + " " + function)
-    ax.set_xlabel(varying)
-    ax.set_xscale("log", base=10)
-    ax.set_ylabel("throughput [million items/s]")
-
-    for aggregator in aggregators:
-        data = aggs[aggregator.name]
-        x_axis = np.array(sorted([int(w) for w in data.keys()]))
-        throughput = np.array([data[str(w)].avg for w in x_axis]) / 1e6
-
-        stddev = np.array([data[str(w)].std for w in x_axis]) / 1e6
-        ax.errorbar(
-            x_axis,
-            throughput,
-            yerr=stddev,
-            label=get_screen_name(aggregator.name),
-            linewidth=2,
-            linestyle=aggregator.style,
-            color=aggregator.color,
-        )
-
-    # shrink axis by 25% and put legend outside and to the right
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 1.1, box.height * 0.75])
-    ax.legend(
-        frameon=False,
-        ncol=3,
-        loc="upper center",
-        columnspacing=0.5,
-        bbox_to_anchor=(0.45, 1.55),
-    )
-
-    graph.savefig("figures/" + preamble + "_" + function + ".pdf")
-
 
 def make_small_window_varying_graphs(
     title, preamble, varying, aggregators, func_to_data

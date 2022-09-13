@@ -31,7 +31,9 @@ base_window_sizes = [4*u.MB]
 
 base_iterations = 50 * u.MILLION
 
-bulk_sizes = [1, 1*u.KB, 64*u.KB, 512*u.KB, 2*u.MB]
+fifo_bulk_sizes = [1, 4, 16, 64, 256,
+             1*u.KB, 4*u.KB, 16*u.KB, 64*u.KB, 256*u.KB,
+             1*u.MB, 2*u.MB]
 
 ooo_bulk_sizes = [1, 64*u.KB, 2*u.MB]
 
@@ -42,7 +44,7 @@ functions = {
             }
 
 def main():
-    u.run_bulk(full_aggregators, functions, fifo_degrees, bulk_sizes, 'bulk_evict_insert', filemode='wt')
+    u.run_bulk(full_aggregators, functions, fifo_degrees, fifo_bulk_sizes, 'bulk_evict_insert', filemode='wt')
     u.run_bulk(ooo_aggregators, functions, ooo_degrees, ooo_bulk_sizes, 'bulk_evict_insert', filemode='at+')
 
 if __name__ == "__main__":
