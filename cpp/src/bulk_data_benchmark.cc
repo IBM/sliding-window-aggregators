@@ -47,13 +47,15 @@ void call_benchmarks(std::ifstream& in, int samples, const std::string& data_set
         DataExperiment exp(std::chrono::milliseconds(window_duration), latency, latencies, evictions);
 
         std::string result_file = "results/" + data_set + "_data_" + aggregator + ".csv";
-        std::ofstream out(result_file, std::ios::app);
-        if (!out) {
-            std::cerr << "could not open " + result_file << std::endl;
-            throw std::invalid_argument(result_file);
-        }
-        if (!latency) // write the header tag for throughput experiments
+        std::ofstream out;
+        if (!latency) { // open & write the header tag for throughput experiments
+            out.open(result_file, std::ios::app);
+            if (!out) {
+                std::cerr << "could not open " + result_file << std::endl;
+                throw std::invalid_argument(result_file);
+            }
             out << function << "," << window_duration;
+        }
 
         for (int i = 0; i < samples; ++i) {
             // we run this before the benchmark, so every run has a clean heap.
