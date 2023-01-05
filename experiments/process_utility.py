@@ -113,7 +113,7 @@ def read_citibike_throughput(agg, functions):
 
         for row in reader:
             f = row[0]
-            w = str(int(row[1]))  # already in seconds
+            w = int(row[1])  # already in seconds
 
             # the remainder of the row is a flat list of (num items processed, exec time) pairs
             remainder = zip(

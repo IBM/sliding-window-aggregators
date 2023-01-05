@@ -7,6 +7,7 @@ import numpy as np
 import process_utility as u
 from run_bulk_evict import base_iterations, bulk_sizes, base_window_sizes, functions
 from run_bulk_evict_insert import base_iterations
+from process_bulk_evict import make_throughput_panel
 from bulk_data_common import *
 
 Line = collections.namedtuple("Line", ["style", "color"])
@@ -18,7 +19,8 @@ aggregators = {  # "bfinger2":   Line('-',  'red'),
     "nbfinger4": Line("--", "blue"),
     "nbfinger8": Line("--", "green"),
     "amta": Line("-", "red"),
-    "two_stacks_lite": Line("-", "maroon"),
+    # "two_stacks_lite": Line("-", "maroon"),
+    "chunked_two_stacks_lite": Line("-", "maroon"),
     "daba_lite": Line("--", "maroon"),
 }
 fifo_aggs_sorted = [
@@ -28,7 +30,8 @@ fifo_aggs_sorted = [
     "nbfinger4",
     "nbfinger8",
     "amta",
-    "two_stacks_lite",
+    # "two_stacks_lite",
+    "chunked_two_stacks_lite",
     "daba_lite",
 ]
 
@@ -112,16 +115,21 @@ def make_throughput_graph(preamble, function, i, mapping, constant, varying, agg
     graph.savefig(
         "figures/" + preamble + "_" + constant + str(i) + "_" + function + ".pdf"
     )
-    plt.close(graph)
+    plt.close()
 
 
 def make_bulk_size_varying_graph(preamble, func_to_data):
+    ww = None
     for f, windows in func_to_data.items():
         for w, aggs in windows.items():
+            ww = w
             make_throughput_graph(
                 preamble, f, w, aggs, constant="window", varying="bulk size",
                 aggs_sorted=fifo_aggs_sorted
             )
+    functions = ["sum", "geomean", "bloom"]
+    aggs_array = [func_to_data[f][ww] for f in functions] 
+    make_throughput_panel(preamble, functions, ww, aggs_array, constant="window", varying="bulk size")
 
 def make_ooo_distance_varying_graph(preamble, func_to_data):
     for f, windows in func_to_data.items():
@@ -130,6 +138,10 @@ def make_ooo_distance_varying_graph(preamble, func_to_data):
                 preamble, f, b, aggs, constant="bulksize", varying="ooo distance",
                 aggs_sorted=ooo_aggs_sorted,
             )
+    functions = ["sum", "geomean", "bloom"]
+    for bb in bulk_sizes:
+        aggs_array = [func_to_data[f][bb] for f in functions]
+        make_throughput_panel(preamble, functions, bb, aggs_array, constant="bulksize", varying="ooo distance", sorted_keys=ooo_aggs_sorted)
 
 
 def func_varying_bulk_size(agg_to_func, for_distance: int = 0):

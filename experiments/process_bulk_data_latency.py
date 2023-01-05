@@ -38,7 +38,7 @@ def get_screen_name(name: str) -> str:
     return rename_list.get(name, name)
     
 
-def make_violin_graph(data, aggs_sorted, name, title, preamble, func, use_custom_y=False):
+def make_violin_graph(data, aggs_sorted, name, title, preamble, func, use_custom_y=False, force_bottom=True):
     graph = plt.figure(figsize=(6, 0.75 * 4))
     ax = graph.add_subplot(111)
     ax.set_title(title)
@@ -85,7 +85,8 @@ def make_violin_graph(data, aggs_sorted, name, title, preamble, func, use_custom
     
     ax.vlines(pos, ymin=[np.min(l) for l in all_latencies], 
                    ymax=[np.max(l) for l in all_latencies], color=DARK_GREY, linewidth=1.25, capstyle="round")
-    plt.ylim(bottom=1)
+    if force_bottom:
+        plt.ylim(bottom=1)
     if use_custom_y:
         ax.set_yticks(y_ticks)
         ax.yaxis.set_minor_locator(LogLocator())
