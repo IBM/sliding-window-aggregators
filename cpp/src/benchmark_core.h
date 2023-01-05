@@ -650,20 +650,17 @@ void bulk_data_benchmark(Aggregate agg, DataExperiment exp, Generator& gen, std:
         std::chrono::time_point<std::chrono::system_clock> start;
         bool warmup = true;
         uint64_t count = 0;
-        uint64_t added = 0; // meh
 
         for (; gen.is_valid(); ++gen) {
             std::atomic_thread_fence(std::memory_order_seq_cst);
             if (agg.size() == 0 || exp.window_duration >= agg.youngest() - (*gen).order()) {
                 agg.insert((*gen).order(), *gen);
-                ++added;
                 if (!warmup) {
                     ++count;
                 }
 
                 typename Aggregate::timeT youngest = agg.youngest();
                 if (exp.window_duration < (youngest - agg.oldest())) {
-                    added = 0;
                     agg.bulkEvict(youngest - delta); 
                     if (warmup) { 
                         start = std::chrono::system_clock::now();
