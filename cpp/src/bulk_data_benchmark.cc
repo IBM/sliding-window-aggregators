@@ -44,7 +44,9 @@ void call_benchmarks(std::ifstream& in, int samples, const std::string& data_set
 
         std::vector<cycle_duration> latencies;
         std::vector<uint32_t> evictions;
-        DataExperiment exp(std::chrono::milliseconds(window_duration), latency, latencies, evictions);
+        DataExperiment exp(
+                std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds(window_duration)),
+                latency, latencies, evictions);
 
         std::string result_file = "results/" + data_set + "_data_" + aggregator + ".csv";
         std::ofstream out;
