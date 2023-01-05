@@ -274,9 +274,8 @@ void bulk_evict_benchmark(Aggregate agg, Experiment exp) {
         uint64_t start_pos = exp.window_size - exp.ooo_distance;
         uint64_t stop_pos = exp.iterations - exp.ooo_distance;
         for (i = start_pos; i < stop_pos; /* nop */) {
-            std::atomic_thread_fence(std::memory_order_seq_cst);
-
             agg.bulkEvict(i - exp.window_size + exp.bulk_size - 1);
+
             for (typename Aggregate::timeT j = 0; j < exp.bulk_size && i < stop_pos; ++j, ++i) {
                 std::atomic_thread_fence(std::memory_order_seq_cst);
                 agg.insert(i, 1 + (i % 101));
@@ -407,13 +406,12 @@ void bulk_evict_insert_benchmark(Aggregate agg, Experiment exp) {
         uint64_t start_pos = exp.window_size - exp.ooo_distance;
         uint64_t stop_pos = exp.iterations - exp.ooo_distance;
         for (i = start_pos; i < stop_pos; i += exp.bulk_size) {
-            std::atomic_thread_fence(std::memory_order_seq_cst);
-
             agg.bulkEvict(i - exp.window_size + exp.bulk_size - 1);
 
             using SG = SyntheticGenerator<typename Aggregate::timeT, uint64_t>;
             SG begin(i, i);
             SG end(i + exp.bulk_size + 1, i + exp.bulk_size + 1);
+            std::atomic_thread_fence(std::memory_order_seq_cst);
             agg.bulkInsert(begin, end);
 
             silly_combine(force_side_effect, agg.query());
