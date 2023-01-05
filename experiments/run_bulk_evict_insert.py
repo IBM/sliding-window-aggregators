@@ -3,21 +3,22 @@
 import run_utility as u
 
 full_aggregators = [
-                "bfinger2",
+#                "bfinger2",
                 "bfinger4",
                 "bfinger8",
-                "nbfinger2",
+#                "nbfinger2",
                 "nbfinger4",
                 "nbfinger8",
                 "amta",
-                "two_stacks_lite",
+#                "two_stacks_lite",
+                "chunked_two_stacks_lite",
                 "daba_lite",
               ]
 ooo_aggregators = [
-                "bfinger2",
+#                "bfinger2",
                 "bfinger4",
                 "bfinger8",
-                "nbfinger2",
+#                "nbfinger2",
                 "nbfinger4",
                 "nbfinger8",
               ]
@@ -35,12 +36,12 @@ fifo_bulk_sizes = [1, 4, 16, 64, 256,
              1*u.KB, 4*u.KB, 16*u.KB, 64*u.KB, 256*u.KB,
              1*u.MB, 2*u.MB]
 
-ooo_bulk_sizes = [1, 64*u.KB, 2*u.MB]
+ooo_bulk_sizes = [1, 1*u.KB, 64*u.KB, 2*u.MB]
 
 functions = { 
              "sum": (base_iterations, base_window_sizes),
              "geomean": (base_iterations, base_window_sizes),
-             "bloom": (base_iterations/25, base_window_sizes),
+             "bloom": (base_iterations//2, base_window_sizes),
             }
 
 def main():

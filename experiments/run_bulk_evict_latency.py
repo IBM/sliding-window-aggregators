@@ -11,6 +11,7 @@ aggregators = [
                 "nbfinger8",
                 "amta",
                 "two_stacks_lite",
+                "chunked_two_stacks_lite",
                 "daba_lite",
               ]
 
