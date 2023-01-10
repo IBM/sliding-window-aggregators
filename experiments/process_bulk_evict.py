@@ -118,6 +118,7 @@ def make_throughput_panel(preamble, functions, ii, mappings, constant, varying, 
             ax.set_xticks(x_ticks,  x_labels)
         else:
             ax.set_xticks(x_ticks)
+        ax.set_xlim(min(x_ticks), max(x_ticks))
         for agg in sorted_keys:
             data = mappings[i][agg]
             if len(data) <= 1:
