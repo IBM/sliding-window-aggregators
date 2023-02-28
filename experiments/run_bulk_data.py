@@ -15,7 +15,7 @@ aggregators = [
               ]
 
 DAY = 60 * 60 * 24 # one day is 60 seconds * 60 minutes * 24 hours
-durations = [DAY/4, DAY/2, 1*DAY, 2*DAY, 4*DAY, 8*DAY, 12*DAY, 16*DAY, 24*DAY, 32*DAY]
+durations = [DAY//4, DAY//2, 1*DAY, 2*DAY, 4*DAY, 8*DAY, 12*DAY, 16*DAY, 24*DAY, 32*DAY]
 
 
 data_sets = {

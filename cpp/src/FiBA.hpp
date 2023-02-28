@@ -16,6 +16,10 @@
 #include "utils.h"
 #include "BulkAdapter.hpp"
 
+#ifdef _MIMALLOC
+#include "mimalloc-new-delete.h"
+#endif
+
 namespace btree {
 
 using namespace std;
@@ -605,7 +609,7 @@ private:
 
 
   binOpFunc _binOp;
-  deque<Node*> _freeList;
+  vector<Node*> _freeList;
   Node *_root;
   Node *_leftFinger, *_rightFinger;
   size_t _size;

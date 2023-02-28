@@ -11,6 +11,7 @@ aggregators = [
                 "nbfinger8",
                 "amta",
                 "two_stacks_lite",
+                "chunked_two_stacks_lite",
                 "daba_lite",
               ]
 
@@ -20,7 +21,7 @@ base_window_sizes = [4*u.MB]
 
 base_iterations = 5 * u.MILLION
 
-bulk_sizes = [1, 256, 1024, 16384]
+bulk_sizes = [1, 256, 1024, 16384, 64*u.KB, 128*u.KB, 1*u.MB]
 
 
 functions = {

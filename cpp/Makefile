@@ -1,10 +1,16 @@
 UNAME := $(shell uname)
 
+
 ifeq ($(UNAME), Darwin)
 	EXTRAS = 
 else
+ifdef BUILD_STATIC
 	EXTRAS = -static
+else
+	EXTRAS = 
 endif
+endif
+
 
 DEBUG ?= 0
 ifeq ($(DEBUG), 1)
@@ -12,6 +18,14 @@ ifeq ($(DEBUG), 1)
 	CXXFLAGS=-std=gnu++17 -DHAS_UNCAUGHT_EXCEPTIONS=1 -g -fsanitize=address -fno-omit-frame-pointer ${EXTRAS}
 else
 	CXXFLAGS=-std=gnu++17 -DHAS_UNCAUGHT_EXCEPTIONS=1 -O3 -DNDEBUG ${EXTRAS}
+endif
+
+ifdef USE_MIMALLOC
+	MIMALLOC_PREFIX ?= ../../mimalloc
+	INCLUDE="${MIMALLOC_PREFIX}/include"
+	LINK_PACKAGE="${MIMALLOC_PREFIX}/out/release"
+	CXXFLAGS += -I${INCLUDE} -D_MIMALLOC
+	LXXFLAGS = -L${LINK_PACKAGE} -lmimalloc
 endif
 
 SWAG_ALGOS=src/ChunkedArrayQueue.hpp \
@@ -74,13 +88,13 @@ ooo_benchmark: log src/ooo_benchmark_driver.cc src/benchmark_core.h src/FiBA.hpp
 	$(CXX) $(CXXFLAGS) src/ooo_benchmark_driver.cc -o bin/ooo_benchmark_driver
 
 bulk_evict_benchmark: log src/bulk_evict_benchmark_driver.cc src/benchmark_core.h src/FiBA.hpp
-	$(CXX) $(CXXFLAGS) src/bulk_evict_benchmark_driver.cc -o bin/bulk_evict_benchmark_driver
+	$(CXX) $(CXXFLAGS) src/bulk_evict_benchmark_driver.cc ${LXXFLAGS} -o bin/bulk_evict_benchmark_driver
 
 bulk_evict_insert_benchmark: log src/bulk_evict_insert_benchmark_driver.cc src/benchmark_core.h src/FiBA.hpp
-	$(CXX) $(CXXFLAGS) src/bulk_evict_insert_benchmark_driver.cc -o bin/bulk_evict_insert_benchmark_driver
+	$(CXX) $(CXXFLAGS) src/bulk_evict_insert_benchmark_driver.cc ${LXXFLAGS} -o bin/bulk_evict_insert_benchmark_driver
 
 bulk_data_benchmark: log src/bulk_data_benchmark.cc src/benchmark_core.h src/DataGenerators.h
-	$(CXX) $(CXXFLAGS) src/bulk_data_benchmark.cc -o bin/bulk_data_benchmark
+	$(CXX) $(CXXFLAGS) src/bulk_data_benchmark.cc ${LXXFLAGS} -o bin/bulk_data_benchmark
 
 ooo_benchmark_stats: log src/ooo_benchmark_driver.cc src/benchmark_core.h src/FiBA.hpp
 	$(CXX) $(CXXFLAGS) -DCOLLECT_STATS src/ooo_benchmark_driver.cc -o bin/ooo_benchmark_driver_stats
@@ -93,5 +107,4 @@ dynamic_benchmark: log src/benchmark_driver.cc src/benchmark_core.h $(SWAG_ALGOS
 
 shared: log src/shared_benchmark_driver.cc src/benchmark_core.h src/FiBA.hpp
 	$(CXX) $(CXXFLAGS) src/shared_benchmark_driver.cc -o bin/shared_benchmark_driver
-
 

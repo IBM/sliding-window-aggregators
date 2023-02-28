@@ -4,6 +4,7 @@
 #include "AMTA.hpp"
 #include "FiBA.hpp"
 #include "TimestampedTwoStacksLite.hpp"
+#include "TimestampedImplicitTwoStacksLite.hpp"
 #include "TimestampedDABALite.hpp"
 
 typedef uint64_t timestamp;
@@ -55,6 +56,7 @@ int main(int argc, char** argv) {
           query_call_bulk_evict_benchmark<btree::MakeBulkAggregate, timestamp, 8, btree::finger>("nbfinger8", aggregator, function, exp) ||
 
           query_call_bulk_evict_benchmark<timestamped_twostacks_lite::MakeBulkAggregate, timestamp>("two_stacks_lite", aggregator, function, exp) ||
+          query_call_bulk_evict_insert_benchmark<timestamped_chunked_twostackslite::MakeBulkAggregate, timestamp>("chunked_two_stacks_lite", aggregator, function, exp) ||
           query_call_bulk_evict_benchmark<timestamped_dabalite::MakeBulkAggregate, timestamp>("daba_lite", aggregator, function, exp) ||
           query_call_bulk_evict_benchmark<amta::MakeAggregate, timestamp>("amta", aggregator, function, exp)
           )) {
