@@ -51,6 +51,10 @@ int main(int argc, char** argv) {
           query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 4, btree::finger>("bfinger4", aggregator, function, exp) ||
           query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 8, btree::finger>("bfinger8", aggregator, function, exp) ||
 
+          query_call_bulk_evict_benchmark<fiba_nofl::MakeAggregate, timestamp, 2, btree::finger>("nofl_bfinger2", aggregator, function, exp) ||
+          query_call_bulk_evict_benchmark<fiba_nofl::MakeAggregate, timestamp, 4, btree::finger>("nofl_bfinger4", aggregator, function, exp) ||
+          query_call_bulk_evict_benchmark<fiba_nofl::MakeAggregate, timestamp, 8, btree::finger>("nofl_bfinger8", aggregator, function, exp) ||
+
           query_call_bulk_evict_benchmark<btree::MakeBulkAggregate, timestamp, 2, btree::finger>("nbfinger2", aggregator, function, exp) ||
           query_call_bulk_evict_benchmark<btree::MakeBulkAggregate, timestamp, 4, btree::finger>("nbfinger4", aggregator, function, exp) ||
           query_call_bulk_evict_benchmark<btree::MakeBulkAggregate, timestamp, 8, btree::finger>("nbfinger8", aggregator, function, exp) ||

@@ -40,7 +40,7 @@ IF_COLLECT_STATS(static long statsSumRootDegree = 0);
 enum Kind { classic, knuckle, finger };
 
 template<typename _timeT, int minArity, Kind kind, typename binOpFunc,
-         bool early_stopping=false>
+         bool early_stopping=false, bool use_freelist=true>
 class Aggregate {
 public:
   typedef typename binOpFunc::In inT;
@@ -607,30 +607,78 @@ private:
     }
   };
 
+  template<typename T, bool freelistFlag>
+  class FreeListMgr { /* template */};
+
+
+  template<typename T>
+  class FreeListMgr<T, true> {
+  public:
+    vector<T> _freeList;
+    FreeListMgr() : _freeList() { /* no op */ }
+    ~FreeListMgr() {
+      while (!_freeList.empty()) {
+        Node* node = newNode(true);
+        deleteNode(node, false);
+      }
+    }
+
+    void deleteNode(Node* node, bool recursive) {
+      if (recursive && !node->isLeaf())
+        for (int i=0, n=node->arity(); i<n; i++)
+          _freeList.push_back(node->getChild(i));
+      delete node;
+    }
+
+    Node* newNode(bool isLeaf) {
+      if (_freeList.empty())
+        return new Node(isLeaf);
+      Node* node = _freeList.back();
+      _freeList.pop_back();
+      if (!node->isLeaf())
+        for (int i=0, n=node->arity(); i<n; i++)
+          _freeList.push_back(node->getChild(i));
+      node->init(isLeaf);
+      return node;
+    }
+  };
+
+template<typename T>
+  class FreeListMgr<T, false> { // With the free list turned off
+  public:
+    void deleteNode(Node* node, bool recursive) {
+      /* todo: check me */
+      if (!recursive) {
+        delete node;
+        return ;
+      }
+      std::deque<Node*> forCleanUp;
+      forCleanUp.push_back(node);
+      while (!forCleanUp.empty()) {
+        node = forCleanUp.front(); forCleanUp.pop_front();
+        if (!node->isLeaf()) {
+          for (int i=0, n=node->arity(); i<n; i++)
+            forCleanUp.push_back(node->getChild(i));
+        }
+        delete node;
+      }
+    }
+    Node* newNode(bool isLeaf) { return new Node(isLeaf); }
+  };
 
   binOpFunc _binOp;
-  vector<Node*> _freeList;
+  FreeListMgr<Node*, use_freelist> _freeListMgr;
   Node *_root;
   Node *_leftFinger, *_rightFinger;
   size_t _size;
 
+
   void deleteNode(Node* node, bool recursive) {
-    if (recursive && !node->isLeaf())
-      for (int i=0, n=node->arity(); i<n; i++)
-        _freeList.push_back(node->getChild(i));
-    delete node;
+    _freeListMgr.deleteNode(node, recursive);
   }
 
   Node* newNode(bool isLeaf) {
-    if (_freeList.empty())
-      return new Node(isLeaf);
-    Node* node = _freeList.back();
-    _freeList.pop_back();
-    if (!node->isLeaf())
-      for (int i=0, n=node->arity(); i<n; i++)
-        _freeList.push_back(node->getChild(i));
-    node->init(isLeaf);
-    return node;
+    return _freeListMgr.newNode(isLeaf);
   }
 
   void heightDecrease() {
@@ -1588,7 +1636,7 @@ private:
 public:
   Aggregate(binOpFunc binOp)
     : _binOp(binOp),
-      _freeList(),
+      _freeListMgr(),
       _root(newNode(true)),
       _leftFinger(NULL), _rightFinger(NULL),
       _size(0)
@@ -1607,10 +1655,6 @@ public:
     IF_COLLECT_STATS(cout << "# of repair calls: " << statsTotalRepairAggCount << endl);
     IF_COLLECT_STATS(cout << "avg root degree when repairs were made: " <<  ((double) statsSumRootDegree) / statsTotalRepairAggCount << endl);
     deleteNode(_root, true);
-    while (!_freeList.empty()) {
-      Node* node = newNode(true);
-      deleteNode(node, false);
-    }
   }
 
   aggT at(timeT const& time) {
@@ -1986,6 +2030,27 @@ struct MakeBulkAggregate {
       >(f, elem);
   }
 };
+}
+
+namespace fiba_nofl {
+  template <typename timeT, int minArity, btree::Kind kind, class BinaryFunction, class T>
+  auto make_aggregate(BinaryFunction f, T elem) {
+      // last two flags: bool early_stopping, bool use_freelist>
+      return btree::Aggregate<timeT, minArity, kind, BinaryFunction, false, false>(f);
+  }
+
+  template <typename BinaryFunction, typename timeT, int minArity, btree::Kind kind>
+  struct MakeAggregate {
+    template <typename T>
+    auto operator()(T elem) {
+      BinaryFunction f;
+      return make_aggregate<
+        timeT, minArity, kind,
+        BinaryFunction,
+        typename BinaryFunction::Partial
+        >(f, elem);
+    }
+  };
 }
 
 #endif
