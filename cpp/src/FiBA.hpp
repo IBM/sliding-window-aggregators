@@ -839,6 +839,7 @@ private:
       int nodeIndex, siblingIndex;
       Node* sibling = pickEvictionSibling(node, nodeIndex, siblingIndex);
       *hitRight |= sibling->rightSpine();
+      *hitLeft |= sibling->leftSpine();
       if (sibling->arity() <= minArity) {
         node = merge(parent, nodeIndex, siblingIndex);
         if (parent->isRoot() && parent->arity() == 1)
