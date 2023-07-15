@@ -291,7 +291,7 @@ private:
       if(!ok){cerr<<f<<":"<<l<<": FAILED"<<endl<<*this; throw 0;}
       if (strong) {
         ok &= (_agg == recalcAgg(op));
-        if(!ok){cerr<<f<<":"<<l<<": FAILED(partial aggregation value is not correct)"<<endl<<*this; throw 0;}
+        if(!ok){cerr<<f<<":"<<l<<": FAILED"<<endl<<*this; throw 0;}
       }
       return ok;
     }
@@ -1689,7 +1689,7 @@ public:
     }
     repairAggs(topChanged, hitLeft, hitRight);
     _size--;
-    if (true) cout << *_root;
+    if (false) cout << *_root;
     assert(checkInvariant(__FILE__, __LINE__));
     return true;
   }
