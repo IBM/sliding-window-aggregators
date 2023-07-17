@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import matplotlib.pyplot as plt
-from matplotlib.ticker import LogLocator
+from matplotlib.ticker import LogLocator, AutoMinorLocator
 import numpy as np
 from sys import stdout
 import process_utility as u
@@ -16,12 +16,12 @@ aggs_sorted = [
     "nbclassic8",
 ]
 
-max_yaxis = {
+MAX_YAXIS = {
     "sum": 5e5,
     "geomean": 5e5,
     "bloom": 3e7,
 }
-y_ticks = [1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7]
+Y_TICKS = [1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9]
 
 # in seconds
 windows = [
@@ -38,7 +38,7 @@ def get_screen_name(name: str) -> str:
     return rename_list.get(name, name)
     
 
-def make_violin_graph(data, aggs_sorted, name, title, preamble, func, use_custom_y=False, force_bottom=True):
+def make_violin_graph(data, aggs_sorted, name, title, preamble, func, use_custom_y=None, force_bottom=True, grid_line=False):
     graph = plt.figure(figsize=(6, 0.75 * 4))
     ax = graph.add_subplot(111)
     ax.set_title(title)
@@ -88,9 +88,18 @@ def make_violin_graph(data, aggs_sorted, name, title, preamble, func, use_custom
     if force_bottom:
         plt.ylim(bottom=1)
     if use_custom_y:
-        ax.set_yticks(y_ticks)
-        ax.yaxis.set_minor_locator(LogLocator())
+        if "y_ticks" in use_custom_y  and use_custom_y["y_ticks"] is not None:
+            y_ticks = use_custom_y.get("y_ticks", Y_TICKS)
+            ax.set_yticks(y_ticks)
+        # ax.yaxis.set_minor_locator(LogLocator())
+        max_yaxis = use_custom_y.get("max_yaxis", MAX_YAXIS)
         plt.ylim(top=max_yaxis[func])
+        if "min_yaxis" in use_custom_y:
+            min_yaxis = use_custom_y["min_yaxis"]
+            plt.ylim(bottom=min_yaxis[func])
+    if grid_line:
+        GRID_COLOR = '#ffd7c7'
+        plt.grid(True, axis='y', linestyle=':', color=GRID_COLOR)
 
     plt.setp(
         ax,
