@@ -48,17 +48,21 @@ struct Experiment {
     uint64_t bulk_size;
     bool latency;
     std::vector<cycle_duration>& latencies;
+    std::vector<std::reference_wrapper<std::vector<cycle_duration>>> extra_latencies;
 
     Experiment(size_t w, uint64_t i, bool l, std::vector<cycle_duration>& ls):
-        window_size(w), iterations(i), ooo_distance(0), bulk_size(1), latency(l), latencies(ls)
+        window_size(w), iterations(i), ooo_distance(0), bulk_size(1), latency(l), latencies(ls),
+        extra_latencies()
     {}
 
     Experiment(size_t w, uint64_t i, uint64_t d, bool l, std::vector<cycle_duration>& ls):
-        window_size(w), iterations(i), ooo_distance(d), bulk_size(1), latency(l), latencies(ls)
+        window_size(w), iterations(i), ooo_distance(d), bulk_size(1), latency(l), latencies(ls),
+        extra_latencies()
     {}
 
     Experiment(size_t w, uint64_t i, uint64_t d, uint64_t b, bool l, std::vector<cycle_duration>& ls):
-        window_size(w), iterations(i), ooo_distance(d), bulk_size(b), latency(l), latencies(ls)
+        window_size(w), iterations(i), ooo_distance(d), bulk_size(b), latency(l), latencies(ls),
+        extra_latencies()
     {}
 
 };
@@ -270,9 +274,8 @@ void bulk_evict_benchmark(Aggregate agg, Experiment exp) {
         uint64_t start_pos = exp.window_size - exp.ooo_distance;
         uint64_t stop_pos = exp.iterations - exp.ooo_distance;
         for (i = start_pos; i < stop_pos; /* nop */) {
-            std::atomic_thread_fence(std::memory_order_seq_cst);
-
             agg.bulkEvict(i - exp.window_size + exp.bulk_size - 1);
+
             for (typename Aggregate::timeT j = 0; j < exp.bulk_size && i < stop_pos; ++j, ++i) {
                 std::atomic_thread_fence(std::memory_order_seq_cst);
                 agg.insert(i, 1 + (i % 101));
@@ -285,7 +288,46 @@ void bulk_evict_benchmark(Aggregate agg, Experiment exp) {
         std::cerr << force_side_effect << std::endl;
     }
     else {
-        throw std::runtime_error("bulk_evict_benchmark latency not implemented");
+        for (i = exp.iterations - exp.ooo_distance; i < exp.iterations; ++i) {
+            agg.insert(i, 1 + (i % 101));
+        }
+        for (i = 0; i < exp.window_size - exp.ooo_distance; ++i) {
+            agg.insert(i, 1 + (i % 101));
+        }
+
+        if (agg.size() != exp.window_size) {
+            std::cerr << "window is not exactly full; should be " << exp.window_size << ", but is " << agg.size();
+            exit(2);
+        }
+
+        uint64_t start_pos = exp.window_size - exp.ooo_distance;
+        uint64_t stop_pos = exp.iterations - exp.ooo_distance;
+        for (i = start_pos; i < stop_pos; /* nop */) {
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto before = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+
+            agg.bulkEvict(i - exp.window_size + exp.bulk_size - 1);
+
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto evict = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+            for (typename Aggregate::timeT j = 0; j < exp.bulk_size && i < stop_pos; ++j, ++i) {
+                std::atomic_thread_fence(std::memory_order_seq_cst);
+                agg.insert(i, 1 + (i % 101));
+            }
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto insert = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+            silly_combine(force_side_effect, agg.query());
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto after = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+            exp.latencies.push_back(after - before);
+            exp.extra_latencies[0].get().push_back(evict - before);
+            exp.extra_latencies[1].get().push_back(insert - evict);
+        }
+        std::cerr << force_side_effect << std::endl;
     }
 }
 
@@ -364,13 +406,12 @@ void bulk_evict_insert_benchmark(Aggregate agg, Experiment exp) {
         uint64_t start_pos = exp.window_size - exp.ooo_distance;
         uint64_t stop_pos = exp.iterations - exp.ooo_distance;
         for (i = start_pos; i < stop_pos; i += exp.bulk_size) {
-            std::atomic_thread_fence(std::memory_order_seq_cst);
-
             agg.bulkEvict(i - exp.window_size + exp.bulk_size - 1);
 
             using SG = SyntheticGenerator<typename Aggregate::timeT, uint64_t>;
             SG begin(i, i);
             SG end(i + exp.bulk_size + 1, i + exp.bulk_size + 1);
+            std::atomic_thread_fence(std::memory_order_seq_cst);
             agg.bulkInsert(begin, end);
 
             silly_combine(force_side_effect, agg.query());
@@ -381,7 +422,50 @@ void bulk_evict_insert_benchmark(Aggregate agg, Experiment exp) {
         std::cerr << force_side_effect << std::endl;
     }
     else {
-        throw std::runtime_error("bulk_evict_benchmark latency not implemented");
+        for (i = exp.iterations - exp.ooo_distance; i < exp.iterations; ++i) {
+            agg.insert(i, 1 + (i % 101));
+        }
+        for (i = 0; i < exp.window_size - exp.ooo_distance; ++i) {
+            agg.insert(i, 1 + (i % 101));
+        }
+
+        if (agg.size() != exp.window_size) {
+            std::cerr << "window is not exactly full; should be " << exp.window_size << ", but is " << agg.size();
+            exit(2);
+        }
+
+        uint64_t start_pos = exp.window_size - exp.ooo_distance;
+        uint64_t stop_pos = exp.iterations - exp.ooo_distance;
+        for (i = start_pos; i < stop_pos; i += exp.bulk_size) {
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto before = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+
+            agg.bulkEvict(i - exp.window_size + exp.bulk_size - 1);
+
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto evict = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+
+            using SG = SyntheticGenerator<typename Aggregate::timeT, uint64_t>;
+            SG begin(i, i);
+            SG end(i + exp.bulk_size + 1, i + exp.bulk_size + 1);
+            agg.bulkInsert(begin, end);
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto insert = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+
+            silly_combine(force_side_effect, agg.query());
+
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto after = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+            exp.latencies.push_back(after - before);
+            exp.extra_latencies[0].get().push_back(evict - before);
+            exp.extra_latencies[1].get().push_back(insert - evict);
+        }
+
+        std::cerr << force_side_effect << std::endl;
     }
 }
 
@@ -532,6 +616,88 @@ void data_benchmark(Aggregate agg, DataExperiment exp, Generator& gen, std::ostr
                 typename Aggregate::timeT youngest = agg.youngest();
                 while (exp.window_duration < (youngest - agg.oldest())) {
                     agg.evict();
+                    warmup = false;
+                }
+                silly_combine(force_side_effect, agg.query());
+            }
+
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto after = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+            if (!warmup) {
+                exp.latencies.push_back(after - before);
+            }
+        }
+
+        if (warmup) {
+            std::cerr << "warmup still true, results invalid" << std::endl;
+        }
+
+        std::cout << force_side_effect << std::endl;
+    }
+}
+
+template <typename Data, typename Aggregate, typename Generator>
+void bulk_data_benchmark(Aggregate agg, DataExperiment exp, Generator& gen, std::ostream& out) {
+    typename Aggregate::outT force_side_effect = typename Aggregate::outT();
+    // add 1 time unit so that youngest - delta is the last timestamp to be evicted
+    auto delta = exp.window_duration; 
+    delta++;
+
+    gen.reset();
+
+    if (!exp.latency) {
+        std::chrono::time_point<std::chrono::system_clock> start;
+        bool warmup = true;
+        uint64_t count = 0;
+
+        for (; gen.is_valid(); ++gen) {
+            std::atomic_thread_fence(std::memory_order_seq_cst);
+            if (agg.size() == 0 || exp.window_duration >= agg.youngest() - (*gen).order()) {
+                agg.insert((*gen).order(), *gen);
+                if (!warmup) {
+                    ++count;
+                }
+
+                typename Aggregate::timeT youngest = agg.youngest();
+                if (exp.window_duration < (youngest - agg.oldest())) {
+                    agg.bulkEvict(youngest - delta); 
+                    if (warmup) { 
+                        start = std::chrono::system_clock::now();
+                    }
+                    warmup = false;
+                }
+#ifdef _COLLECT_STATS
+                printf("== size: size=%lu\n", agg.size());
+#endif
+                silly_combine(force_side_effect, agg.query());
+            }
+        }
+
+        std::chrono::duration<double> runtime = std::chrono::system_clock::now() - start;
+        if (warmup) {
+            std::cout << "core runtime: invalid" << std::endl;
+        }
+        else {
+            std::cout << "core runtime: " << runtime.count() << std::endl;
+        }
+        std::cout << force_side_effect << std::endl;
+
+        out << ", " << count << "," << runtime.count();
+    }
+    else {
+        bool warmup = true;
+
+        for (; gen.is_valid(); ++gen) {
+            std::atomic_thread_fence(std::memory_order_acquire);
+            auto before = rdtsc();
+            std::atomic_thread_fence(std::memory_order_release);
+            if (agg.size() == 0 || exp.window_duration >= agg.youngest() - (*gen).order()) {
+                agg.insert((*gen).order(), *gen);
+
+                typename Aggregate::timeT youngest = agg.youngest();
+                if (exp.window_duration < (youngest - agg.oldest())) {
+                    agg.bulkEvict(youngest - delta); 
                     warmup = false;
                 }
                 silly_combine(force_side_effect, agg.query());
@@ -1718,6 +1884,61 @@ bool query_call_data_benchmark(const std::string& aggregator,
     }
 
     return false;
+}
+
+template <
+    typename Data, 
+    template <
+        typename, 
+        typename, 
+        int minDegree, 
+        btree::Kind kind
+    > class MakeAggregate, 
+    int minDegree, 
+    btree::Kind kind,
+    typename Generator
+>
+bool query_call_bulk_data_benchmark(const std::string& aggregator, 
+                               const std::string& aggregator_req, 
+                               const std::string& function_req, 
+                               const DataExperiment& exp, 
+                               Generator& gen, 
+                               std::ostream& out) {
+    if (aggregator_req == aggregator && function_req == "sum") {
+        using SumOp = Sum<Data,int,int>;
+        bulk_data_benchmark<Data>(MakeAggregate<SumOp, typename Data::timestamp, minDegree, kind>()(SumOp::identity), exp, gen, out);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "max") {
+        using MaxOp = Max<Data,typename Data::timestamp,typename Data::timestamp>;
+        bulk_data_benchmark<Data>(MakeAggregate<MaxOp, typename Data::timestamp, minDegree, kind>()(MaxOp::identity), exp, gen, out);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "geomean") {
+        using GeoOp = GeometricMean<Data,double>;
+        bulk_data_benchmark<Data>(MakeAggregate<GeoOp, typename Data::timestamp, minDegree, kind>()(GeoOp::identity), exp, gen, out);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "bloom") {
+        using BloomOp = BloomFilter<Data,uint64_t>;
+        bulk_data_benchmark<Data>(MakeAggregate<BloomOp, typename Data::timestamp, minDegree, kind>()(BloomOp::identity), exp, gen, out);
+        return true;
+    }
+    else if (aggregator_req == aggregator && function_req == "relvar") {
+        using RelVar = RelativeVariation<Data,double>;
+        bulk_data_benchmark<Data>(MakeAggregate<RelVar, typename Data::timestamp, minDegree, kind>()(RelVar::identity), exp, gen, out);
+        return true;
+    }
+
+    return false;
+}
+
+template <typename T=cycle_duration>
+void write_latency(std::string filespec, std::vector<T> &latencies) {
+    std::ofstream out(filespec);
+    for (auto e: latencies) {
+        out << e << std::endl;
+    }
 }
 
 

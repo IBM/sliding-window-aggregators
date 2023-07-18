@@ -4,6 +4,7 @@
 #include "AMTA.hpp"
 #include "FiBA.hpp"
 #include "TimestampedTwoStacksLite.hpp"
+#include "TimestampedImplicitTwoStacksLite.hpp"
 #include "TimestampedDABALite.hpp"
 
 typedef uint64_t timestamp;
@@ -39,26 +40,47 @@ int main(int argc, char** argv) {
               << iterations << std::endl;
 
     std::vector<cycle_duration> latencies;
+    std::vector<cycle_duration> evict_latencies;
+    std::vector<cycle_duration> insert_latencies;
+
     Experiment exp(window_size, iterations, degree, bulk_size, latency, latencies);
+    exp.extra_latencies.push_back(evict_latencies);
+    exp.extra_latencies.push_back(insert_latencies);
 
     if (!(query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 2, btree::finger>("bfinger2", aggregator, function, exp) ||
           query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 4, btree::finger>("bfinger4", aggregator, function, exp) ||
           query_call_bulk_evict_benchmark<btree::MakeAggregate, timestamp, 8, btree::finger>("bfinger8", aggregator, function, exp) ||
 
+          query_call_bulk_evict_benchmark<fiba_nofl::MakeAggregate, timestamp, 2, btree::finger>("nofl_bfinger2", aggregator, function, exp) ||
+          query_call_bulk_evict_benchmark<fiba_nofl::MakeAggregate, timestamp, 4, btree::finger>("nofl_bfinger4", aggregator, function, exp) ||
+          query_call_bulk_evict_benchmark<fiba_nofl::MakeAggregate, timestamp, 8, btree::finger>("nofl_bfinger8", aggregator, function, exp) ||
+
+          query_call_bulk_evict_benchmark<btree::MakeBulkAggregate, timestamp, 2, btree::finger>("nbfinger2", aggregator, function, exp) ||
+          query_call_bulk_evict_benchmark<btree::MakeBulkAggregate, timestamp, 4, btree::finger>("nbfinger4", aggregator, function, exp) ||
+          query_call_bulk_evict_benchmark<btree::MakeBulkAggregate, timestamp, 8, btree::finger>("nbfinger8", aggregator, function, exp) ||
 
           query_call_bulk_evict_benchmark<timestamped_twostacks_lite::MakeBulkAggregate, timestamp>("two_stacks_lite", aggregator, function, exp) ||
+          query_call_bulk_evict_insert_benchmark<timestamped_chunked_twostackslite::MakeBulkAggregate, timestamp>("chunked_two_stacks_lite", aggregator, function, exp) ||
           query_call_bulk_evict_benchmark<timestamped_dabalite::MakeBulkAggregate, timestamp>("daba_lite", aggregator, function, exp) ||
           query_call_bulk_evict_benchmark<amta::MakeAggregate, timestamp>("amta", aggregator, function, exp)
-       )) {
+          )) {
         std::cerr << "error: no matching kind of experiment: " << aggregator << ", " << function << std::endl;
         return 2;
     }
 
     if (latency) {
-        std::ofstream out("results/latency_bulk_evict_" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str + ".txt");
-        for (auto e: latencies) {
-            out << e << std::endl;
-        }
+        write_latency(
+            "results/latency_bulk_evict_" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str +  "_b" + bulk_size_str + ".txt",
+            latencies
+        );
+        write_latency(
+            "results/latency_bulk_evict_opevict_" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str +  "_b" + bulk_size_str + ".txt",
+            evict_latencies
+        );
+        write_latency(
+            "results/latency_bulk_evict_opinsert_" + aggregator + "_" + function + "_w" + window_size_str + "_d" + degree_str +  "_b" + bulk_size_str + ".txt",
+            insert_latencies
+        );
     }
 
     return 0;

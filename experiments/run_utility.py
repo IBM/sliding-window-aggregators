@@ -36,6 +36,36 @@ def run_fifo_latency(aggregators, functions):
             iterations = base_iterations + window_size
             exec_no_fail(['../bin/benchmark_driver', agg, f, str(window_size), str(iterations), 'latency'])
 
+def run_ooo_latency(aggregators, functions, name_base):
+    for agg in aggregators:
+        for f, params in functions.iteritems():
+            base_iterations = params[0]
+            window_sizes = params[1]
+
+            for w in window_sizes:
+                for d in [0, w/4]:
+                    print(agg + '_' + f, w, d, ':')
+                    sys.stdout.flush()
+                    iterations = base_iterations + w
+                    exec_no_fail(['../bin/' + name_base + '_benchmark_driver', agg, f, str(w), str(d), str(iterations), 'latency'])
+
+def run_bulk_latency(aggregators, functions, degrees, bulk_sizes, name_base):
+    for agg in aggregators:
+        for f, params in functions.items():
+            base_iterations = params[0]
+            window_sizes = params[1]
+
+            for w in window_sizes:
+                for d in degrees:
+                    for b in bulk_sizes:
+                        print(agg + '_' + f, w, d, b, ':')
+                        sys.stdout.flush()
+                        iterations = base_iterations + w
+                        exec_no_fail(
+                            ['../bin/' + name_base + '_benchmark_driver',
+                            agg, f, str(w), str(d), str(b), str(iterations), 'latency']
+                        )
+
 def get_runtime(stdout):
     for line in stdout.splitlines():
         if 'core runtime: ' in line:
@@ -78,9 +108,9 @@ def run_ooo(aggregators, functions, degrees, name_base, sample_size=5):
         results_file.close()
 
 
-def run_bulk(aggregators, functions, degrees, bulks, name_base, sample_size=5):
+def run_bulk(aggregators, functions, degrees, bulks, name_base, sample_size=5, filemode="w"):
     for agg in aggregators:
-        with open('results/' + name_base + '_' + agg + '.csv', 'w') as results_file:
+        with open('results/' + name_base + '_' + agg + '.csv', filemode) as results_file:
             results = csv.writer(results_file)
 
             for f, params in functions.items():
@@ -204,7 +234,7 @@ def run_shared_half(aggregators, functions, window_sizes, name_base, sample_size
                 base_iterations = params
 
                 for w in window_sizes:
-                    big_window_size = w 
+                    big_window_size = w
                     small_window_size = w / 2
 
                     row = [f, big_window_size, small_window_size]
@@ -232,7 +262,7 @@ def run_data(aggregators, functions, durations, data_sets, name_base, latency=''
                     for d in durations:
                         exp_file.write(' '.join([agg, f, str(d), latency]) + '\n')
 
-        stdout = exec_no_fail(['../bin/' + name_base + '_benchmark', exp_filename, str(sample_size), data_set, data_file])
-        with open('results/' + data_set + '_' + name_base + '.log', 'w') as log:
+        stdout = exec_no_fail(['../bin/shell_' + name_base + '_benchmark', exp_filename, str(sample_size), data_set, data_file])
+        with open('results/' + data_set + '_' + name_base + '.log', 'wt') as log:
             log.write(stdout)
 

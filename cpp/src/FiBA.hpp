@@ -16,6 +16,10 @@
 #include "utils.h"
 #include "BulkAdapter.hpp"
 
+#ifdef _MIMALLOC
+#include "mimalloc-new-delete.h"
+#endif
+
 namespace btree {
 
 using namespace std;
@@ -36,7 +40,7 @@ IF_COLLECT_STATS(static long statsSumRootDegree = 0);
 enum Kind { classic, knuckle, finger };
 
 template<typename _timeT, int minArity, Kind kind, typename binOpFunc,
-         bool early_stopping=false>
+         bool early_stopping=false, bool use_freelist=true>
 class Aggregate {
 public:
   typedef typename binOpFunc::In inT;
@@ -603,30 +607,78 @@ private:
     }
   };
 
+  template<typename T, bool freelistFlag>
+  class FreeListMgr { /* template */};
+
+
+  template<typename T>
+  class FreeListMgr<T, true> {
+  public:
+    vector<T> _freeList;
+    FreeListMgr() : _freeList() { /* no op */ }
+    ~FreeListMgr() {
+      while (!_freeList.empty()) {
+        Node* node = newNode(true);
+        deleteNode(node, false);
+      }
+    }
+
+    void deleteNode(Node* node, bool recursive) {
+      if (recursive && !node->isLeaf())
+        for (int i=0, n=node->arity(); i<n; i++)
+          _freeList.push_back(node->getChild(i));
+      delete node;
+    }
+
+    Node* newNode(bool isLeaf) {
+      if (_freeList.empty())
+        return new Node(isLeaf);
+      Node* node = _freeList.back();
+      _freeList.pop_back();
+      if (!node->isLeaf())
+        for (int i=0, n=node->arity(); i<n; i++)
+          _freeList.push_back(node->getChild(i));
+      node->init(isLeaf);
+      return node;
+    }
+  };
+
+template<typename T>
+  class FreeListMgr<T, false> { // With the free list turned off
+  public:
+    void deleteNode(Node* node, bool recursive) {
+      /* todo: check me */
+      if (!recursive) {
+        delete node;
+        return ;
+      }
+      std::deque<Node*> forCleanUp;
+      forCleanUp.push_back(node);
+      while (!forCleanUp.empty()) {
+        node = forCleanUp.front(); forCleanUp.pop_front();
+        if (!node->isLeaf()) {
+          for (int i=0, n=node->arity(); i<n; i++)
+            forCleanUp.push_back(node->getChild(i));
+        }
+        delete node;
+      }
+    }
+    Node* newNode(bool isLeaf) { return new Node(isLeaf); }
+  };
 
   binOpFunc _binOp;
-  deque<Node*> _freeList;
+  FreeListMgr<Node*, use_freelist> _freeListMgr;
   Node *_root;
   Node *_leftFinger, *_rightFinger;
   size_t _size;
 
+
   void deleteNode(Node* node, bool recursive) {
-    if (recursive && !node->isLeaf())
-      for (int i=0, n=node->arity(); i<n; i++)
-        _freeList.push_back(node->getChild(i));
-    delete node;
+    _freeListMgr.deleteNode(node, recursive);
   }
 
   Node* newNode(bool isLeaf) {
-    if (_freeList.empty())
-      return new Node(isLeaf);
-    Node* node = _freeList.back();
-    _freeList.pop_back();
-    if (!node->isLeaf())
-      for (int i=0, n=node->arity(); i<n; i++)
-        _freeList.push_back(node->getChild(i));
-    node->init(isLeaf);
-    return node;
+    return _freeListMgr.newNode(isLeaf);
   }
 
   void heightDecrease() {
@@ -936,7 +988,7 @@ private:
     { }
   };
 
-  using BoundaryT = deque<BoundaryLevel>;
+  using BoundaryT = vector<BoundaryLevel>;
 
   void searchBoundary(timeT time, BoundaryT& result) const {
     Node* node = _root;
@@ -1584,7 +1636,7 @@ private:
 public:
   Aggregate(binOpFunc binOp)
     : _binOp(binOp),
-      _freeList(),
+      _freeListMgr(),
       _root(newNode(true)),
       _leftFinger(NULL), _rightFinger(NULL),
       _size(0)
@@ -1603,10 +1655,6 @@ public:
     IF_COLLECT_STATS(cout << "# of repair calls: " << statsTotalRepairAggCount << endl);
     IF_COLLECT_STATS(cout << "avg root degree when repairs were made: " <<  ((double) statsSumRootDegree) / statsTotalRepairAggCount << endl);
     deleteNode(_root, true);
-    while (!_freeList.empty()) {
-      Node* node = newNode(true);
-      deleteNode(node, false);
-    }
   }
 
   aggT at(timeT const& time) {
@@ -1693,17 +1741,19 @@ public:
     return true;
   }
 
+  BoundaryT boundary;
   void bulkEvict(timeT const& time) {
-    BoundaryT boundary;
+    if (!boundary.empty()) { throw 1; }
     searchBoundary(time, boundary);
     Node* skipUpTo = NULL;
     Node* top = NULL;
     if (false) cout << "boundary.size() " << boundary.size() << endl;
-    for (int i=0, n=boundary.size(); i<n; i++) {
-      BoundaryLevel const& level = boundary[n - i - 1];
+    int n = boundary.size();
+    for (int i=0; !boundary.empty(); i++, boundary.pop_back()) {
+      BoundaryLevel const& level = boundary.back();
       if (false) cout << *_root << "level " << (i + 1);
       if (false) cout << ", node " << level.node << ", neighbor " << level.neighbor << ", ancestor " << level.ancestor;
-      if (level.neighbor != NULL)
+      if (level.neighbor != NULL && i > 0) // repair neighbor only after the starting level
         level.neighbor->localRepairAggIfUp(_binOp);
       if (skipUpTo == NULL || skipUpTo == level.node) {
         skipUpTo = NULL;
@@ -1757,8 +1807,9 @@ public:
       }
       if (false) cout << endl;
     }
+    while (!boundary.empty()) boundary.pop_back();
+
     assert(top != NULL);
-    int i = boundary.size();
     if (false) cout << *_root;
     bool hitLeft, hitRight;
     if (top->isRoot()) {
@@ -1772,7 +1823,7 @@ public:
       hitLeft = top->leftSpine();
       hitRight = top->rightSpine();
     } else {
-      if (false) cout << "continuing repair for underflow at level " << i << endl;
+      if (false) cout << "continuing repair for underflow at level " << n << endl;
       top = rebalanceAfterEvict(top, &hitLeft, &hitRight);
     }
     if (false) cout << *_root;
@@ -1940,31 +1991,66 @@ public:
   }
 };
 
-template <typename timeT, int minArity, Kind kind, class BinaryFunction, class T, bool simulatedBulk=false>
+template <typename timeT, int minArity, Kind kind, class BinaryFunction, class T>
 Aggregate<timeT, minArity, kind, BinaryFunction>
 make_aggregate(BinaryFunction f, T elem) {
-  if (simulatedBulk)
-    return BulkAdapter<
-      Aggregate<timeT, minArity, kind, BinaryFunction>,
-      timeT, typename BinaryFunction::In
-      >(f);
-  else
     return Aggregate<timeT, minArity, kind, BinaryFunction>(f);
 }
 
-template <typename BinaryFunction, typename timeT, int minArity, Kind kind, bool simulatedBulk=false>
+template <typename BinaryFunction, typename timeT, int minArity, Kind kind>
 struct MakeAggregate {
   template <typename T>
-  Aggregate<timeT, minArity, kind, BinaryFunction> operator()(T elem) {
+Aggregate<timeT, minArity, kind, BinaryFunction> operator()(T elem) {
     BinaryFunction f;
     return make_aggregate<
       timeT, minArity, kind,
       BinaryFunction,
-      typename BinaryFunction::Partial,
-      simulatedBulk
+      typename BinaryFunction::Partial
       >(f, elem);
   }
 };
+
+template <typename timeT, int minArity, Kind kind, class BinaryFunction, class T>
+auto make_bulk_aggregate(BinaryFunction f, T elem) {
+  return BulkAdapter<
+    Aggregate<timeT, minArity, kind, BinaryFunction>,
+    timeT, typename BinaryFunction::In
+    >(f);
+}
+
+template <typename BinaryFunction, typename timeT, int minArity, Kind kind>
+struct MakeBulkAggregate {
+  template <typename T>
+  auto operator()(T elem) {
+    BinaryFunction f;
+    return make_bulk_aggregate<
+      timeT, minArity, kind,
+      BinaryFunction,
+      typename BinaryFunction::Partial
+      >(f, elem);
+  }
+};
+}
+
+namespace fiba_nofl {
+  template <typename timeT, int minArity, btree::Kind kind, class BinaryFunction, class T>
+  auto make_aggregate(BinaryFunction f, T elem) {
+      // last two flags: bool early_stopping, bool use_freelist>
+      return btree::Aggregate<timeT, minArity, kind, BinaryFunction, false, false>(f);
+  }
+
+  template <typename BinaryFunction, typename timeT, int minArity, btree::Kind kind>
+  struct MakeAggregate {
+    template <typename T>
+    auto operator()(T elem) {
+      BinaryFunction f;
+      return make_aggregate<
+        timeT, minArity, kind,
+        BinaryFunction,
+        typename BinaryFunction::Partial
+        >(f, elem);
+    }
+  };
 }
 
 #endif
