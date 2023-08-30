@@ -42,6 +42,7 @@ provide more background on sliding window aggregation algorithms.
                        amortized O(1) and worst-case O(log *n*)
 - **space requirements**: O(*n*)
 - **first appeared**: [Optimal and General Out-of-Order Sliding-Window Aggregation][vldb2019]
+  - **bulk operations**: [Out-of-Order Sliding-Window Aggregation with Efficient Bulk Evictions and Insertions][vldb2023]
 - **implementions**: [C++](cpp/src/FiBA.hpp)
 
 # FlatFIT
@@ -135,3 +136,4 @@ provide more background on sliding window aggregation algorithms.
 [vldb2015]: http://www.vldb.org/pvldb/vol8/p702-tangwongsan.pdf
 [vldbj2021]: https://doi.org/10.1007/s00778-021-00668-3
 [tpds2018]: https://doi.org/10.1109/TPDS.2018.2868960
+[vldb2023]: https://www.vldb.org/pvldb/vol16/p3227-hirzel.pdf
