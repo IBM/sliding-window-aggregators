@@ -101,6 +101,9 @@ public:
     typedef In Out;
 
     Out lower(const Partial& c) const {
+        if (c.n == 0) {
+            return Out();
+        }
         return static_cast<Out>(c.sum / c.n);
     }
 
@@ -164,6 +167,9 @@ public:
     typedef _Out Out;
 
     Out lower(const Partial& c) const {
+        if (c.n == 0) {
+            return Out();
+        }
         float t = static_cast<float>(c.product/(float) c.n); // the exponent
         float geo_mean = expf(t);
         return static_cast<Out>(geo_mean);
@@ -199,7 +205,7 @@ public:
 };
 
 template <class I, class O>
-const typename GeometricMean<I,O>::Partial GeometricMean<I,O>::identity = {1.0, 0};
+const typename GeometricMean<I,O>::Partial GeometricMean<I,O>::identity = {0.0, 0};
 
 template <class _In>
 class SampleStdDev {
@@ -535,7 +541,7 @@ public:
 				size_t num_loop = to_loop + (accum + b)%11;
 				double dummy = busy_looper(num_loop);
 				int dummy_int = (int) dummy;
-  
+
         accum += b + (dummy_int)%16;
     }
 
@@ -607,7 +613,7 @@ public:
 };
 
 template <class In, class Out>
-const typename RelativeVariation<In, Out>::Partial RelativeVariation<In, Out>::identity = {std::numeric_limits<int64_t>::min(), 
+const typename RelativeVariation<In, Out>::Partial RelativeVariation<In, Out>::identity = {std::numeric_limits<int64_t>::min(),
                                                                                            std::numeric_limits<int64_t>::max()};
 
 #endif
