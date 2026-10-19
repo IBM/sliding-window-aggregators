@@ -1,4 +1,4 @@
-use rand::Rng;
+use rand::RngExt;
 
 use swag::recalc;
 use swag::soe;
@@ -49,9 +49,9 @@ where
 }
 
 fn synthesize(size: usize) -> Vec<i32> {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     (0..size)
-        .map(|_| rng.gen_range(1, 5))
+        .map(|_| rng.random_range(1..5))
         .collect::<Vec<_>>()
 }
 

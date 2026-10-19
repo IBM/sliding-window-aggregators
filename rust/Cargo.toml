@@ -25,11 +25,11 @@ path               = "src/lib.rs"
 num-traits         = "0.2.12"
 arrayvec           = "0.5.1"
 alga               = "0.9.3"
-rand               = "0.7.3"
 fxhash             = "0.2.1"
 
 [dev-dependencies]
-clap               = "~3.0.0-beta.2"
+clap               = { version = "4.6", features = ["derive"] }
+rand               = "0.10.1"
 trybuild           = "1.0.30"
 
 # https://doc.rust-lang.org/cargo/reference/profiles.html

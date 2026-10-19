@@ -5,7 +5,7 @@ use std::time::Instant;
 use num_traits::{NumAssign, Zero};
 use num_traits::cast::NumCast;
 
-use clap::Clap;
+use clap::{ArgAction, Parser};
 
 use swag::FifoWindow;
 use swag::reactive::Reactive;
@@ -18,11 +18,11 @@ use swag::ops::max::Max;
 use swag::ops::mean::Mean;
 use swag::ops::sum::Sum;
 
-#[derive(Clap)]
+#[derive(Parser)]
 struct Opts {
     // cargo calls us with --bench, so we just need to consume it
-    #[clap(long, parse(try_from_str), default_value="true")]
-    _bench: String,
+    #[arg(long = "bench")]
+    _bench: bool,
 
     // cargo passes our own name, so we just need to consume it
     _name: String,
@@ -32,7 +32,7 @@ struct Opts {
     window_size: usize,
     iterations: usize,
 
-    #[clap(long, parse(try_from_str), default_value="false")]
+    #[arg(long, action = ArgAction::Set, default_value_t = false)]
     latency: bool
 }
 
