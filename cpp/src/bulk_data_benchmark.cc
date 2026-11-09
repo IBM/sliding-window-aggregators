@@ -1,4 +1,6 @@
+#if __has_include(<malloc.h>)
 #include <malloc.h>
+#endif
 #include "benchmark_core.h"
 
 #include "utils.h"
@@ -64,9 +66,11 @@ void call_benchmarks(std::ifstream& in, int samples, const std::string& data_set
             // glibc magic: to force malloc to release free memory back to the OS.
             // the argument 0 is the amount of padding we want to leave in the heap,
             // and 0 means minimal padding.
+#ifdef __GLIBC__
             int trim_result = malloc_trim(0);
             // the return value is 1 if it has cleaned something and 0 otherwise.
             std::cout << "malloc_trim: " << trim_result << std::endl;
+#endif
             // end glibc magic
 
             std::cout << i << " " << aggregator << " " << function << " " << window_duration << std::endl;

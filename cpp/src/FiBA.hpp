@@ -1658,6 +1658,29 @@ public:
     deleteNode(_root, true);
   }
 
+  // Aggregate owns its nodes through raw pointers, so a (shallow) copy would
+  // leave two trees sharing nodes. Disallow copies; moves swap ownership.
+  Aggregate(Aggregate const&) = delete;
+  Aggregate& operator=(Aggregate const&) = delete;
+
+  Aggregate(Aggregate&& other) : Aggregate(other._binOp) { swap(other); }
+
+  Aggregate& operator=(Aggregate&& other) {
+    swap(other);
+    return *this;
+  }
+
+  void swap(Aggregate& other) {
+    using std::swap;
+    swap(_binOp, other._binOp);
+    swap(_freeListMgr, other._freeListMgr);
+    swap(_root, other._root);
+    swap(_leftFinger, other._leftFinger);
+    swap(_rightFinger, other._rightFinger);
+    swap(_size, other._size);
+    swap(boundary, other.boundary);
+  }
+
   aggT at(timeT const& time) {
     Node* node = searchNode(time);
     for (int i=0, n=node->arity()-1; i<n; i++)
