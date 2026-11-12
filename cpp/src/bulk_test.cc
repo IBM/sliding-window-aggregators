@@ -362,7 +362,7 @@ void bulk_insert_from_adapter(F f) {
 
   bfinger_wrapped.bulkInsert(bulkOne);
   // reset
-  bfinger_wrapped = btree::make_aggregate<timestamp, minArity, btree::finger, F, typename F::Partial, true>(f, f.identity);
+  bfinger_wrapped = btree::make_bulk_aggregate<timestamp, minArity, btree::finger, F, typename F::Partial>(f, f.identity);
 
   bfinger_wrapped.bulkInsert(bulkOne.begin(), bulkOne.end());
 }
